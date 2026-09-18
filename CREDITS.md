@@ -1,0 +1,60 @@
+# Credits and provenance
+
+## MiaAI Lab / Wesley Young — AGPLv3 runtime foundation
+
+This recipe owes its optimized EXL3 serving foundation to **MiaAI Lab
+(Mia'a AI Lab) and Wesley Young**, and the contributors to
+[DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks](https://github.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks).
+Their native Engram row store, grouped-prefill MoE implementation, cooperative
+MoE work, EXL3 integration, performance investigation and two-Spark recipe work
+are substantial upstream contributions, not original work of this repository.
+
+All incorporated MiaAI code and our adaptations of it are explicitly
+**AGPL-3.0-only (GNU Affero General Public License version 3)**. Original license
+texts, copyright notices, MIT dependency notices and file-level source hashes
+are retained under `release/runtime/vendor/`. Our recipe integration is also
+distributed under AGPL-3.0-only; this is not an MIT relicensing of MiaAI's work.
+
+Pinned source lineage:
+
+| Component | Upstream revision / location |
+| --- | --- |
+| Latest incorporated MiaAI snapshot | `8404ac7d389c418300d0bee960d52313247930e1` |
+| Cooperative-MoE merge | `b9c49e90bdcc6f1e0192feb57214df11b67d36aa` |
+| Earlier Engram / grouped-prefill integration | `979e68a` (full pins in the corresponding `UPSTREAM.json`) |
+| Cooperative ExLlamaV3 dependency | `02aef45cd681b960a00afcd0749a4ab99e6c1bfe`, original MIT notices retained |
+
+The `UPSTREAM.json` inventories distinguish pristine upstream files from local
+adaptations. The native cooperative source adapted for up to 24 rows is in
+`release/runtime/sources/cooperative24.{cu,cuh}`. Grouped-prefill and Engram
+sources and build instructions accompany their native libraries. SPDX notices
+are retained in the derived sources. The corresponding source is shipped with
+the recipe/runtime, not available only in a private campaign directory.
+
+## Other foundations
+
+- **DeepSeek-AI:** DeepSeek V4.1 Flash architecture, original model, native
+  vision, Engram, and DSpark research/weights. Model revision
+  `df42c109f1defefcbfcedbe7d905718a12266e40`; weight licenses are separate.
+- **turboderp / ExLlamaV3:** EXL3 and the MUL1 quantization/kernel foundations.
+  Original ExLlamaV3 MIT notices remain with the vendored source.
+- **vLLM and DSpark contributors:** model serving, scheduling, distributed
+  execution, speculative decoding and the OpenAI-compatible API.
+- **FlashInfer, CUTLASS, TileLang, Triton and NVIDIA CUDA/NCCL:** native kernel,
+  compilation and communication foundations; their licenses remain applicable.
+- **NVIDIA CUB/CCCL:** block radix-sort primitives used by the exact
+  length-aware top-k kernel; the original CCCL license is retained separately.
+
+## Recipe inspiration
+
+The user-facing configuration and quick-start organization are informed by:
+
+- [MiaAI's DeepSeek V4 DSpark recipe](https://github.com/MiaAI-Lab/DeepSeek-v4-Flash-DSpark-2x-DGX-Spark).
+- [The GLM-5.3 two-Spark recipe](https://github.com/coolbho3k/GLM-5.3-Flash-NVFP4-DFlash2-2x-DGX-Spark).
+- The neighboring DeepSeek V4 NVFP4/DSpark recipes and their retained contributor
+  credits, including Keys, Fraser Price, Anemll, and TonyD2Wild where applicable.
+
+Our additions include this separate 3bpw target/draft quantization campaign,
+FP4/DCP2/image-safe integration, display-reserve KV experiments, six-session
+adaptation and release packaging. Credit for upstream techniques stays upstream.
+These statements do not imply endorsement by MiaAI or other upstream authors.

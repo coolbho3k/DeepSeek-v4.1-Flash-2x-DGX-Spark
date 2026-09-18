@@ -1,0 +1,21 @@
+{
+  "compressed_bytes": 16532881207,
+  "fresh_clone_gpu_tested": false,
+  "runtime": {
+    "cache_manifest_sha256": "9c130184f8a1cc27d763ff2fb5286c49178d72bcd0473be77efad6e4b6aa7efa",
+    "files": {
+      "kernel-cache.tar": {
+        "bytes": 683673600,
+        "sha256": "79753f74bc81c048d0f72f0c941efc46d368f262f95f916a218a3d3a72fa841c"
+      },
+      "runtime-source.tar.gz": {
+        "bytes": 6315050,
+        "sha256": "2c73ce72170bdfa638cf985b7de809eb73f05ad745478f9201335a894057b2fa"
+      }
+    },
+    "image": "ghcr.io/coolbho3k/deepseek-v4.1-flash-exl3-3bpw-2x-dgx-spark@sha256:30557154f0d56b613a95867d41918c50d61f94107fa46861343d08f28c54bce3",
+    "transport": "ghcr"
+  },
+  "status": "published_anonymous_access_verified",
+  "tag": "ghcr.io/coolbho3k/deepseek-v4.1-flash-exl3-3bpw-2x-dgx-spark:20260917-rc2"
+}

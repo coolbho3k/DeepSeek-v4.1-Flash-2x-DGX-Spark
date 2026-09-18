@@ -1,0 +1,12 @@
+{
+  "bytes": 598794240,
+  "file": "ds41-runtime-cache-v1.tar",
+  "files": 12957,
+  "format": "ds41_auxiliary_cache_archive_v1",
+  "manifest_sha256": "939a5317880b3003e76657db9a349ab509225c463686604ca536c39e34b1e1ee",
+  "mtime_preserved": true,
+  "payload_bytes": 571815939,
+  "physical_deployment_verified": false,
+  "publication_approved": false,
+  "sha256": "9a5c9c563317cd9205b5e640a9f082e326a875497a2a742c2e9d34faa5cd1bad"
+}

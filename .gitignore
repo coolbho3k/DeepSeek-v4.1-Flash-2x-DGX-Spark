@@ -1,0 +1,36 @@
+# Allowlist the public recipe. Preserve, but never accidentally publish, the
+# author's multi-day campaign, model payloads, secrets, caches and local state.
+/*
+!/.gitignore
+!/.gitattributes
+!/.github/
+!/README.md
+!/LICENSE
+!/CREDITS.md
+!/THIRD_PARTY_NOTICES.md
+!/.env.ds41.example
+!/start-server.sh
+!/recipe-lock.json
+!/release/
+!/tests/
+!/docs/
+/docs/*
+!/docs/display-memory.md
+!/docs/release-validation.md
+!/docs/configuration.md
+!/docs/release-maintenance.md
+!/docs/kernel-batch-performance.md
+!/docs/repository-review.md
+!/probes/
+/probes/*
+!/probes/compare_kernel_batch.py
+__pycache__/
+*.py[cod]
+.env
+.env.*
+!/.env.ds41.example
+.state/
+.assets/
+.venv*/
+# Maintainer-only local audit reports/outputs never belong in the release.
+*.local.json

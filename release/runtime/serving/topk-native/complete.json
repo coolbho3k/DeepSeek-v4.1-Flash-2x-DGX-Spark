@@ -1,0 +1,22 @@
+{
+  "binary_sha256": "2ee6bde332658f6c3fd0eba299a6ed9cbdc3a72b78f17fb9c7bd149d0246f672",
+  "command": [
+    "/usr/local/cuda/bin/nvcc",
+    "-std=c++17",
+    "-O3",
+    "-lineinfo",
+    "--expt-relaxed-constexpr",
+    "-gencode",
+    "arch=compute_121a,code=sm_121a",
+    "-shared",
+    "-Xcompiler",
+    "-fPIC",
+    "--ptxas-options=-v",
+    "/work/kernels/length_aware_topk.cu",
+    "-o",
+    "/build/topk.so"
+  ],
+  "seconds": 2.532175538013689,
+  "source_sha256": "afa778cfbdb5650ccc0cc063ff41eeabe4682c6190e19b37763a376f9a56fb3e",
+  "status": "built_not_gpu_qualified"
+}

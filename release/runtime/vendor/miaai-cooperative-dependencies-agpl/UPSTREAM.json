@@ -1,0 +1,89 @@
+{
+  "commit": "02aef45cd681b960a00afcd0749a4ab99e6c1bfe",
+  "files": {
+    "LICENSE": {
+      "bytes": 1066,
+      "final_newline_added": true,
+      "git_blob_sha1": "b40e3294c2cd30839e56636a3d2ccfaaa2c0f6e6",
+      "sha256": "93ccc2f4c97c03bc767c611c75f3bb16b97e49606f5cd3ca05d7f6201ff8f8de",
+      "upstream_sha256": "27a32b6263fcd96c79d3beeecf221c4366780bdf15ad51986f48650bd7369bff",
+      "url": "https://raw.githubusercontent.com/turboderp-org/exllamav3/02aef45cd681b960a00afcd0749a4ab99e6c1bfe/LICENSE"
+    },
+    "exllamav3/exllamav3_ext/compat.cuh": {
+      "bytes": 642,
+      "final_newline_added": false,
+      "git_blob_sha1": "9a0e549dc55f21b59f584d28c82bfd86218f04f8",
+      "sha256": "dd6038fa6eb8b28df56b184e358e5633421af76eeb40bad4abc522ce6ba54f57",
+      "upstream_sha256": "dd6038fa6eb8b28df56b184e358e5633421af76eeb40bad4abc522ce6ba54f57",
+      "url": "https://raw.githubusercontent.com/turboderp-org/exllamav3/02aef45cd681b960a00afcd0749a4ab99e6c1bfe/exllamav3/exllamav3_ext/compat.cuh"
+    },
+    "exllamav3/exllamav3_ext/ptx.cuh": {
+      "bytes": 9623,
+      "final_newline_added": false,
+      "git_blob_sha1": "be50a689f5781a3579e5f8a06c81dd7413cf77e5",
+      "sha256": "8ceacb1b321af5877a9a3d651e038fb1f44b543c3011e2f814f448830efe27ee",
+      "upstream_sha256": "8ceacb1b321af5877a9a3d651e038fb1f44b543c3011e2f814f448830efe27ee",
+      "url": "https://raw.githubusercontent.com/turboderp-org/exllamav3/02aef45cd681b960a00afcd0749a4ab99e6c1bfe/exllamav3/exllamav3_ext/ptx.cuh"
+    },
+    "exllamav3/exllamav3_ext/quant/codebook.cuh": {
+      "bytes": 5865,
+      "final_newline_added": false,
+      "git_blob_sha1": "fad7559c4341a6a43aa6922e9f00de01a2a4c1b3",
+      "sha256": "0e3c63b323f8d3cc15c6a8f2e2b3816efafd71e149a99997b30b2f806375138a",
+      "upstream_sha256": "0e3c63b323f8d3cc15c6a8f2e2b3816efafd71e149a99997b30b2f806375138a",
+      "url": "https://raw.githubusercontent.com/turboderp-org/exllamav3/02aef45cd681b960a00afcd0749a4ab99e6c1bfe/exllamav3/exllamav3_ext/quant/codebook.cuh"
+    },
+    "exllamav3/exllamav3_ext/quant/exl3_dq.cuh": {
+      "bytes": 10325,
+      "final_newline_added": true,
+      "git_blob_sha1": "2cf103654abe7f7e4e63b2db271a9eeee87f9adb",
+      "sha256": "062607948fbbf86f5f9decd58337b69e2e3924f11ff7c393f883e96789be1cc9",
+      "upstream_sha256": "7e3009b0f70635e8a98edf8b929832ca0fe16b6a5ad20f13b77ebfa72723feac",
+      "url": "https://raw.githubusercontent.com/turboderp-org/exllamav3/02aef45cd681b960a00afcd0749a4ab99e6c1bfe/exllamav3/exllamav3_ext/quant/exl3_dq.cuh"
+    },
+    "exllamav3/exllamav3_ext/quant/exl3_gemv_kernel.cuh": {
+      "bytes": 15352,
+      "final_newline_added": false,
+      "git_blob_sha1": "74201ddd0eab574e283f6df28cc0e6e897534b4b",
+      "sha256": "12fadaabf5483b0c3b5c6cfd33eb8b23442c92b928e2813057342ea7a89eb863",
+      "upstream_sha256": "12fadaabf5483b0c3b5c6cfd33eb8b23442c92b928e2813057342ea7a89eb863",
+      "url": "https://raw.githubusercontent.com/turboderp-org/exllamav3/02aef45cd681b960a00afcd0749a4ab99e6c1bfe/exllamav3/exllamav3_ext/quant/exl3_gemv_kernel.cuh"
+    },
+    "exllamav3/exllamav3_ext/quant/exl3_kernel_map.cuh": {
+      "bytes": 4845,
+      "final_newline_added": false,
+      "git_blob_sha1": "58cde38c06f7002a256ebb3edbb4086352b04516",
+      "sha256": "6db5f3ab7ed173236080d641309076608c32c97c923555fbdeb699e08515729e",
+      "upstream_sha256": "6db5f3ab7ed173236080d641309076608c32c97c923555fbdeb699e08515729e",
+      "url": "https://raw.githubusercontent.com/turboderp-org/exllamav3/02aef45cd681b960a00afcd0749a4ab99e6c1bfe/exllamav3/exllamav3_ext/quant/exl3_kernel_map.cuh"
+    },
+    "exllamav3/exllamav3_ext/quant/hadamard_inner.cuh": {
+      "bytes": 13148,
+      "final_newline_added": false,
+      "git_blob_sha1": "b6bad240d7d160d4ca2cb3d43a67187793f98b6f",
+      "sha256": "8d8e437aced88735e919563301ffac0e4a2aac28cc542ed3f738e1216ea0c36b",
+      "upstream_sha256": "8d8e437aced88735e919563301ffac0e4a2aac28cc542ed3f738e1216ea0c36b",
+      "url": "https://raw.githubusercontent.com/turboderp-org/exllamav3/02aef45cd681b960a00afcd0749a4ab99e6c1bfe/exllamav3/exllamav3_ext/quant/hadamard_inner.cuh"
+    },
+    "exllamav3/exllamav3_ext/util.cuh": {
+      "bytes": 4686,
+      "final_newline_added": false,
+      "git_blob_sha1": "8a9f70604fcd88a3be1e8e4f313b6b2bbcd6aac5",
+      "sha256": "1907cea115260db7c3b0de540e375e7733b7ffc9019bec190c1d92abea1d964e",
+      "upstream_sha256": "1907cea115260db7c3b0de540e375e7733b7ffc9019bec190c1d92abea1d964e",
+      "url": "https://raw.githubusercontent.com/turboderp-org/exllamav3/02aef45cd681b960a00afcd0749a4ab99e6c1bfe/exllamav3/exllamav3_ext/util.cuh"
+    },
+    "exllamav3/exllamav3_ext/util.h": {
+      "bytes": 8762,
+      "final_newline_added": false,
+      "git_blob_sha1": "cb61b94a2f50b2255daac29c81412183accda12f",
+      "sha256": "ba89ac6793bf31cfe123d13baa2e34531a18a24bc3b2ff4add8cf4856b75a1c8",
+      "upstream_sha256": "ba89ac6793bf31cfe123d13baa2e34531a18a24bc3b2ff4add8cf4856b75a1c8",
+      "url": "https://raw.githubusercontent.com/turboderp-org/exllamav3/02aef45cd681b960a00afcd0749a4ab99e6c1bfe/exllamav3/exllamav3_ext/util.h"
+    }
+  },
+  "integration_license": "AGPL-3.0-only",
+  "local_changes": "Only missing final newlines normalized; native overrides live in the separately attributed MiaAI snapshot.",
+  "repo": "turboderp-org/exllamav3",
+  "upstream_license": "MIT"
+}

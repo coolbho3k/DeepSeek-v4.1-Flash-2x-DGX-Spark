@@ -1,0 +1,29 @@
+{
+  "draft": {
+    "manifest_sha256": "c559721310c9bcbd82d460865d3499065a6c6de67d4badf8aacfc79396562c46",
+    "repo": "coolbho3k/DeepSeek-V4.1-Flash-DSpark-EXL3-3bpw",
+    "revision": "f74b8c9b7d4448e2deeaf23be7d03557f2878504"
+  },
+  "format": "ds41_public_recipe_lock_v2",
+  "kit_manifest_sha256": "e5460de0a86ff4551b6ce4116f8c2e852c1c5c0daaed1ddf17a930d9d2c30e6d",
+  "model": {
+    "manifest_sha256": "6d79a9ae5cfd121df7c559b76cde87b50551adbe68ae0dc94c97973e85e8e1d1",
+    "repo": "coolbho3k/DeepSeek-V4.1-Flash-EXL3-3bpw",
+    "revision": "5571a3c9ee09f9495e9118b54e022ac591b85373"
+  },
+  "runtime": {
+    "cache_manifest_sha256": "9c130184f8a1cc27d763ff2fb5286c49178d72bcd0473be77efad6e4b6aa7efa",
+    "files": {
+      "kernel-cache.tar": {
+        "bytes": 683673600,
+        "sha256": "79753f74bc81c048d0f72f0c941efc46d368f262f95f916a218a3d3a72fa841c"
+      },
+      "runtime-source.tar.gz": {
+        "bytes": 6315050,
+        "sha256": "2c73ce72170bdfa638cf985b7de809eb73f05ad745478f9201335a894057b2fa"
+      }
+    },
+    "image": "ghcr.io/coolbho3k/deepseek-v4.1-flash-exl3-3bpw-2x-dgx-spark@sha256:30557154f0d56b613a95867d41918c50d61f94107fa46861343d08f28c54bce3",
+    "transport": "ghcr"
+  }
+}

@@ -1,0 +1,14 @@
+# Source-only candidate overlay on the already compiled, locally pinned runtime.
+# scripts/build_runtime_overlay.py verifies the base ID and resulting layer ancestry.
+ARG BASE_IMAGE=ds41-vllm:e47aa780-sm121-inputs-v2
+FROM ${BASE_IMAGE}
+LABEL ds41.runtime.overlay="dcp-v3-candidate" \
+      ds41.runtime.scope="local integration tests; full serving not qualified"
+# Use a fresh import directory; do not merge with stale installed source files.
+COPY ds41 /opt/ds41-dcp-v3/ds41
+COPY pyproject.toml /opt/ds41-dcp-v3/pyproject.toml
+COPY docker/Dockerfile.runtime-overlay /opt/ds41-dcp-v3/Dockerfile
+WORKDIR /opt/ds41-dcp-v3
+RUN sha256sum ds41/*.py pyproject.toml Dockerfile > source.sha256
+ENV PYTHONPATH=/opt/ds41-dcp-v3:/opt/exllamav3 VLLM_PLUGINS=ds41
+# Inherit the original API-server entrypoint; no server runs during the build.

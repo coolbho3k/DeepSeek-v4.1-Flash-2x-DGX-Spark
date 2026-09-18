@@ -1,0 +1,21 @@
+{
+  "format": "ds41_public_credential_review_v1",
+  "image_manifest_digest": "sha256:30557154f0d56b613a95867d41918c50d61f94107fa46861343d08f28c54bce3",
+  "tag": "20260917-rc2",
+  "audit_report_sha256": "e15401e4614d0f547a45483d76549b8f2d36873f549dc6f4b27ad32f91496de8",
+  "all_image_layers_rehashed_and_scanned": 39,
+  "superseded_content_scanned": true,
+  "nested_archives_scanned": 14,
+  "archive_and_filesystem_entries_examined": 305409,
+  "known_current_credential_representations_checked": 5,
+  "known_current_credential_matches": 0,
+  "new_release_layer_findings": 0,
+  "previously_reviewed_upstream_findings": 141,
+  "additional_reviewed_upstream_findings": 19,
+  "remaining_unreviewed_findings": 0,
+  "findings_disposition": "Upstream AWS examples, crypto parser markers/self-test fixtures, embedded font and Unicode-table pattern coincidences, symbols/checksums, and the empty SSH directory. AWS/Pillow match hashes were checked against public upstream source. No campaign credential was identified.",
+  "host_home_or_docker_login_packaged": false,
+  "live_container_committed": false,
+  "secret_values_written_to_reports": false,
+  "limitations": "Pattern and known-current-credential audit with contextual/upstream review; not a comprehensive security certification or guarantee against every possible unknown secret."
+}

@@ -1,0 +1,178 @@
+{
+  "activated": false,
+  "commit": "8404ac7d389c418300d0bee960d52313247930e1",
+  "files": {
+    "LICENSE": {
+      "git_blob_sha1": "fe6b9036ba1818c79c15f802a586a9711ece2b97",
+      "license": "AGPL-3.0-only with retained MIT notices",
+      "local_sha256": "8d56b405468aad11f87ab5763f901e276e08d9646ff5c8481b1762b6b789e9ed",
+      "upstream_bytes": 34524,
+      "upstream_sha256": "8d56b405468aad11f87ab5763f901e276e08d9646ff5c8481b1762b6b789e9ed",
+      "url": "https://raw.githubusercontent.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks/8404ac7d389c418300d0bee960d52313247930e1/LICENSE"
+    },
+    "LICENSE.MIT": {
+      "git_blob_sha1": "a2618f57856de4aff4562cc0cdf502d0803b527b",
+      "license": "AGPL-3.0-only with retained MIT notices",
+      "local_sha256": "d48b01844af2aa68bc3fbea765069b94d70adb0c67dc4a62ca605c067aec9ab3",
+      "upstream_bytes": 1363,
+      "upstream_sha256": "d48b01844af2aa68bc3fbea765069b94d70adb0c67dc4a62ca605c067aec9ab3",
+      "url": "https://raw.githubusercontent.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks/8404ac7d389c418300d0bee960d52313247930e1/LICENSE.MIT"
+    },
+    "docs/cooperative-moe-quickstart.md": {
+      "git_blob_sha1": "a2fe6dc3fc002b2b72825ccaac461fca8c1c1ad4",
+      "license": "AGPL-3.0-only with retained MIT notices",
+      "local_sha256": "7b428bef8bb34050df83ff3f5d7f14b85af12e7e18ab9f915c4c7be5a5b04a2a",
+      "upstream_bytes": 14199,
+      "upstream_sha256": "7b428bef8bb34050df83ff3f5d7f14b85af12e7e18ab9f915c4c7be5a5b04a2a",
+      "url": "https://raw.githubusercontent.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks/8404ac7d389c418300d0bee960d52313247930e1/docs/cooperative-moe-quickstart.md"
+    },
+    "docs/cooperative-moe.md": {
+      "git_blob_sha1": "18d139ddc45e2a9a667558aba907a63e8461ab0a",
+      "license": "AGPL-3.0-only with retained MIT notices",
+      "local_sha256": "bec6980173f851c28657ad559e67a0dfefdc5f6d8296c6263744c3c349efb4da",
+      "upstream_bytes": 7948,
+      "upstream_sha256": "bec6980173f851c28657ad559e67a0dfefdc5f6d8296c6263744c3c349efb4da",
+      "url": "https://raw.githubusercontent.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks/8404ac7d389c418300d0bee960d52313247930e1/docs/cooperative-moe.md"
+    },
+    "extensions/cooperative_moe/README.md": {
+      "git_blob_sha1": "8c681ffe50e90af0445f370a67afcfc3e2b4088e",
+      "license": "AGPL-3.0-only with retained MIT notices",
+      "local_sha256": "905d75f9ed792951f3a37a2ac23c1308aa55d0e05713a1c48e005c08130d3e8e",
+      "upstream_bytes": 5709,
+      "upstream_sha256": "905d75f9ed792951f3a37a2ac23c1308aa55d0e05713a1c48e005c08130d3e8e",
+      "url": "https://raw.githubusercontent.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks/8404ac7d389c418300d0bee960d52313247930e1/extensions/cooperative_moe/README.md"
+    },
+    "extensions/cooperative_moe/archive_upstream.sh": {
+      "git_blob_sha1": "6168aa8493af241289a4dd83c41ff18a6c4912b3",
+      "license": "AGPL-3.0-only with retained MIT notices",
+      "local_sha256": "2bc58857a64a5a164448bd3935c288002bead284625c10a44a29aeb5f696589f",
+      "upstream_bytes": 906,
+      "upstream_sha256": "96ac525ffac1027a98cfee86710d44d38c24a1e151081809db92b176919ca140",
+      "url": "https://raw.githubusercontent.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks/8404ac7d389c418300d0bee960d52313247930e1/extensions/cooperative_moe/archive_upstream.sh"
+    },
+    "extensions/cooperative_moe/artifacts/README.md": {
+      "git_blob_sha1": "1ca1bc12b869c802cb8df50fa981d313534a1088",
+      "license": "AGPL-3.0-only with retained MIT notices",
+      "local_sha256": "63f495458dffbcd4e8b71dc49dcb8899c8ad896a6a615eca080cda01c734928c",
+      "upstream_bytes": 665,
+      "upstream_sha256": "63f495458dffbcd4e8b71dc49dcb8899c8ad896a6a615eca080cda01c734928c",
+      "url": "https://raw.githubusercontent.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks/8404ac7d389c418300d0bee960d52313247930e1/extensions/cooperative_moe/artifacts/README.md"
+    },
+    "extensions/cooperative_moe/artifacts/SHA256SUMS": {
+      "git_blob_sha1": "1db8b7127bbc37b7f58e85a62b3709d611f57c6e",
+      "license": "AGPL-3.0-only with retained MIT notices",
+      "local_sha256": "a88b4ffed493a7c78ac1fa325ea905efe9e887ba777c8ce959804f4215fb1309",
+      "upstream_bytes": 85,
+      "upstream_sha256": "a88b4ffed493a7c78ac1fa325ea905efe9e887ba777c8ce959804f4215fb1309",
+      "url": "https://raw.githubusercontent.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks/8404ac7d389c418300d0bee960d52313247930e1/extensions/cooperative_moe/artifacts/SHA256SUMS"
+    },
+    "extensions/cooperative_moe/benchmarks/results.json": {
+      "git_blob_sha1": "7d1e24357bb11fed9a8c7a01c275ad428b2222c2",
+      "license": "AGPL-3.0-only with retained MIT notices",
+      "local_sha256": "77c83e556a320e76ec1f21bef6c197e4edc387c7fdc1fba47be39e67af86dd7f",
+      "upstream_bytes": 11680,
+      "upstream_sha256": "77c83e556a320e76ec1f21bef6c197e4edc387c7fdc1fba47be39e67af86dd7f",
+      "url": "https://raw.githubusercontent.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks/8404ac7d389c418300d0bee960d52313247930e1/extensions/cooperative_moe/benchmarks/results.json"
+    },
+    "extensions/cooperative_moe/benchmarks/workloads.json": {
+      "git_blob_sha1": "1559d178c931cf68703c0a2ac163d58a5158ac63",
+      "license": "AGPL-3.0-only with retained MIT notices",
+      "local_sha256": "435926d8b66241d43bb8b0d2c6c2dce8dd5e8fcd1a1fc476269a390f29d0d223",
+      "upstream_bytes": 2555,
+      "upstream_sha256": "435926d8b66241d43bb8b0d2c6c2dce8dd5e8fcd1a1fc476269a390f29d0d223",
+      "url": "https://raw.githubusercontent.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks/8404ac7d389c418300d0bee960d52313247930e1/extensions/cooperative_moe/benchmarks/workloads.json"
+    },
+    "extensions/cooperative_moe/build.sh": {
+      "git_blob_sha1": "ac3eb71fb405b41d29acbd8ce464520c6bc0ffa7",
+      "license": "AGPL-3.0-only with retained MIT notices",
+      "local_sha256": "43e70430bf110629ca5bf201551330aad1a8507526879731d36414920430f075",
+      "upstream_bytes": 2145,
+      "upstream_sha256": "0eca829cf4045ea35c2b0a7a422eeef8abdabdedc68834084aad4f64a1f4b048",
+      "url": "https://raw.githubusercontent.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks/8404ac7d389c418300d0bee960d52313247930e1/extensions/cooperative_moe/build.sh"
+    },
+    "extensions/cooperative_moe/native/LICENSE.exllamav3": {
+      "git_blob_sha1": "00ba64513eb76fa5db5e7b82ac7d9a9672f5348b",
+      "license": "AGPL-3.0-only with retained MIT notices",
+      "local_sha256": "93ccc2f4c97c03bc767c611c75f3bb16b97e49606f5cd3ca05d7f6201ff8f8de",
+      "upstream_bytes": 1066,
+      "upstream_sha256": "93ccc2f4c97c03bc767c611c75f3bb16b97e49606f5cd3ca05d7f6201ff8f8de",
+      "url": "https://raw.githubusercontent.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks/8404ac7d389c418300d0bee960d52313247930e1/extensions/cooperative_moe/native/LICENSE.exllamav3"
+    },
+    "extensions/cooperative_moe/native/cooperative_moe.cu": {
+      "git_blob_sha1": "16c7c9b21f561e1b0ada560e0383f62b3df03c76",
+      "license": "AGPL-3.0-only with retained MIT notices",
+      "local_sha256": "d35036cfeb8d53eb97226fbfe22a1d020b424a1fcacfdc4cfea977db38ae5d0d",
+      "upstream_bytes": 5210,
+      "upstream_sha256": "0e14e30fd693fc7759d6309695fa741fbf6d7fa6fd600541b403418135cabd6f",
+      "url": "https://raw.githubusercontent.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks/8404ac7d389c418300d0bee960d52313247930e1/extensions/cooperative_moe/native/cooperative_moe.cu"
+    },
+    "extensions/cooperative_moe/native/cooperative_moe_kernel.cuh": {
+      "git_blob_sha1": "aa8e9bcb789f155404ba10cba0a832cf4408a307",
+      "license": "AGPL-3.0-only with retained MIT notices",
+      "local_sha256": "a4d089fdcb6a4646a18c37ac1354de849c422cdef56182fe7c3b10ed4ebf3bb2",
+      "upstream_bytes": 38511,
+      "upstream_sha256": "57e05f6f18f6713091e0b0717e7fca3f43f0525f99cc2b123a5da5d60616a248",
+      "url": "https://raw.githubusercontent.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks/8404ac7d389c418300d0bee960d52313247930e1/extensions/cooperative_moe/native/cooperative_moe_kernel.cuh"
+    },
+    "extensions/cooperative_moe/native/exl3_moe_coop.cuh": {
+      "git_blob_sha1": "a64fb64eeb0b55156173edba1e36c09522cb4ccf",
+      "license": "AGPL-3.0-only with retained MIT notices",
+      "local_sha256": "e668ea01742d3f6be435d7322b11594380aa11f6914e1c0eda224e365b9569a9",
+      "upstream_bytes": 6945,
+      "upstream_sha256": "6b0d214cd2813181596287e85f842850f1437a82b7de1b142171519c5188ce79",
+      "url": "https://raw.githubusercontent.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks/8404ac7d389c418300d0bee960d52313247930e1/extensions/cooperative_moe/native/exl3_moe_coop.cuh"
+    },
+    "extensions/cooperative_moe/prepare_profile.py": {
+      "git_blob_sha1": "4cd3143c5cff8ca2c7cd0f03ddc5ed36c3ee2d32",
+      "license": "AGPL-3.0-only with retained MIT notices",
+      "local_sha256": "3af6f33992f311a50cad2ccd6d51e0cfdc03dbd0e900f4909b284e8f945f2840",
+      "upstream_bytes": 2343,
+      "upstream_sha256": "bdfe4dca0c584821d2360a54d8bad3a2208f0beffac71527d6e2b707e92c1575",
+      "url": "https://raw.githubusercontent.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks/8404ac7d389c418300d0bee960d52313247930e1/extensions/cooperative_moe/prepare_profile.py"
+    },
+    "extensions/cooperative_moe/runtime.py": {
+      "git_blob_sha1": "84cb741d730c971e613e6becc872626f2604a8d7",
+      "license": "AGPL-3.0-only with retained MIT notices",
+      "local_sha256": "681f93377e42fb0ec48d8f88aa10eb8253a0aa37fef8e9f5b17a5da6ffbc6bbb",
+      "upstream_bytes": 7558,
+      "upstream_sha256": "9f1d10ffc39ac4433828a000c4932a4a773b00acadd80b46c7568f494a77b2fb",
+      "url": "https://raw.githubusercontent.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks/8404ac7d389c418300d0bee960d52313247930e1/extensions/cooperative_moe/runtime.py"
+    },
+    "extensions/cooperative_moe/test_build.py": {
+      "git_blob_sha1": "a76373cdfe3df5e2565bae7a90fa4962f143adb7",
+      "license": "AGPL-3.0-only with retained MIT notices",
+      "local_sha256": "3daaff28cae9f963ffd92c5b36df546eba2a1c124f47f1be73f51e79f815585f",
+      "upstream_bytes": 2546,
+      "upstream_sha256": "8e264642b70c15f865359a1010940aac071ae8e03f65f71dae6fe811965098f9",
+      "url": "https://raw.githubusercontent.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks/8404ac7d389c418300d0bee960d52313247930e1/extensions/cooperative_moe/test_build.py"
+    },
+    "extensions/cooperative_moe/test_cuda_integration.py": {
+      "git_blob_sha1": "b8130697201640275e357779e282b00238a38fd9",
+      "license": "AGPL-3.0-only with retained MIT notices",
+      "local_sha256": "8a25d18febcc4d72e66724078965c0a2e0eb661c833a97a13a2237e0eb60b8d6",
+      "upstream_bytes": 6188,
+      "upstream_sha256": "249934dddcded4977524d139e78f6ea9fbdc40cd147eb304a2ae5c01e78f0f00",
+      "url": "https://raw.githubusercontent.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks/8404ac7d389c418300d0bee960d52313247930e1/extensions/cooperative_moe/test_cuda_integration.py"
+    },
+    "extensions/cooperative_moe/test_dispatch.py": {
+      "git_blob_sha1": "14cbfb5bf8fac2a4f268ed439ca0ea8565b67ca5",
+      "license": "AGPL-3.0-only with retained MIT notices",
+      "local_sha256": "22b44e40d5ffae1382955423379f962cb30c451bf3354fca31013772607b3d77",
+      "upstream_bytes": 6647,
+      "upstream_sha256": "0862b9ea8193d3b6ce6cfb5513743dfbc368e3b1e2f695807aec288970029349",
+      "url": "https://raw.githubusercontent.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks/8404ac7d389c418300d0bee960d52313247930e1/extensions/cooperative_moe/test_dispatch.py"
+    },
+    "extensions/cooperative_moe/test_profile.py": {
+      "git_blob_sha1": "66504675b9fbd992c8499383df4b29e26ec9fec9",
+      "license": "AGPL-3.0-only with retained MIT notices",
+      "local_sha256": "b8cbcf36829f03509d2726a68f3c7a281351aee7dfff33c13378d8da159ace0f",
+      "upstream_bytes": 3534,
+      "upstream_sha256": "9fc5cff6218a4e0d257ad32470e65c897b974d6a171b79aaf32b3e9fbbff7f2f",
+      "url": "https://raw.githubusercontent.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks/8404ac7d389c418300d0bee960d52313247930e1/extensions/cooperative_moe/test_profile.py"
+    }
+  },
+  "license": "AGPL-3.0-only",
+  "local_changes": "Attribution/SPDX prefixes only; no upstream code executed by import.",
+  "native_dependency_commit": "02aef45cd681b960a00afcd0749a4ab99e6c1bfe",
+  "repo": "MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks"
+}

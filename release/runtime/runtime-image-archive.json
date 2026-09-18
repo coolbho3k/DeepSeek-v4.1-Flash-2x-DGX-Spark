@@ -1,0 +1,12 @@
+{
+  "archive_payload_reviewed": false,
+  "bytes": 21625698481,
+  "file": "ds41-runtime-image-v1.tar.gz",
+  "format": "ds41_runtime_image_archive_v1",
+  "imported_archive_verified": false,
+  "platform": "linux/arm64",
+  "publication_approved": false,
+  "runtime_image_identity_sha256": "03c151b169249d413dc64a365d3fa8f5c104561d1eb3bf2bd30138b9010c3e3b",
+  "sha256": "dd6b4604be3985ad2413e40123d3a74415c4e63b38d0caeff2e54b47eb7fe5a3",
+  "uncompressed_bytes": 21708827648
+}
