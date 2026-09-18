@@ -13,4 +13,5 @@ jobs:
         with:
           python-version: '3.12'
       - run: bash -n start-server.sh
+      - run: bash -n stop-server.sh
       - run: python3 -B -m unittest discover -s tests -v

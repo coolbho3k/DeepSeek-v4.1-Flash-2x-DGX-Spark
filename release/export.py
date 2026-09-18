@@ -6,7 +6,7 @@ import shutil
 
 ROOT=Path(__file__).resolve().parents[1]
 FILES=('README.md','LICENSE','CREDITS.md','THIRD_PARTY_NOTICES.md','.gitignore',
-       '.gitattributes','.env.ds41.example','start-server.sh','recipe-lock.json',
+       '.gitattributes','.env.ds41.example','start-server.sh','stop-server.sh','recipe-lock.json',
        'docs/display-memory.md','docs/configuration.md','docs/release-validation.md',
        'docs/release-maintenance.md','docs/kernel-batch-performance.md',
        'docs/repository-review.md',

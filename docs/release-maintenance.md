@@ -17,6 +17,7 @@ intended prebuilt distribution path.
    ```bash
    python3 -B release/validate_public.py --online
    bash -n start-server.sh
+   bash -n stop-server.sh
    python3 -B -m unittest discover -s tests -v
    python3 -B release/export.py --output /absolute/new/empty/release-directory
    ```

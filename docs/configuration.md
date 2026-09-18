@@ -79,6 +79,11 @@ the right pair after you edit `.env.ds41`. If no public-launcher state exists,
 as the old controller. Keep `.state/public/` and the run directory until the
 owned pair is stopped. Do not delete them as a way to bypass a failed launch.
 
+Run `./stop-server.sh` from the head checkout to stop its recorded pair on both
+hosts. This is an alias for `./start-server.sh stop`, with the same environment
+configuration and ownership checks. Models, caches and logs are preserved.
+`./stop-server.sh --dry-run` reports the action without stopping anything.
+
 `logs` follows inference output; add `--node 1` for the worker,
 `--controller` for startup/watchdog output, or `--no-follow` for a snapshot.
 `--no-wait` starts in the background without waiting for readiness. Interrupting

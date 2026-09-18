@@ -35,6 +35,12 @@ class GitExport(unittest.TestCase):
         self.assertEqual(tracked, self.expected)
         self.assertIn('probes/compare_kernel_batch.py', tracked)
         self.assertIn('docs/kernel-batch-performance.md', tracked)
+        self.assertIn('stop-server.sh', tracked)
+
+    def test_shell_launchers_remain_executable(self):
+        for name in ('start-server.sh', 'stop-server.sh'):
+            with self.subTest(script=name):
+                self.assertTrue((self.checkout / name).stat().st_mode & 0o111)
 
     def test_private_paths_are_ignored(self):
         paths = ['.env.ds41', '.env', '.env.local', '.state/public/current.json',

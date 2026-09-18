@@ -10,6 +10,7 @@
 !/THIRD_PARTY_NOTICES.md
 !/.env.ds41.example
 !/start-server.sh
+!/stop-server.sh
 !/recipe-lock.json
 !/release/
 !/tests/

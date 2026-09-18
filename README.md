@@ -527,7 +527,7 @@ effect on a subsequent launch from the updated recipe.
 ./start-server.sh logs                    # head inference/throughput logs
 ./start-server.sh logs --node 1           # worker logs
 ./start-server.sh logs --controller       # startup checks and RAM watchdog
-./start-server.sh stop                    # only this recipe's recorded pair
+./stop-server.sh                          # only this recipe's recorded pair
 ./start-server.sh --restart               # explicit stop + fresh launch
 ```
 
@@ -536,6 +536,9 @@ It watches the two exact containers and available host RAM. The server stays
 up when startup returns or your terminal closes; Ctrl+C while waiting for
 readiness or viewing logs stops only the wait/viewer. To stop serving, use the
 explicit `stop` command. Nothing is configured to start automatically on boot.
+`./stop-server.sh` is a convenience alias for `./start-server.sh stop`; it stops
+the recorded pair on both hosts and preserves models, caches and logs. Use
+`./stop-server.sh --dry-run` to check the action without stopping anything.
 Logs and ownership records live in `.state/public/` and the configured cache's
 `runs/` directory. No unrelated containers or historical campaign are adopted.
 
