@@ -485,6 +485,41 @@ If the client insists on an API key, a dummy value such as `not-needed` satisfie
 the client but **does not add authentication**. Automatic tool choice and the
 DeepSeek V4.1 tool/reasoning parsers are already enabled. No tunnel is needed.
 
+### Reasoning effort
+
+Reasoning is **enabled by default at `high` (75/100)**. Set the request's
+top-level `reasoning_effort` to one of these names:
+
+| Setting | Numeric effort / behavior |
+| --- | --- |
+| `none` | Thinking off |
+| `minimal` | 25 |
+| `low` | 50 (DeepSeek native) |
+| `medium` | 60 |
+| `high` | 75 (DeepSeek native; default) |
+| `xhigh` | 90 |
+| `max` | 100 (DeepSeek native) |
+
+`minimal`, `medium`, and `xhigh` are this recipe's compatibility aliases;
+DeepSeek's native `low`, `high`, and `max` values are unchanged. For a custom
+integer from **1 through 100**, put it in `chat_template_kwargs` instead:
+
+```json
+{
+  "model": "deepseek-v41-flash-exl3",
+  "messages": [{"role": "user", "content": "Explain your approach."}],
+  "chat_template_kwargs": {"reasoning_effort": 60}
+}
+```
+
+Use either the named top-level setting or the numeric template setting.
+The number is a prompt instruction encouraging more thorough reasoning, **not
+a hard reasoning-token limit or percentage of compute**. `none` disables
+thinking; numeric 1 is still thinking mode. The mapping ships in the recipe's
+Python overlay, so it needs no image rebuild or local compilation. Updating
+the checkout does not change an already running server; the new mapping takes
+effect on a subsequent launch from the updated recipe.
+
 ## Everyday use
 
 ```bash

@@ -214,8 +214,8 @@
       "sha256": "24a0a731fdd331c8650afabbe630e9388c54137d346e82a02f02773dc74739b9"
     },
     "ds41/vllm_prompt.py": {
-      "bytes": 1840,
-      "sha256": "bb95bf328162d91a9918b39ce85542421867201cac6b87dec314cdce99a2aecd"
+      "bytes": 1986,
+      "sha256": "ba1fdff0c294bc87063b53c68d6fd7197b16479be390b9756f5bd5515cf47303"
     },
     "ds41/vllm_vision_inputs.py": {
       "bytes": 7081,
@@ -1948,6 +1948,10 @@
     "serving/ds41/vllm_prefill_workspace.py": {
       "bytes": 5847,
       "sha256": "24a0a731fdd331c8650afabbe630e9388c54137d346e82a02f02773dc74739b9"
+    },
+    "serving/ds41/vllm_prompt.py": {
+      "bytes": 1986,
+      "sha256": "ba1fdff0c294bc87063b53c68d6fd7197b16479be390b9756f5bd5515cf47303"
     },
     "serving/ds41/vllm_v2_cache.py": {
       "bytes": 6401,
