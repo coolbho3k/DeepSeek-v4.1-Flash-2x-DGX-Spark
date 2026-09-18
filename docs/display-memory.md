@@ -5,6 +5,11 @@ monitor, remote graphical desktop or display workload.** Preserve SSH access
 before changing display settings. Do not change or reload NVIDIA modules while
 the model, CUDA jobs, or a graphical session are running.
 
+The complete [README setup](../README.md#2-set-up-headless-display-memory-on-both-sparks)
+includes persistent boot configuration, the guarded no-reboot module reload,
+DRM card discovery and recovery. Keep the UEFI/BIOS display-memory reservation
+at **2 GB**, as in the tested configuration; do not set it to zero.
+
 This recipe uses **1.75 GiB per Spark** from the platform's approximately 2 GiB
 display-reserved allocation region. It does not increase physical RAM or turn
 2 GiB into ordinary CUDA memory. A DRM display buffer is allocated, mapped and
@@ -20,8 +25,8 @@ take another 1.75 GiB from ordinary RAM or reduce image support.
 ## Required state on both hosts
 
 ```bash
-cat /sys/module/nvidia_drm/parameters/modeset  # must report Y
-cat /sys/module/nvidia_drm/parameters/fbdev    # must report N
+sudo cat /sys/module/nvidia_drm/parameters/modeset  # must report Y
+sudo cat /sys/module/nvidia_drm/parameters/fbdev    # must report N
 ls -l /dev/dri/card*
 ```
 
@@ -44,30 +49,33 @@ These are instructions, **not actions performed by the launcher**:
    options nvidia_drm modeset=1 fbdev=0
    ```
 
-3. On Ubuntu/DGX OS, update the initramfs with `sudo update-initramfs -u`, then
-   reboot both idle machines when convenient. On other distributions use their
+3. On Ubuntu/DGX OS, run `sudo update-initramfs -u -k all`, then reboot both
+   idle machines when convenient. On other distributions use their
    supported initramfs procedure. Do not blindly unload a live NVIDIA module.
 4. Recheck the two parameter files above, then run `./start-server.sh doctor`.
 
-Do not set a hypothetical BIOS "0 GB GPU memory" option: this recipe has not
-validated such a setting. Do not disable CUDA, change zram or globally drop OS
-caches to make this allocator work. Normal startup checks memory separately.
+Do not set the firmware's display-memory reservation to zero. Do not disable
+CUDA, change zram or globally drop OS caches to make this allocator work.
+Normal startup checks memory separately.
 
 ## Restoring your prior display setup
 
 First stop this recipe and all GPU/display jobs. Remove only the configuration
 file you created for this recipe, restore any prior settings you deliberately
 changed, rebuild the initramfs as above, and reboot. Do not remove unrelated
-NVIDIA configuration. The recipe does not install a systemd unit, alter the
+NVIDIA configuration. The launcher itself does not install a systemd unit, alter the
 default boot target, edit a firewall, or modify networking.
 
 ## Capacity and safety
 
 The tested configuration has zero ordinary KV backing plus 1.75 GiB display
 backing per GPU, TP2/DCP2, six sequence slots and a 1,048,576-token per-request
-limit. It completed six simultaneous independent contexts containing 3,146,968
-input tokens (3,161,062 including generated tokens at the final observation).
+limit. On the preceding v103 runtime, it completed six simultaneous independent
+contexts containing 3,146,968 input tokens (3,161,062 including generated tokens
+at the final observation).
 This is aggregate capacity, **not six full million-token contexts**.
+The long-capacity test has not been repeated with rc2's attention/top-k kernels;
+see [release validation](release-validation.md).
 
 The background Python controller samples available host memory and stops only
 its own two containers below 512 MiB or on a failed worker. This is an emergency
