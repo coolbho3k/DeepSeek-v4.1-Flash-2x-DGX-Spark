@@ -22,8 +22,8 @@ PINS = {
     'ds41.cooperative_routes': 'ae91ace2d4310f9409ade1367b341cadd90bc28b152e355831144f9b09dc7be7',
     'ds41.cooperative_moe': '22edf8a5aed2194ac0fd2050a9fd27ffea48dd82de021c40f68fd17109ec6bc5',
     'ds41.dcp_communication': '7aa4a5e6d978f4be72db26e65619e75c7c09e75a218426afbf4a8aab1d56ce20',
-    'spark_dcp_communication': '66607252ec7a96458fcd52bed36fd1841ac75409a51e1bb0cf3509a665321117',
-    'spark_sparse_slots': '67bd8fed269ead5fce990d75a396fcab5490885af4e55d5b4026fbe19191831a',
+    'spark_dcp_communication': '3ce8a87e7ab253b0e645c0a0f1f346dd6a0be7d15cb749ee37320d5a65f26f25',
+    'spark_sparse_slots': '17794cd1c4641bb70ecbd5027c08b018dd03d984231d8b319263710c46eb3961',
     'ds41.dcp_candidates': 'af608345e8d492299508ed6f4cf6ab58b6baaf1da7149c2a681127000520c726',
     'spark_topk': 'e74afeaf1ae8d3edd8388a2c36fbdfdcf9ab0464d22f4b186af81d4d08820521',
     'ds41.vllm_exl3': 'd23c1e0df03cc097cad69314e53cef161cf599bba0b7b726d082cf144ffdfaa3',
@@ -43,7 +43,8 @@ PINS = {
     'spark_packed_wo_a': '5bf809bed67f28e2b94b345d039e5e808cb8fcb556d49dc1edfecefe1bbf4fe5',
 }
 KERNEL_BATCH = {'online_decode_attention': True, 'length_aware_radix_topk': True}
-DESCRIPTOR = dict(kernel_batch=KERNEL_BATCH, implementation='combined_miaai_v2_graph_prefill_v1',
+DCP_OVERLAP = {'mode': 'concurrent', 'experimental': True, 'gpu_qualified': False, 'tensor_parallel_size': 2, 'decode_context_parallel_size': 2, 'quantization_unchanged': True, 'memory_limits_unchanged': True}
+DESCRIPTOR = dict(dcp_overlap=DCP_OVERLAP, kernel_batch=KERNEL_BATCH, implementation='combined_miaai_v2_graph_prefill_v1',
     license='AGPL-3.0-only', upstream_commit='8404ac7d389c418300d0bee960d52313247930e1', draft_experts='exl3_3bit_mul1',
     full_model_graphs=True, graph_validation='device_masked_flags_checked_before_output',
     maximum_prefill_tokens=3072, io_threads=96, target_quantization_unchanged=True,

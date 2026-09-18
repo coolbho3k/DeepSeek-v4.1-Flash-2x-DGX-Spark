@@ -39,6 +39,24 @@ silently repaired or compiled.
 large download/hash job beside a resident model. It does not stop existing GPU
 jobs. No global page-cache clearing, swap tuning or automatic disk cleanup occurs.
 
+For an already prepared installation, `EXISTING_DEPLOYMENT` may point to a
+frozen deployment JSON, with its exact `EXISTING_DEPLOYMENT_SHA256`. This is an
+explicit alternative to fresh downloads: it reuses that deployment's existing
+images, model/draft paths, verification receipts, runtime kit and cache pins.
+Both hosts must already contain those assets. It does not adopt the old server
+or reuse its run ID; each start records a new pair under `.state/public/`, so
+the normal start/stop/log commands own the new run. API, concurrency, memory
+and fabric settings still come from the env file. Both-host read-only preflight
+must pass before preparation succeeds. Remove both settings to return to the
+public download path. Updating Git does not replace a separately frozen local
+runtime kit; update and verify that kit explicitly when changing runtime code.
+
+When the NVIDIA driver makes its display-mode flags root-readable, preflight
+reads those two flags using a temporary 32-MiB CPU-only container from the
+already-installed image. It has no GPU/device access, network, host mounts or
+Linux capabilities, and a read-only root filesystem. It changes no driver
+settings, requires no sudo, and removes the helper when the read finishes.
+
 ## Serving knobs
 
 CLI overrides: `--port`, `--host`, `--worker`, `--gpu-memory-utilization`,

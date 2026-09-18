@@ -9,6 +9,7 @@ FILES=('README.md','LICENSE','CREDITS.md','THIRD_PARTY_NOTICES.md','.gitignore',
        '.gitattributes','.env.ds41.example','start-server.sh','stop-server.sh','recipe-lock.json',
        'docs/display-memory.md','docs/configuration.md','docs/release-validation.md',
        'docs/release-maintenance.md','docs/kernel-batch-performance.md',
+       'docs/dcp-overlap-performance.md',
        'docs/repository-review.md',
        'probes/compare_kernel_batch.py')
 TREES=('release','tests','.github')

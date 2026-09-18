@@ -26,7 +26,11 @@ See [credits](CREDITS.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
 > pinned by digest in `recipe-lock.json` (**15.40 GiB compressed**, including
 > kernel caches and corresponding source). Anonymous access is verified. This
 > version includes the tested one-pass decode attention and exact length-aware
-> top-k kernels. `prepare` never falls back to a local image build.
+> top-k kernels. The Git-shipped serving overlay additionally enables tested
+> **concurrent DCP attention** using this same image; no new Docker/C++ build
+> or image download is needed for that update. New Triton specializations may
+> JIT-compile during warmup/first use because rc2's cache predates the overlay.
+> `prepare` never falls back to a local image build.
 
 > **Release candidate, not yet clean-install-qualified:** the current runtime
 > passed short six-session, image, tool and 32K prefill checks. The 3.15M-token
@@ -34,6 +38,12 @@ See [credits](CREDITS.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
 > the new kernels. The fresh-clone launcher has CPU-only validation; its clean
 > two-node GPU boot is deferred until explicitly authorized.
 > See [validation status](docs/release-validation.md).
+
+The latest local overlap trial measured **30.52 tok/s pooled serial decode**
+and **1,026 tok/s on uncached 32K prefill**, about 3.4% and 4.8% above the saved
+historical baseline—not a fresh controlled A/B. Images, tools and six short
+concurrent sessions passed; KV allocation and memory limits are unchanged.
+See [measurements, caveats and upgrade behavior](docs/dcp-overlap-performance.md).
 
 ## What this recipe adds
 
@@ -628,7 +638,19 @@ observations are workload-dependent, not promises of 50 tok/s for one chat.
 Comparisons there with GLM or MiaAI's published numbers are not matched
 cross-recipe benchmarks. The more tightly scoped measurements follow.
 
-Current **GHCR rc2 / v106** measurements, September 17, 2026:
+Current **concurrent DCP overlay** measurements, September 18, 2026:
+
+- **30.52 decode tok/s** pooled over 12 serial requests, and **1,026 input
+  tok/s** on fully uncached 32K prefill. Easy-prose T=0 median was **30.10 tok/s**.
+- About **3.4% decode / 4.8% prefill** above the saved v106 results below. This
+  historical comparison is not a fresh controlled A/B; ten of twelve replies
+  and acceptance fractions matched exactly, while two differed.
+- Images, tools, multilingual generation and six simultaneous short requests
+  passed. KV and memory limits are unchanged; no new million-token run was done.
+
+See [overlap measurements and upgrade notes](docs/dcp-overlap-performance.md).
+
+Preceding **GHCR rc2 / v106** measurements, September 17, 2026:
 
 - Matched 12-request suite: **29.51 decode tok/s** pooled, up from 28.27 on
   the baseline. T=0 content medians ranged from **25.88 to 35.14 tok/s**;
@@ -643,7 +665,8 @@ See [measurement details](docs/kernel-batch-performance.md).
 
 **Historical capacity evidence — preceding runtime v103**, September 17, 2026.
 Weights, KV allocation and safety settings are unchanged, but the following
-long-context test has **not** been repeated with rc2's attention/top-k kernels:
+long-context test has **not** been repeated with rc2's attention/top-k kernels
+or the new concurrent DCP overlay:
 
 - **3,146,968 independent input tokens across six simultaneous sessions**, with
   **3,161,062 total resident tokens** at the final observation. The largest

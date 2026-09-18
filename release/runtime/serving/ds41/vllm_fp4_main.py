@@ -166,6 +166,8 @@ def register():
             *_collective_chunk_replacements(),
         ], {'_fp4_main_pages':_main_pages,'bf16_sparse_attention_with_lse':mixed_attention,
             '_ds41_collective_chunk':collective_chunk})
+        from .dcp_overlap.integration import wrap_forward
+        forward = wrap_forward(forward)
         workspace.register()
         arithmetic.attention_forward = forward
         try:

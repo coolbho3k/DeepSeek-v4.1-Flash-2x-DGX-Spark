@@ -1,8 +1,9 @@
 # Maintainer release procedure
 
 End users do not run these packaging commands. Their entry point is
-`./start-server.sh`; no local image/kernel/quantization build is required by the
-intended prebuilt distribution path.
+`./start-server.sh`; no local Docker/framework/C++ build or quantization is
+required. Ordinary Triton JIT warmup/first-use compilation can occur when a
+source overlay adds signatures absent from the published cache.
 
 ## Before pushing the repository
 
@@ -11,6 +12,10 @@ intended prebuilt distribution path.
    with its cache and corresponding source. Pin the actual immutable registry
    digest and every payload hash. Confirm anonymous pulls; no guessed image
    URLs, mutable tags or private-package dependencies in the public lock.
+   A source-only serving-overlay update can reuse the pinned image when its
+   native dependencies are unchanged. Ship its corresponding source in Git,
+   refresh overlay and kit pins, and disclose any new Triton cache misses; do
+   not imply the old image's source archive already contains the new overlay.
 3. After an intentional host-tool/source change, refresh the staged bundle with
    `python3 -B release/freeze.py`, then run:
 
@@ -43,7 +48,7 @@ CPU tests and HTTP metadata checks are allowed without restarting it.
 
 Once authorized: use the exported checkout, public Hub and GHCR pins, with the GPUs
 idle. Run `doctor`, `prepare`, and the ordinary default start command. Confirm
-no image/kernel build or quantization is needed, both workers load the expected
+no image/framework/C++ build or quantization is needed, both workers load the expected
 native backends, and the API works directly on the head's configured LAN port.
 Check image requests, automatic tool choice, reasoning, six short sessions,
 then a long-context capacity workload while watching both hosts' RAM.

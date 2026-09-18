@@ -112,6 +112,33 @@ class PortableNodes(unittest.TestCase):
     def test_imports_without_cuda(self):
         self.assertNotIn('torch',sys.modules)
 
+    def test_display_flags_read_directly_when_allowed(self):
+        node=node_module()
+        with patch.object(Path,'read_text',side_effect=['Y\n','N\n']), \
+             patch.object(node,'command',side_effect=AssertionError('No helper needed')):
+            self.assertEqual(node.display_flags({'image':'sha256:'+'a'*64}),
+                             {'modeset':'Y','fbdev':'N'})
+
+    def test_root_only_display_flags_use_restricted_cpu_helper(self):
+        node=node_module()
+        with patch.object(Path,'read_text',side_effect=PermissionError), \
+             patch.object(node,'command',return_value='Y\nN\n') as command:
+            self.assertEqual(node.display_flags({'image':'sha256:'+'a'*64}),
+                             {'modeset':'Y','fbdev':'N'})
+        argv=command.call_args.args[0]
+        for flag in ('--runtime=runc','--pull=never','--network=none','--read-only',
+                     '--cap-drop=ALL','--security-opt=no-new-privileges','--memory=32m'):
+            self.assertIn(flag,argv)
+        for flag in ('--gpus','--privileged','--mount','--volume'):
+            self.assertFalse(any(part.startswith(flag) for part in argv))
+
+    def test_bad_display_helper_output_fails_closed(self):
+        node=node_module()
+        with patch.object(Path,'read_text',side_effect=PermissionError), \
+             patch.object(node,'command',return_value='Y\nN\nextra\n'):
+            with self.assertRaisesRegex(ValueError,'Invalid NVIDIA'):
+                node.display_flags({'image':'sha256:'+'a'*64})
+
 
 class Lifecycle(unittest.TestCase):
     def test_no_state_stop_does_not_touch_other_servers(self):

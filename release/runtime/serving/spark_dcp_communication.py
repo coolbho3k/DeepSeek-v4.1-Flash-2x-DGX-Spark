@@ -5,11 +5,12 @@ The original FP4 source, cache writer, bounds checks, metadata and native
 attention kernel are untouched. No live worker may acquire this hook late.
 """
 import hashlib
+from ds41.dcp_overlap.integration import forward_admitted as _ds41_overlap_forward_admitted
 import os
 from pathlib import Path
 
 CORE_SHA='7aa4a5e6d978f4be72db26e65619e75c7c09e75a218426afbf4a8aab1d56ce20'
-FP4_SHA='4a8ada8fddc38570c98e907afe35e1606691aab48d1945440e854b0c1105df52'
+FP4_SHA='e61a6b984fc351cf5147603035913b17fa4c99d66e654861a124118a04320a36'
 DESCRIPTOR=dict(implementation='fused_dcp2_communication_v1',license='AGPL-3.0-only',
     kernel_sha256=CORE_SHA,maximum_rows=64,maximum_sparse_width=8192,
     stable_sparse_partition=True,duplicate_entries_preserved=True,
@@ -46,7 +47,7 @@ def register():
             forward=fp4._forward
             if (forward is not arithmetic.attention_forward
                     or any(forward.__globals__.get(k) is not v for k,v in bindings.items())
-                    or 'all_packed = group.all_gather(_ds41_pack_result(partial, lse), dim=0)' not in forward.__ds41_patch_source__
+                    or not _ds41_overlap_forward_admitted(forward, 'all_packed = group.all_gather(_ds41_pack_result(partial, lse), dim=0)')
                     or 'all_lses = group.all_gather' in forward.__ds41_patch_source__):
                 raise RuntimeError('Native attention did not install fused DCP communication')
         return

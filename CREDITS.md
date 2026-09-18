@@ -58,3 +58,9 @@ Our additions include this separate 3bpw target/draft quantization campaign,
 FP4/DCP2/image-safe integration, display-reserve KV experiments, six-session
 adaptation and release packaging. Credit for upstream techniques stays upstream.
 These statements do not imply endorsement by MiaAI or other upstream authors.
+
+The concurrent DCP overlap scheduler and packed-output address adaptations are
+this recipe's additions to that foundation, also **AGPL-3.0-only**. They retain
+the existing attention/merge arithmetic and use vLLM's existing communicator;
+no NCCL implementation is vendored. Their measured gains are this recipe's
+results, not an upstream MiaAI performance claim.

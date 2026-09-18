@@ -21,6 +21,7 @@
 !/docs/configuration.md
 !/docs/release-maintenance.md
 !/docs/kernel-batch-performance.md
+!/docs/dcp-overlap-performance.md
 !/docs/repository-review.md
 !/probes/
 /probes/*

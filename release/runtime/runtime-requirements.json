@@ -16,6 +16,22 @@
   "bound_model_cpu_container_views_verified_both_hosts": true,
   "bound_model_full_payload_hashes_verified_both_hosts": true,
   "cuda_arch": "12.1a",
+  "dcp_overlap_candidate": {
+    "broad_quality_qualified": false,
+    "cpu_tests_run": true,
+    "gpu_tests_run": true,
+    "inherited_qualification_applies_to_parent_only": true,
+    "long_capacity_retested": false,
+    "mode": "concurrent",
+    "new_persistent_gpu_tensor_workspace_bytes": 0,
+    "public_fresh_clone_gpu_qualified": false,
+    "publication_approved": false,
+    "serving_evidence": "docs/dcp-overlap-performance.md",
+    "serving_settings_unchanged": true,
+    "serving_tests_run": true,
+    "status": "local_canary_pass",
+    "tested_candidate_manifest_sha256": "2874a3d7c1c88a05cfc9a659856b5af75c787f974f52ae7c3e696153bbf4391e"
+  },
   "dependency_artifact_lock": false,
   "exllama_python_commit": "6ff3a17ea7f3d0026b273d43239398d57f71b788",
   "format": "ds41_runtime_requirements_v5",
@@ -76,7 +92,7 @@
   "loaded_backend_verification": {
     "format": "ds41_loaded_combined_miaai_v9",
     "inspector": "serving/spark_backend_attestation.py",
-    "sha256": "d56471cb9f64608f7c3fb75becfb639f25a902d75f0879bf1ebd2867b2be7f44"
+    "sha256": "736ef3d5bbec1888805845cce761ad69ece363e3effa6effbe9c1182d2e302ef"
   },
   "model_revision": "df42c109f1defefcbfcedbe7d905718a12266e40",
   "mxfp8_aot_serving_1m_reuse_verified": false,
@@ -153,7 +169,7 @@
       "partial_dtype": "float32",
       "probability_bf16_terms": 2,
       "query_dtype": "bfloat16",
-      "registration_sha256": "4a8ada8fddc38570c98e907afe35e1606691aab48d1945440e854b0c1105df52",
+      "registration_sha256": "e61a6b984fc351cf5147603035913b17fa4c99d66e654861a124118a04320a36",
       "swa_cache_format": "fp8"
     },
     "gpu_utilization_ceiling": 0.925,

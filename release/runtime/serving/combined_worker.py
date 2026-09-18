@@ -144,7 +144,8 @@ def execute_with_prefill_reclaim(worker, scheduler_output, execute):
 class CombinedWorker(baseline.InitialWorker):
     # Preserve lazy loading, malloc_trim, native profile_run/graph memory
     # accounting, successful-only CUDA observations and every fatal-error path.
-    init_device = _init_device
+    from ds41.dcp_overlap.integration import wrap_init_device as _wrap_overlap_init
+    init_device = _wrap_overlap_init(_init_device)
 
     def initialize_from_config(self, kv_cache_config):
         from ds41.display_kv import real_allocation

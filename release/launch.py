@@ -118,6 +118,53 @@ def host_info(worker, card):
         card], worker)
 
 
+def prepare_existing(settings):
+    """Reuse explicitly pinned local assets; never adopt or restart an old run."""
+    values = settings['values']
+    source = Path(values['EXISTING_DEPLOYMENT'])
+    if source.resolve() != source or not source.is_file() or source.stat().st_size > 65536:
+        raise ValueError('Existing deployment must be a small unredirected JSON file')
+    raw = source.read_bytes()
+    if hashlib.sha256(raw).hexdigest() != values['EXISTING_DEPLOYMENT_SHA256']:
+        raise ValueError('Existing deployment differs from its configured SHA256')
+    config = json.loads(raw)
+    kit = Path(config['nodes'][0]['kit'])
+    # Verify the entire explicit kit with the checkout's independent checker
+    # BEFORE importing a helper from it. Asset/runtime pins come from this
+    # opt-in deployment, not from the fresh-download recipe lock.
+    checker = module(ROOT/'release/runtime/verify.py', 'existing_kit_check')
+    checker.verify(kit, config['kit_manifest_sha256'])
+    sys.path.insert(0, str(kit/'tools'))
+    node = module(kit/'tools/portable_node.py', 'existing_node')
+    node.validate_config(config)
+    if config['nodes'][1]['ssh'] != settings['worker']:
+        raise ValueError('Existing assets belong to a different worker; refusing to retarget them')
+    config.update(run_id='ds41-release-v'+str(time.time_ns()),
+                  api=settings['api'], serving=settings['serving'],
+                  fabric_network=settings['fabric_network'],
+                  startup_memory_override=settings['startup_memory_override'])
+    for i, n in enumerate(config['nodes']):
+        n.update(settings['rails'][i][0])
+        n['rails'] = settings['rails'][i]
+        n['drm_card'] = values[('HEAD' if i == 0 else 'WORKER')+'_DRM_CARD']
+        n.update(host_info(n['ssh'], n['drm_card']))
+    node.validate_config(config)
+    # Read-only checks on BOTH hosts, including exact image identities,
+    # weight receipts, runtime/cache pins, fabric, free RAM and idle GPUs.
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(lambda i: node_action({'config': config}, i, 'preflight'), (0, 1)))
+    if any(row.get('status') != 'portable_node_preflight_pass' for row in results):
+        raise ValueError('Existing asset preflight did not pass on both hosts')
+    path = STATE/config['run_id']/'deployment.json'
+    path.parent.mkdir(parents=True, exist_ok=False)
+    path.write_bytes(encoded(config))
+    (path.parent/'reuse-preflight.json').write_bytes(encoded(dict(
+        source=str(source), source_sha256=values['EXISTING_DEPLOYMENT_SHA256'],
+        nodes=results, downloaded=False, containers_started=False)))
+    print('Reusing verified existing assets on both hosts; no downloads or model copies.', flush=True)
+    return path, config
+
+
 def prepare(settings, lock):
     if lock.get('runtime') is None:
         raise ValueError('Prebuilt runtime publication is pending. No local build fallback is allowed.')
@@ -129,6 +176,8 @@ def prepare(settings, lock):
                    host, stdout=subprocess.PIPE, timeout=30).stdout.strip()
         if jobs:
             raise ValueError(f'GPU busy on {host or "head"}; preparation/start refused. Existing server was not touched.')
+    if values['EXISTING_DEPLOYMENT']:
+        return prepare_existing(settings)
     home = remote_home(worker)
     remote_cache = values['REMOTE_CACHE_DIR'] or home+'/.cache/ds41'
     remote_dir = values['REMOTE_DIR'] or home+'/.cache/ds41/recipe'
@@ -294,7 +343,10 @@ def main():
     settings = load(ROOT, overrides)
     lock = json.loads((ROOT/'recipe-lock.json').read_bytes())
     if args.dry_run:
-        print(json.dumps(dict(settings=settings, assets=lock, gpu_started=False, changed=False),indent=2)); return
+        assets = (dict(mode='reuse_existing', deployment=settings['values']['EXISTING_DEPLOYMENT'],
+                       sha256=settings['values']['EXISTING_DEPLOYMENT_SHA256'])
+                  if settings['values']['EXISTING_DEPLOYMENT'] else lock)
+        print(json.dumps(dict(settings=settings, assets=assets, gpu_started=False, changed=False),indent=2)); return
     if args.action == 'doctor':doctor(settings); return
     STATE.mkdir(parents=True,exist_ok=True)
     with (STATE/'operation.lock').open('a') as lockfile:

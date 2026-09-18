@@ -39,5 +39,6 @@ def register():
         return
     if forward.__globals__.get(KEY) is not eager.sparse_global_to_local_slots:
         raise RuntimeError('Unexpected original native sparse mapper binding')
-    forward.__globals__[KEY]=candidate
+    from ds41.dcp_overlap.integration import bind_sparse_mapper
+    bind_sparse_mapper(forward, candidate)
     _installed=dict(forward=forward,candidate=candidate)

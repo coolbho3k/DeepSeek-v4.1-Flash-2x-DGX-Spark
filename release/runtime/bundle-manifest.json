@@ -1682,8 +1682,8 @@
       "sha256": "7c467b82c1e1f9022a2683cffc27a387bb155115dbd08781bdc3ddd1806017fb"
     },
     "runtime-requirements.json": {
-      "bytes": 18525,
-      "sha256": "84cbf634e7b25c15ebc2b8347e2152271e11661a8cc391b91f0ae16fa20640d9"
+      "bytes": 19180,
+      "sha256": "afe2e3a0c9e2f3316bb53052b73a1626b12dc6c9e8f6ee236b597829ce997239"
     },
     "scripts/build_cooperative_moe.py": {
       "bytes": 2599,
@@ -1734,8 +1734,8 @@
       "sha256": "24f8f4e8cd839785f97f73b15a9ca29b19e0a5bd1e420df5e306ab7ef35fe007"
     },
     "serving/combined_worker.py": {
-      "bytes": 9024,
-      "sha256": "46f9683d494470dd2366ab20988d5f95bb5a4e36d5f7d2ed01471c98690a9e0e"
+      "bytes": 9128,
+      "sha256": "87184d112fb8c1b592d5fa25fc25702bb112ea6c87f15b5e9f85f8e52755275a"
     },
     "serving/conservative.yaml": {
       "bytes": 1281,
@@ -1804,6 +1804,30 @@
     "serving/ds41/dcp_key_order.py": {
       "bytes": 986,
       "sha256": "4269e3e21a58001721a328fccccd9abd30d3acc0d84511100898baf5775431a3"
+    },
+    "serving/ds41/dcp_overlap/__init__.py": {
+      "bytes": 123,
+      "sha256": "60cd06da8801cf7403d06e37398b92409f2bab7c9dea47744ba56df72b83599d"
+    },
+    "serving/ds41/dcp_overlap/attention.py": {
+      "bytes": 12205,
+      "sha256": "9d186d63cc310c4e3a4fb81448e0bc7b862a2e87d22f69af265ae310a065e466"
+    },
+    "serving/ds41/dcp_overlap/integration.py": {
+      "bytes": 7019,
+      "sha256": "2b40d6f1c2bcfc204b006c97d5b737c816f34ea1e80954253b5b22c3160e58cb"
+    },
+    "serving/ds41/dcp_overlap/packed.py": {
+      "bytes": 3460,
+      "sha256": "8788de737b1feeda2c4003b27f531547bbf685602d0c28bf6342ab081233b944"
+    },
+    "serving/ds41/dcp_overlap/policy.py": {
+      "bytes": 1701,
+      "sha256": "74d7e3f8527f9079110f8033dde63ed9b0c2d3b135cb1035e043b259e4f2d806"
+    },
+    "serving/ds41/dcp_overlap/transport.py": {
+      "bytes": 9980,
+      "sha256": "10f1e338b31db54db30959d127f6bfa8964281aa909f579570297b7015217af3"
     },
     "serving/ds41/dcp_sparse_slots.py": {
       "bytes": 4500,
@@ -1938,8 +1962,8 @@
       "sha256": "73608f392b3b12c9ea7a461d804b13a994178add038852a5d8df9ffac4df91f5"
     },
     "serving/ds41/vllm_fp4_main.py": {
-      "bytes": 9038,
-      "sha256": "4a8ada8fddc38570c98e907afe35e1606691aab48d1945440e854b0c1105df52"
+      "bytes": 9136,
+      "sha256": "e61a6b984fc351cf5147603035913b17fa4c99d66e654861a124118a04320a36"
     },
     "serving/ds41/vllm_owned_graphs.py": {
       "bytes": 6957,
@@ -1998,8 +2022,8 @@
       "sha256": "896646a3178bba174ae4fa16ba85b1f1f03b7055128d2cdc02664d78ce95007e"
     },
     "serving/overlay-manifest.json": {
-      "bytes": 9323,
-      "sha256": "30a0658111ceff645ca532a854bd9f1fb93d1d34cfaee90180337142af3dc4cb"
+      "bytes": 10029,
+      "sha256": "53c4edc49f2f91443b5917b6d42c53720e3924a0674137a632f54bda0a1add36"
     },
     "serving/serve.py": {
       "bytes": 5397,
@@ -2022,12 +2046,12 @@
       "sha256": "78d8786397898cca0c987c6470fb055eba6030126ee8ea49592f9cf89598bbd5"
     },
     "serving/spark_backend_attestation.py": {
-      "bytes": 29185,
-      "sha256": "d56471cb9f64608f7c3fb75becfb639f25a902d75f0879bf1ebd2867b2be7f44"
+      "bytes": 29786,
+      "sha256": "736ef3d5bbec1888805845cce761ad69ece363e3effa6effbe9c1182d2e302ef"
     },
     "serving/spark_combined_miaai.py": {
-      "bytes": 26085,
-      "sha256": "e097a865e640af4f0dfdad47a6c9bd69a224e01263690b22030041104d293a82"
+      "bytes": 26320,
+      "sha256": "112c448fe1fb539b285f0be122f5c3ef491d7f3b35afb7169b46716d16de6679"
     },
     "serving/spark_combined_ready.py": {
       "bytes": 11732,
@@ -2042,8 +2066,8 @@
       "sha256": "407c05c55509c0c49c4d117129fb8b9a1deb1555e4fc93b12ae4b5b7f3734528"
     },
     "serving/spark_dcp_communication.py": {
-      "bytes": 3796,
-      "sha256": "66607252ec7a96458fcd52bed36fd1841ac75409a51e1bb0cf3509a665321117"
+      "bytes": 3896,
+      "sha256": "3ce8a87e7ab253b0e645c0a0f1f346dd6a0be7d15cb749ee37320d5a65f26f25"
     },
     "serving/spark_dense_decode_graph.py": {
       "bytes": 7309,
@@ -2098,8 +2122,8 @@
       "sha256": "30609eb9e365b8400a2d463e8515e99751dc773a8d767221d547295539c4305e"
     },
     "serving/spark_sparse_slots.py": {
-      "bytes": 2200,
-      "sha256": "67bd8fed269ead5fce990d75a396fcab5490885af4e55d5b4026fbe19191831a"
+      "bytes": 2268,
+      "sha256": "17794cd1c4641bb70ecbd5027c08b018dd03d984231d8b319263710c46eb3961"
     },
     "serving/spark_topk.py": {
       "bytes": 4010,
@@ -2150,8 +2174,8 @@
       "sha256": "99a49757216a5048a0dc4c6893716a62d6d2193a80b9295d3c940212703f7cf6"
     },
     "tools/portable_node.py": {
-      "bytes": 43576,
-      "sha256": "5792c80ac059457005b1469267910ce254be14ff931661be3edfb489838c068c"
+      "bytes": 44617,
+      "sha256": "7e703040d90fa0320404190a839a7f76d1803c934d7251945723bcc34c340a73"
     },
     "tools/portable_pair.py": {
       "bytes": 11559,

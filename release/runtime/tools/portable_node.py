@@ -558,7 +558,7 @@ def aot_maps(config,index):
             '/opt/ds41-venv/bin/python','-I','-S','/opt/ds41-serving/spark_backend_attestation.py',
             '--rank',str(NODE_RANKS[index]),'--source-sha',digest]).encode())
         if (result.get('status') != 'qualified_loaded_combined_miaai_with_native_draft_graphs'
-                or result.get('attention') != {'implementation': 'image_safe_packed_sparse_attention_v2', 'kernel_sha256': '22839ccef76d501a9191b193a522429dcfe98ae9977f31f51be04455ea51d9e9', 'registration_sha256': '4a8ada8fddc38570c98e907afe35e1606691aab48d1945440e854b0c1105df52', 'query_dtype': 'bfloat16', 'probability_bf16_terms': 2, 'partial_dtype': 'float32', 'lse_base': 2, 'main_cache_format': 'fp4', 'swa_cache_format': 'fp8', 'image_visibility_unchanged': True}
+                or result.get('attention') != {'implementation': 'image_safe_packed_sparse_attention_v2', 'kernel_sha256': '22839ccef76d501a9191b193a522429dcfe98ae9977f31f51be04455ea51d9e9', 'registration_sha256': 'e61a6b984fc351cf5147603035913b17fa4c99d66e654861a124118a04320a36', 'query_dtype': 'bfloat16', 'probability_bf16_terms': 2, 'partial_dtype': 'float32', 'lse_base': 2, 'main_cache_format': 'fp4', 'swa_cache_format': 'fp8', 'image_visibility_unchanged': True}
                 or result.get('image_prefix') != {'implementation': 'whole_image_prefix_v1', 'bootstrap_sha256': '4f3049b68b0fbdec933c281d0303f2702af729818a94b1af84dbaf0807642ab5', 'override_sha256': 'dd2b90570f6f42a70ce3b2b997e0027d98a6baa75889b441ae5c60c6443173aa', 'partial_image_prefix_hits': False, 'complete_image_prefix_hits_preserved': True, 'original_image_pixels_preserved': True}
                 or result.get('sparse_mapping') != {'implementation': 'stable_fused_dcp2_sparse_slots_v1', 'kernel_sha256': 'acbd5dce12e3a988697268c946f7c1a178cc38a3dc738dbb5a94287b7cc43edb', 'stable_candidate_order': True, 'duplicate_candidates_preserved': True, 'synchronous_bounds_checks': True, 'image_key_membership_unchanged': True, 'maximum_rows': 512, 'maximum_width': 8192, 'persistent_gpu_workspace_bytes': 0}
                 or result.get('native_engram') != {'implementation': 'miaai_parallel_native_engram_v1', 'license': 'AGPL-3.0-only', 'core_sha256': 'c9b751ec4ee4251acc26dece3c7794408bb305a45ea32cf666a784e49033aacb', 'maximum_chunk_tokens': 256, 'maximum_local_heads': 144, 'staging_bytes_per_layer_ceiling': 19759104, 'cache_bytes_per_layer_ceiling': 67108864, 'io_threads': 96, 'resident_tables': False, 'resident_scales': False, 'native_image_hasher_unchanged': True, 'unowned_and_dead_ids_zero': True, 'callback_stream_ordering': True, 'full_model_graph_capture_enabled': True, 'live_tables': 2, 'staging_bounds_verified': True}
@@ -641,6 +641,27 @@ def validate_config(config):
         raise ValueError('Rails require unique addresses and matching counts')
     return config
 
+def display_flags(node):
+    names = ('modeset', 'fbdev')
+    paths = ['/sys/module/nvidia_drm/parameters/'+name for name in names]
+    try:
+        values = [Path(path).read_text().strip() for path in paths]
+    except PermissionError:
+        # Some NVIDIA drivers expose these harmless status flags as root-only.
+        # Use the already-installed image, with no host mounts, GPU, network,
+        # capabilities or writable rootfs. Never prompt for sudo or alter flags.
+        if not re.fullmatch('sha256:[0-9a-f]{64}', node['image']):
+            raise ValueError('Display inspection requires an immutable installed image')
+        values = command(['docker', 'run', '--rm', '--pull=never', '--runtime=runc',
+            '--network=none', '--read-only', '--cap-drop=ALL',
+            '--security-opt=no-new-privileges', '--memory=32m', '--memory-swap=32m',
+            '--pids-limit=16', '--user=0:0', '--entrypoint=/bin/cat',
+            node['image'], *paths], timeout=30).splitlines()
+    if len(values) != 2 or any(value not in ('Y', 'N') for value in values):
+        raise ValueError('Invalid NVIDIA display-mode flag response')
+    return dict(zip(names, values))
+
+
 def sample_start(node):
     sample=_public_sample_start(node)
     sample['rails']=[]
@@ -650,8 +671,7 @@ def sample_start(node):
             gid=(base/'gids'/str(rail['gid_index'])).read_text().strip(),
             gid_type=(base/'gid_attrs/types'/str(rail['gid_index'])).read_text().strip(),
             addresses=json.loads(command(['ip','-j','address','show','dev',rail['ifname']]))))
-    sample['display']=dict(modeset=Path('/sys/module/nvidia_drm/parameters/modeset').read_text().strip(),
-        fbdev=Path('/sys/module/nvidia_drm/parameters/fbdev').read_text().strip(),
+    sample['display']=dict(**display_flags(node),
         card_exists=Path(node['drm_card']).is_char_device(),card_gid=os.stat(node['drm_card']).st_gid)
     return sample
 

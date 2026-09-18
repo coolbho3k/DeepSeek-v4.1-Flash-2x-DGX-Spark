@@ -21,6 +21,7 @@ DEFAULTS = {
     'ALLOW_STARTUP_MEMORY_SHORTFALL': '1',
     'HEAD_DRM_CARD': '/dev/dri/card0', 'WORKER_DRM_CARD': '/dev/dri/card0',
     'DS41_CACHE_DIR': '', 'REMOTE_CACHE_DIR': '', 'REMOTE_DIR': '',
+    'EXISTING_DEPLOYMENT': '', 'EXISTING_DEPLOYMENT_SHA256': '',
 }
 
 
@@ -93,6 +94,15 @@ def load(root, overrides=None, environ=None):
     for path in (str(cache), values['REMOTE_CACHE_DIR'], values['REMOTE_DIR']):
         if path and (len(Path(path).parts) < 3 or any(c in path for c in ('\n', '\r', '\0', ','))):
             raise ValueError('Use a dedicated cache directory, not a filesystem root')
+    existing, digest = values['EXISTING_DEPLOYMENT'], values['EXISTING_DEPLOYMENT_SHA256']
+    if bool(existing) != bool(digest):
+        raise ValueError('Set both EXISTING_DEPLOYMENT and EXISTING_DEPLOYMENT_SHA256, or neither')
+    if existing:
+        path = Path(existing)
+        if (not path.is_absolute() or str(path) != existing or '..' in path.parts
+                or any(c in existing for c in ('\n', '\r', '\0'))
+                or not re.fullmatch('[0-9a-f]{64}', digest)):
+            raise ValueError('Existing deployment requires an absolute path and SHA256 pin')
     return dict(values=values, worker=values['WORKER_HOST'], rails=rails, cache=str(cache),
                 api=dict(host=host, port=port, master_port=master, model_name=values['SERVED_MODEL_NAME']),
                 serving=profile, fabric_network=str(network), startup_memory_override=override == '1')

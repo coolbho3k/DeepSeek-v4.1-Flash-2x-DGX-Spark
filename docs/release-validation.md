@@ -1,6 +1,22 @@
 # Release validation
 
-## Current kernel update: completed serving trial
+## Current source-overlay update: concurrent DCP attention
+
+The Git-shipped overlay enables the tested concurrent DCP schedule using the
+same GHCR rc2 runtime and native libraries. Two 23-case two-GPU component runs
+passed bitwise correctness and graph checks, including image-width attention;
+the local canary passed serial generation, 32K retrieval, image/tool checks and
+six concurrent requests. Pooled decode was 30.52 tok/s and uncached 32K prefill
+1,026 tok/s. The historical comparison is modest and is not a fresh controlled
+A/B or broad quality evaluation. See [results and upgrade behavior](dcp-overlap-performance.md).
+
+The six new runtime modules match the frozen tested candidate byte-for-byte.
+Native dependencies, quantization, KV allocation and memory limits are unchanged.
+No GHCR republish, live-worker patch or server restart was performed to publish
+this source-only recipe change. New Triton signatures may compile normally on
+first use; the existing image/cache is not claimed to contain them all.
+
+## Preceding kernel/image update: completed serving trial
 
 GHCR rc2 adds the one-pass decode attention and exact length-aware radix top-k
 tested together in deployment v106. The serving overlay and native kernel
@@ -86,11 +102,13 @@ The public wrapper replaces systemd/campaign-specific launch assumptions with
 plain Docker/SSH and explicit configuration. It uses a separate state directory
 and does not adopt the currently running campaign server.
 
-All 66 offline tests pass in the workspace. They cover configuration, lifecycle,
+The offline suite covers configuration, lifecycle,
 GHCR transport, OCI layer round-trips, public-access errors and the published
 HF manifest/verifier dispatch, the exact tested kernel pins, secret-audit
 redaction/archives, non-destructive runtime upgrades, and Git/export allowlist
-equivalence with private-file exclusions. They do not load model weights or
+equivalence with private-file exclusions. Added coverage checks exact overlap
+payload pins, default selection, integration hooks and CPU transport/validation
+contracts. These tests do not load model weights or
 compile/execute CUDA kernels. A clean exported checkout is checked separately.
 
 CPU-only tests cover configuration validation, alternate host paths/UIDs/DRM
@@ -100,8 +118,9 @@ and link rejection, bundled-source inventory and Python syntax.
 
 **Not yet performed:** starting this newly packaged wrapper from a clean clone
 and fresh asset cache on two GPUs. The operator explicitly prohibited stopping
-the current server for this test. No restart, live kernel replacement, module
-reload or new GPU benchmark was performed as part of release preparation.
+the current server for this test. The optimization's separate local canary was
+explicitly authorized and left running; publication does not restart it or
+establish the fresh-download path on two clean machines.
 
 Before marking a public release fully clean-install-qualified, obtain that
 permission and complete the checklist in [release maintenance](release-maintenance.md).
