@@ -84,6 +84,16 @@ author's original workspace to run the recipe.
 - Working NVIDIA drivers, NVIDIA Container Toolkit and non-root Docker access
   on both. Python 3.11+, `ssh`, `rsync`, `ip` and `ss` on both; `git`, `curl` and
   `rdma` for the setup/checks below.
+- The display-reserved KV path is **driver-bound**. With an unqualified driver
+  (observed with 595.84) it passes profiling, budget and pool planning, then
+  fails at display-buffer registration during KV initialization; use the
+  qualified **580.173.02**. On **Secure Boot** systems install the
+  distribution's signed prebuilt module packages for the installed kernel
+  (Ubuntu: `linux-modules-nvidia-580-open-<kernel>`): locally built (DKMS)
+  modules are rejected unless their signing key is enrolled. If a DKMS tree and
+  a prebuilt package both provide those modules, add `AUTOINSTALL="no"` to the
+  module's `dkms.conf` so the kernel post-install hook does not abort on the
+  duplicate.
 - Existing passwordless SSH from the head to the worker, with the host key
   already verified. Neither root SSH nor matching usernames/home directories
   are required. The launcher does not install SSH keys or change SSH policy.
@@ -176,6 +186,12 @@ Keep the firmware's **display-reserved memory at 2 GB**, as used in the tested
 setup. If you previously changed that reservation, restore it in UEFI/BIOS;
 firmware changes require a reboot. Setting it to zero removes the reservation
 this technique is intended to use. The commands below do not change firmware.
+
+Some OEM builds hide these items in setup: on ASUS GX10 units (firmware
+`GX10DGX 0105`) the display-memory entries are not shown and the factory
+reservation is fixed — there is nothing to change and no supported way to
+reduce it. The recipe was verified end-to-end on such units with the factory
+reservation and the qualified driver; do not edit hidden firmware variables.
 
 Record your original boot target and module settings for recovery:
 
@@ -716,6 +732,8 @@ first; startup does not always reach container creation.
 | SSH or Docker permission failure | Run the step 1 `BatchMode` SSH/Docker check using the exact `WORKER_HOST`. Reconnect after a Docker-group change. Do not use root SSH or `sudo start-server.sh`. |
 | GPU busy / another server detected | Stop that workload using its own controls, then retry. This launcher will not adopt or terminate unrelated containers. |
 | Display allocator unavailable | Check both hosts' `modeset=Y`, `fbdev=N`, actual NVIDIA DRM cards and 2 GB firmware reservation. Do not reload modules under a running server. |
+| KV init fails with `register display IO: CUDA_ERROR_INVALID_VALUE` | The display allocator is driver-bound: profiling, budget and pool planning pass, then display registration fails on an unqualified driver (observed with 595.84). Install the qualified 580.173.02. |
+| `Additive display KV requires positive native budgets and zero ordinary KV` | Utilization/profile mismatch. Display-only KV requires zero ordinary KV, which the tested profile supplies (`0.92` with `ALLOW_STARTUP_MEMORY_SHORTFALL=1`). Other utilizations are rejected by design, and the exception is refused outside 0.92. |
 | RoCE/GID preflight fails | Match every rail's IP, interface, case-sensitive HCA, port 1 and RoCE v2 IPv4 GID index on both hosts. Ordinary LAN connectivity is insufficient. Clear all six secondary fields for one rail. |
 | Disk space failure | Check both hosts' asset and Docker filesystems; startup also requires 32 GiB free on the runs filesystem. Do not broadly prune Docker or delete unrelated checkpoints. |
 | RAM preflight/watchdog failure | Stop background jobs/desktops and inspect available RAM on both hosts. Do not raise utilization, bypass checks or globally flush caches as the first remedy. |
