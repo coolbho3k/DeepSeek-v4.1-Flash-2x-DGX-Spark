@@ -80,7 +80,39 @@ def node_action(state, index, action):
 
 
 def controller_alive(state):
-    return bool(state.get('controller') and process_identity(state['controller']['pid']) == state['controller'])
+    saved = state.get('controller')
+    if not saved:
+        return False
+    actual = process_identity(saved['pid'])
+    if actual == saved:
+        return bool(actual and actual.get('argv'))
+    # Older launches could observe /proc/cmdline during the child's exec
+    # transition. Recover ONLY the same PID/start time/UID and exact owned
+    # command; never treat an empty command line as a wildcard.
+    if (saved.get('argv') == [] and actual
+            and all(actual.get(k) == saved.get(k) for k in ('pid', 'start_ticks', 'uid'))
+            and state.get('config') and state.get('deployment')):
+        expected = controller_command(Path(state['deployment']), state['config'])
+        return actual.get('argv') == expected
+    return False
+
+
+def controller_command(path, config):
+    kit = Path(config['nodes'][0]['kit'])
+    return [sys.executable, '-B', str(kit/'tools/portable_pair.py'), '--config', str(path), '--execute']
+
+
+def wait_controller_identity(child, argv):
+    # Popen has returned, but /proc can briefly expose no command line during
+    # exec. Never persist that partial identity. No signals or server changes.
+    for _ in range(100):
+        identity = process_identity(child.pid)
+        if identity and identity['argv'] == argv:
+            return identity
+        if child.poll() is not None:
+            raise RuntimeError('Controller exited before its identity could be recorded')
+        time.sleep(.01)
+    raise RuntimeError('Controller identity not yet verifiable; inspect existing controller, do not start another')
 
 
 def stop(state):
@@ -228,13 +260,11 @@ def prepare(settings, lock):
 def start(path, config, no_wait=False):
     kit = Path(config['nodes'][0]['kit'])
     log = path.parent/'controller.log'
-    argv = [sys.executable, '-B', str(kit/'tools/portable_pair.py'), '--config', str(path), '--execute']
+    argv = controller_command(path, config)
     with log.open('ab', buffering=0) as output:
         child = subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=output, stderr=output,
                                  start_new_session=True, env={**{k:v for k,v in os.environ.items() if k not in ('HF_TOKEN_WRITE','HF_TOKEN','HUGGING_FACE_HUB_TOKEN')}, 'PYTHONUNBUFFERED':'1'})
-    identity = process_identity(child.pid)
-    if identity is None:
-        raise RuntimeError('Controller exited immediately; see '+str(log))
+    identity = wait_controller_identity(child, argv)
     state = dict(deployment=str(path), deployment_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
                  controller=identity, log=str(log))
     (STATE/'current.json').write_bytes(encoded(state))

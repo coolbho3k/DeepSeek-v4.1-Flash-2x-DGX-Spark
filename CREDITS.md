@@ -72,3 +72,21 @@ foundation remains with MiaAI Lab / Wesley Young and upstream contributors.
 The adaptations, native reader source and portable download integration are
 **AGPL-3.0-only**. Their limited performance results are reported separately;
 the packed data does not change or relicense DeepSeek's original weight bytes.
+
+## DSpark draft-length and kernel experiments
+
+The experiments under `release/experimental/dspark/` extend MiaAI's cooperative
+target-MoE geometry and specialize the existing MiaAI/ExLlamaV3-derived staged
+path for the drafter's top-three experts. Full credit for those kernel
+foundations remains with **MiaAI Lab / Wesley Young and contributors**, and
+**turboderp / ExLlamaV3**. These adaptations are **AGPL-3.0-only**; the generated
+corresponding-source bundles retain the original AGPL, MIT and ExLlamaV3 notices.
+
+Native confidence-based verification and rejection sampling come from vLLM's
+DSpark implementation and retain its Apache-2.0 notices. The local SM121/DCP
+compatibility hooks do not replace that sampler. The local acceptance-EMA
+policy is informed by the attributed GLM recipe's warmup, prefix-verification
+and recovery lessons. KV-only projection and Markov-addition integration are
+local adaptations around the existing native operations. Experimental results
+are documented separately; inclusion of their source is not a claim that every
+experiment improved performance or is enabled in the released default.

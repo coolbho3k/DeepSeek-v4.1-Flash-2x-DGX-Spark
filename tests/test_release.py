@@ -143,6 +143,25 @@ class PortableNodes(unittest.TestCase):
 
 
 class Lifecycle(unittest.TestCase):
+    def test_empty_exec_identity_requires_exact_owned_command(self):
+        state=dict(deployment='/srv/run/deployment.json',config=deployment(),
+            controller=dict(pid=123,start_ticks='42',uid=1000,argv=[]))
+        actual=dict(state['controller'],argv=launch.controller_command(Path(state['deployment']),state['config']))
+        with patch.object(launch,'process_identity',return_value=actual):
+            self.assertTrue(launch.controller_alive(state))
+        for fields in (dict(argv=[]),dict(argv=['unrelated']),dict(start_ticks='43'),dict(uid=1001)):
+            with patch.object(launch,'process_identity',return_value=dict(actual,**fields)):
+                self.assertFalse(launch.controller_alive(state))
+
+    def test_start_waits_for_complete_exec_identity(self):
+        from types import SimpleNamespace
+        argv=['python3','controller.py']
+        full=dict(pid=123,start_ticks='42',uid=1000,argv=argv)
+        child=SimpleNamespace(pid=123,poll=lambda:None)
+        with patch.object(launch,'process_identity',side_effect=[dict(full,argv=[]),full]), \
+             patch.object(launch.time,'sleep'):
+            self.assertEqual(launch.wait_controller_identity(child,argv),full)
+
     def test_no_state_stop_does_not_touch_other_servers(self):
         with patch.object(launch,'run',side_effect=AssertionError('No external command')),contextlib.redirect_stdout(io.StringIO()):
             launch.stop(None)
