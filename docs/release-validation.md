@@ -1,6 +1,24 @@
 # Release validation
 
-## Current source-overlay update: concurrent DCP attention
+## Current overlay/data update: lossless packed Engrams
+
+The tested page15 native reader, GPU-readable host staging and deferred
+retrieval are shipped together. Both GPUs passed component correctness/capture
+checks; the full canary passed serial requests, uncached 32K retrieval, images,
+tools and C6. Pooled decode was 30.784 tok/s; warmed uncached prefill was about
+1,078 tok/s. Eleven of twelve baseline replies matched exactly; one changed
+reproducibly by seed, with no established cause. This is not a broad quality
+qualification. See [complete results and atomic publication](engram-io-performance.md).
+
+The prebuilt native reader is included in Git with its corresponding source;
+the GHCR image is unchanged. New data uses an independently pinned namespace
+and immutable Hub revision, leaving old Engrams and old recipe pins intact.
+Offline tests cover rank isolation, exact assembly, interrupted/resumed
+downloads, checksum failures, symlink refusal and atomic preparation pointers.
+The live server is not restarted for publication. Clean two-node installation
+and the large-capacity workload have not been repeated for this update.
+
+## Preceding source-overlay update: concurrent DCP attention
 
 The Git-shipped overlay enables the tested concurrent DCP schedule using the
 same GHCR rc2 runtime and native libraries. Two 23-case two-GPU component runs

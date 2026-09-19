@@ -15,7 +15,7 @@ import torch
 import triton
 import triton.language as tl
 
-BINARY_SHA = 'cacd266e8b218327854c394a5c519e63ed22045dc77fcd058a75ca427a776e36'
+BINARY_SHA = 'b66c3eac86ed189277cb456c5d3b866ed494eed346e99449504cb2c7aa8b1f71'
 MAX_HEADS = 144
 MAX_CHUNK = 256
 MAX_TOKENS = 1056
@@ -55,7 +55,11 @@ def load_native(path):
     lib.ds41_row_store_close.argtypes = [P]
     lib.row_store_stats.argtypes = [P, C.POINTER(U)]
     lib.ds41_row_store_abi.restype = U
-    if lib.ds41_row_store_abi() != 1:
+    lib.ds41_row_store_attach_packed.argtypes = [P, C.c_char_p, U]
+    lib.ds41_row_store_attach_packed.restype = C.c_int
+    lib.ds41_row_store_profile.argtypes = [P, C.POINTER(U)]
+    lib.ds41_row_store_clear_cache.argtypes = [P]
+    if lib.ds41_row_store_abi() != 2:
         raise ValueError('Unexpected native Engram ABI')
     return lib
 
@@ -80,7 +84,7 @@ class NativeStage:
     work and refuses while a managed graph still owns a callback. All eager and
     managed replay calls serialize buffer reuse across CUDA streams.
     """
-    def __init__(self, embedding, library, *, device=None):
+    def __init__(self, embedding, library, *, device=None, packed=None, packed_layer=None, mapped=False):
         if (embedding.dim != 256 or not 1 <= embedding.part_n_hash_cols <= MAX_HEADS
                 or not 1 <= embedding.chunk_tokens <= MAX_CHUNK):
             raise ValueError('Unsupported bounded native Engram partition')
@@ -88,6 +92,9 @@ class NativeStage:
                 or os.environ.get('DSV41_RESIDENT_SCALES') != '0'
                 or os.environ.get('DSV41_IO_THREADS') not in ('32', '64')):
             raise ValueError('Explicit bounded native Engram modes are required')
+        if type(mapped) is not bool or ((packed is None) != (packed_layer is None)):
+            raise ValueError('Explicit mapped mode and paired packed path/layer required')
+        self.mapped = mapped
         self.embedding = embedding
         self.mode = tuple(os.environ[k] for k in ('OFFLOAD_MODE','DSV41_RESIDENT_SCALES','DSV41_IO_THREADS'))
         self.device = torch.device('cuda', torch.cuda.current_device()) if device is None else torch.device(device)
@@ -115,14 +122,24 @@ class NativeStage:
             self.ids = torch.empty(cap, dtype=torch.int64, device='cpu', pin_memory=True)
             self.host_w = torch.empty((cap, 256), dtype=torch.uint8, device='cpu', pin_memory=True)
             self.host_s = torch.empty((cap, 8), dtype=torch.uint8, device='cpu', pin_memory=True)
-            self.dev_w = torch.empty_like(self.host_w, device=self.device)
-            self.dev_s = torch.empty_like(self.host_s, device=self.device)
+            if self.mapped:
+                from vllm.utils.torch_utils import get_accelerator_view_from_cpu_tensor
+                self.dev_w = get_accelerator_view_from_cpu_tensor(self.host_w)
+                self.dev_s = get_accelerator_view_from_cpu_tensor(self.host_s)
+                if self.dev_w.device != self.device or self.dev_s.device != self.device:
+                    raise RuntimeError('Mapped staging is not on the current GPU')
+            else:
+                self.dev_w = torch.empty_like(self.host_w, device=self.device)
+                self.dev_s = torch.empty_like(self.host_s, device=self.device)
             self.store = self.lib.ds41_row_store_open(str(weight.path).encode(), weight.rows,
                 weight.offset, scale.offset, budget)
             if not self.store:
                 raise RuntimeError('Native Engram table open failed')
             self.lib.ds41_row_store_range(self.store, embedding.vocab_start_idx, embedding.vocab_end_idx)
-            self.staging_bytes = cap * (8 + 264 * 2)
+            if packed is not None and self.lib.ds41_row_store_attach_packed(
+                    self.store, str(packed).encode(), packed_layer) != 1:
+                raise ValueError('Explicit packed Engram artifact did not attach')
+            self.staging_bytes = cap * (8 + 264 * (1 if self.mapped else 2))
             assert self.staging_bytes <= MAX_CHUNK * MAX_HEADS * 536
             _LIVE_STAGES.add(self)
         except BaseException:
@@ -179,8 +196,9 @@ class NativeStage:
             if error:
                 self.failed = True
                 raise RuntimeError(f'Native Engram callback enqueue failed: {error}')
-            self.dev_w[:rows].copy_(self.host_w[:rows], non_blocking=True)
-            self.dev_s[:rows].copy_(self.host_s[:rows], non_blocking=True)
+            if not self.mapped:
+                self.dev_w[:rows].copy_(self.host_w[:rows], non_blocking=True)
+                self.dev_s[:rows].copy_(self.host_s[:rows], non_blocking=True)
             _dequant[(triton.cdiv(rows * 256, 4096),)](
                 self.dev_w.view(torch.float8_e4m3fn), self.dev_s, out[start:stop], rows,
                 BLOCK=4096, enable_fp_fusion=False)

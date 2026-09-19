@@ -10,6 +10,7 @@ FILES=('README.md','LICENSE','CREDITS.md','THIRD_PARTY_NOTICES.md','.gitignore',
        'docs/display-memory.md','docs/configuration.md','docs/release-validation.md',
        'docs/release-maintenance.md','docs/kernel-batch-performance.md',
        'docs/dcp-overlap-performance.md',
+       'docs/engram-io-performance.md',
        'docs/repository-review.md',
        'probes/compare_kernel_batch.py')
 TREES=('release','tests','.github')

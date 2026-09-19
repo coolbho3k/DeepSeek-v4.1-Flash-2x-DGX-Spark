@@ -1682,8 +1682,8 @@
       "sha256": "7c467b82c1e1f9022a2683cffc27a387bb155115dbd08781bdc3ddd1806017fb"
     },
     "runtime-requirements.json": {
-      "bytes": 19180,
-      "sha256": "afe2e3a0c9e2f3316bb53052b73a1626b12dc6c9e8f6ee236b597829ce997239"
+      "bytes": 19782,
+      "sha256": "498e4f22ec6421c5b6d9c0199abf057755660973381cccf295c81f1a2752d580"
     },
     "scripts/build_cooperative_moe.py": {
       "bytes": 2599,
@@ -1861,6 +1861,22 @@
       "bytes": 6228,
       "sha256": "d409e6009a513a54cb354b603e4ff70ffc775847f95e0bc6cd4ce69b63978a12"
     },
+    "serving/ds41/engram_io/__init__.py": {
+      "bytes": 41,
+      "sha256": "fe9dbbb6011b2e725132a30c561aaee713ba155352b16391fe6e5d255117eed0"
+    },
+    "serving/ds41/engram_io/integration.py": {
+      "bytes": 4327,
+      "sha256": "189f4e6dd65ee6095232b7e0e7e6ac33276634c28dd2ebb409d2ff4cd7fbdcb8"
+    },
+    "serving/ds41/engram_io/overlap.py": {
+      "bytes": 2632,
+      "sha256": "a06b0f946fb625b055fedecd8f0f67cdc3c7fc9c07cf8cd447746d29dd159b17"
+    },
+    "serving/ds41/engram_io/policy.py": {
+      "bytes": 170,
+      "sha256": "7d67cbc6e419e65d5541e0cc3ce1275a05a1865cbf12d556e99179c4bc3e0254"
+    },
     "serving/ds41/fp4_main_kv.py": {
       "bytes": 5999,
       "sha256": "d06ce6d2431c44c562e0fe85e7094c6db9aacd2185153473b98050ec327deea4"
@@ -2010,20 +2026,24 @@
       "sha256": "8bf881eb6ccbfe676907a92a29a7b3a7474995ad6e9ac3f95bd2db3ce2b90903"
     },
     "serving/miaai-row-store-v1.so": {
-      "bytes": 75664,
-      "sha256": "cacd266e8b218327854c394a5c519e63ed22045dc77fcd058a75ca427a776e36"
+      "bytes": 75688,
+      "sha256": "b66c3eac86ed189277cb456c5d3b866ed494eed346e99449504cb2c7aa8b1f71"
     },
     "serving/miaai_engram.py": {
-      "bytes": 12970,
-      "sha256": "c9b751ec4ee4251acc26dece3c7794408bb305a45ea32cf666a784e49033aacb"
+      "bytes": 14223,
+      "sha256": "79e771e79820c439478ccb51187b329639eb88e2555d31eed4ade9987cd324e7"
     },
     "serving/miaai_row_store.cpp": {
-      "bytes": 2699,
-      "sha256": "896646a3178bba174ae4fa16ba85b1f1f03b7055128d2cdc02664d78ce95007e"
+      "bytes": 3914,
+      "sha256": "f281c7b7d5bf044f991d53edc87fa83ce8b6875f8ba715749787878ef4ecda5a"
     },
     "serving/overlay-manifest.json": {
-      "bytes": 10029,
-      "sha256": "53c4edc49f2f91443b5917b6d42c53720e3924a0674137a632f54bda0a1add36"
+      "bytes": 10521,
+      "sha256": "af197940c43492133cdcb1520c954ac34071c3e24a1db3416e924720a727a922"
+    },
+    "serving/row_store_core.cpp": {
+      "bytes": 18571,
+      "sha256": "e4d8a813dff09b509685b571afb085ed43d37cce43f06ce1deeca75da9288f4c"
     },
     "serving/serve.py": {
       "bytes": 5397,
@@ -2046,12 +2066,12 @@
       "sha256": "78d8786397898cca0c987c6470fb055eba6030126ee8ea49592f9cf89598bbd5"
     },
     "serving/spark_backend_attestation.py": {
-      "bytes": 29786,
-      "sha256": "736ef3d5bbec1888805845cce761ad69ece363e3effa6effbe9c1182d2e302ef"
+      "bytes": 30422,
+      "sha256": "b2fe078ae820d615f16ec07bd01ad8c3614a2de1ea862fe9f33d59c165f4ed5d"
     },
     "serving/spark_combined_miaai.py": {
       "bytes": 26320,
-      "sha256": "112c448fe1fb539b285f0be122f5c3ef491d7f3b35afb7169b46716d16de6679"
+      "sha256": "9afa8ba6b1300681080b5f6f45808b290b26a8e30911943107bd0d67be127a05"
     },
     "serving/spark_combined_ready.py": {
       "bytes": 11732,
@@ -2110,8 +2130,8 @@
       "sha256": "33c794caafb326dc2dac9ca597db5245ff7614624e8e520168a92a1d457eb246"
     },
     "serving/spark_native_engram.py": {
-      "bytes": 3727,
-      "sha256": "e407bc2281c481f3de875b616580ef3cf4ef00236591ea0b090b62a104ceb9d5"
+      "bytes": 3926,
+      "sha256": "aa36cb389b9cc0933fce562afe4bc0077ce363c0c9e793130e24e3a1bfb29aaa"
     },
     "serving/spark_packed_wo_a.py": {
       "bytes": 10233,
@@ -2161,6 +2181,10 @@
       "bytes": 5660,
       "sha256": "2c543060034df1800dec078687a610690272034b57c664a301c01a438a9ae406"
     },
+    "tools/engram_assets.py": {
+      "bytes": 11034,
+      "sha256": "c339b5fef2e023f8d3b90f8b7b11dac33a45c448b822a44d9cc64a64476c8438"
+    },
     "tools/export_runtime_image.py": {
       "bytes": 8976,
       "sha256": "e9066fc3324858302cef2b89ca97773b8ced8638c362411c2051a2e19b716085"
@@ -2174,8 +2198,8 @@
       "sha256": "99a49757216a5048a0dc4c6893716a62d6d2193a80b9295d3c940212703f7cf6"
     },
     "tools/portable_node.py": {
-      "bytes": 44617,
-      "sha256": "7e703040d90fa0320404190a839a7f76d1803c934d7251945723bcc34c340a73"
+      "bytes": 45479,
+      "sha256": "7875afe6950cb5612b2d48b5e56a73c27f39f8a45836e895e835a6f3172b4563"
     },
     "tools/portable_pair.py": {
       "bytes": 11559,

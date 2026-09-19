@@ -98,7 +98,7 @@ def runtime_storage(root,runtime):
     digest=hashlib.sha256(json.dumps(runtime,sort_keys=True).encode()).hexdigest()
     return Path(root)/'runtime-assets'/digest
 
-def bootstrap(lock,root,kit):
+def bootstrap(lock,root,kit,rank=0):
     runtime=lock['runtime']
     if runtime is None:raise ValueError('Prebuilt runtime publication is not complete; no source-build fallback')
     jobs=subprocess.check_output(['nvidia-smi','--query-compute-apps=pid','--format=csv,noheader'],text=True).strip()
@@ -116,11 +116,13 @@ def bootstrap(lock,root,kit):
         shutil.copytree(kit,frozen)
     checker.verify(frozen,lock['kit_manifest_sha256'])
     kit=frozen
-    lock_sha=hashlib.sha256(json.dumps(lock,sort_keys=True).encode()).hexdigest()
+    lock_sha=hashlib.sha256(json.dumps(dict(lock=lock,rank=rank),sort_keys=True).encode()).hexdigest()
+    engrams=module(kit/'tools/engram_assets.py','public_engram_assets')
     prepared=root/'prepared.json'
     if prepared.exists():
         previous=json.loads(prepared.read_bytes())
         if previous.get('lock_sha256')==lock_sha:
+            engrams.validate(previous['engram'],rank)
             verifier=module(kit/'tools/verify_public_download.py','reuse_weights')
             manifest,summary=verifier.load_manifest(root/'model/release-manifest.json',lock['model']['manifest_sha256'])
             verifier.check_receipt(root/'model',manifest,summary,json.loads((root/'model-verified.json').read_bytes()))
@@ -170,16 +172,17 @@ def bootstrap(lock,root,kit):
     cache_manifest=json.loads((cache/'cache-manifest.json').read_bytes())
     for name,row in cache_manifest['files'].items():
         if 'mtime_ns' in row:os.utime(cache/name,ns=(row['mtime_ns'],row['mtime_ns']))
-    result=dict(lock_sha256=hashlib.sha256(json.dumps(lock,sort_keys=True).encode()).hexdigest(),kit=str(kit),model=str(root/'model'),draft=str(root/'draft-exl3'),
+    packed=engrams.prepare(lock['engram'],root,rank,download)
+    result=dict(lock_sha256=lock_sha,kit=str(kit),model=str(root/'model'),draft=str(root/'draft-exl3'),engram=packed,
         model_receipt=str(receipt_path),cache=str(cache),runs=str(root/'runs'),image=image,
         uid=os.getuid(),gid=os.getgid())
     (root/'runs').mkdir(exist_ok=True)
-    (root/'prepared.json').write_text(json.dumps(result,indent=2)+'\n')
+    engrams.atomic_json(root/'prepared.json',result)
     return result
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--lock',type=Path,required=True)
     p.add_argument('--cache-dir',type=Path,required=True)
-    p.add_argument('--kit',type=Path,required=True);a=p.parse_args()
-    result=bootstrap(json.loads(a.lock.read_bytes()),a.cache_dir.resolve(),a.kit.resolve())
+    p.add_argument('--kit',type=Path,required=True);p.add_argument('--rank',type=int,choices=(0,1),required=True);a=p.parse_args()
+    result=bootstrap(json.loads(a.lock.read_bytes()),a.cache_dir.resolve(),a.kit.resolve(),a.rank)
     print(json.dumps(dict(status='public_assets_prepared',**result)),flush=True)

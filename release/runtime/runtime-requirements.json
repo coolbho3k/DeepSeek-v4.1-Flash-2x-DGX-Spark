@@ -33,6 +33,23 @@
     "tested_candidate_manifest_sha256": "2874a3d7c1c88a05cfc9a659856b5af75c787f974f52ae7c3e696153bbf4391e"
   },
   "dependency_artifact_lock": false,
+  "engram_io_candidate": {
+    "broad_quality_qualified": false,
+    "long_capacity_retested": false,
+    "policy": {
+      "deferred_retrieval": true,
+      "gpu_readable_host": true,
+      "layout": "page15",
+      "reader_abi": 2
+    },
+    "public_fresh_clone_gpu_qualified": false,
+    "serving_evidence": "docs/engram-io-performance.md",
+    "serving_settings_unchanged": true,
+    "serving_tests_run": true,
+    "source_row_bytes_unchanged": true,
+    "status": "local_canary_pass",
+    "tested_candidate_manifest_sha256": "f3387571f67d436e9b68bba8e3d526a06289558c7e4e3c6162cb1e3eed3492be"
+  },
   "exllama_python_commit": "6ff3a17ea7f3d0026b273d43239398d57f71b788",
   "format": "ds41_runtime_requirements_v5",
   "fused_kernel_sha256": "66de4aa31e49462fd00fb4b26ebd4e16dfd995b631157e3b0194c27fc1239342",
@@ -92,7 +109,7 @@
   "loaded_backend_verification": {
     "format": "ds41_loaded_combined_miaai_v9",
     "inspector": "serving/spark_backend_attestation.py",
-    "sha256": "736ef3d5bbec1888805845cce761ad69ece363e3effa6effbe9c1182d2e302ef"
+    "sha256": "b2fe078ae820d615f16ec07bd01ad8c3614a2de1ea862fe9f33d59c165f4ed5d"
   },
   "model_revision": "df42c109f1defefcbfcedbe7d905718a12266e40",
   "mxfp8_aot_serving_1m_reuse_verified": false,
@@ -241,7 +258,7 @@
     "native_engram": {
       "cache_bytes_per_layer_ceiling": 67108864,
       "callback_stream_ordering": true,
-      "core_sha256": "c9b751ec4ee4251acc26dece3c7794408bb305a45ea32cf666a784e49033aacb",
+      "core_sha256": "79e771e79820c439478ccb51187b329639eb88e2555d31eed4ade9987cd324e7",
       "full_model_graph_capture_enabled": false,
       "implementation": "miaai_parallel_native_engram_v1",
       "io_threads": 32,

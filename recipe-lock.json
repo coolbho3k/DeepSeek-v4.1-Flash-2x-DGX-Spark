@@ -4,8 +4,14 @@
     "repo": "coolbho3k/DeepSeek-V4.1-Flash-DSpark-EXL3-3bpw",
     "revision": "f74b8c9b7d4448e2deeaf23be7d03557f2878504"
   },
+  "engram": {
+    "manifest_path": "engram-page15-v1/manifest.json",
+    "manifest_sha256": "43b3b6305d3edd8ec24b9014fccd842c623f7cfce41014611cbd85244dc62854",
+    "repo": "coolbho3k/DeepSeek-V4.1-Flash-EXL3-3bpw",
+    "revision": "93a185660c42c90e26c326239ce8c8fd95179d64"
+  },
   "format": "ds41_public_recipe_lock_v2",
-  "kit_manifest_sha256": "bcf7789d505794d47d5e59eaa9ef83e6986cdc94a68bd1337304e1cee779d336",
+  "kit_manifest_sha256": "24fb2daab9076f39da45f79b115ee8debeb1c5ed9afa170e000e10451af07ac3",
   "model": {
     "manifest_sha256": "6d79a9ae5cfd121df7c559b76cde87b50551adbe68ae0dc94c97973e85e8e1d1",
     "repo": "coolbho3k/DeepSeek-V4.1-Flash-EXL3-3bpw",

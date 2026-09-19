@@ -27,8 +27,10 @@ See [credits](CREDITS.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
 > kernel caches and corresponding source). Anonymous access is verified. This
 > version includes the tested one-pass decode attention and exact length-aware
 > top-k kernels. The Git-shipped serving overlay additionally enables tested
-> **concurrent DCP attention** using this same image; no new Docker/C++ build
-> or image download is needed for that update. New Triton specializations may
+> **concurrent DCP attention** and **lossless packed Engram retrieval** using
+> this same image. The tested native Engram reader and corresponding source
+> ship in the Git overlay; no new Docker/C++ build or image download is needed.
+> New Triton specializations may
 > JIT-compile during warmup/first use because rc2's cache predates the overlay.
 > `prepare` never falls back to a local image build.
 
@@ -39,11 +41,14 @@ See [credits](CREDITS.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
 > two-node GPU boot is deferred until explicitly authorized.
 > See [validation status](docs/release-validation.md).
 
-The latest local overlap trial measured **30.52 tok/s pooled serial decode**
-and **1,026 tok/s on uncached 32K prefill**, about 3.4% and 4.8% above the saved
-historical baseline—not a fresh controlled A/B. Images, tools and six short
-concurrent sessions passed; KV allocation and memory limits are unchanged.
-See [measurements, caveats and upgrade behavior](docs/dcp-overlap-performance.md).
+The latest Engram trial measured **30.78 tok/s pooled serial decode** and
+**about 1,078 tok/s on warmed, uncached 32K prefill**. Versus its fresh baseline,
+decode improved about 1.4% and prefill was essentially unchanged, despite much
+faster cold SSD retrieval. Images, tools and six short concurrent sessions
+passed; KV allocation and memory limits are unchanged. Eleven of twelve
+baseline replies matched exactly; one coding reply differed. See
+[measurements, limitations and atomic upgrades](docs/engram-io-performance.md)
+and the [preceding DCP attention results](docs/dcp-overlap-performance.md).
 
 ## What this recipe adds
 
@@ -86,9 +91,12 @@ author's original workspace to run the recipe.
   200-Gbit/s rails. This does not require two physical cables: a Spark QSFP
   connector exposes two network interfaces. One or two rails can be configured;
   single-rail performance has not been qualified by the reported run.
-- **At least 550 GiB free disk space on each host** for a fresh install. The
+- **At least 650 GiB free disk space on each host** for a fresh install. The
   target download is about 397 GiB, the separate drafter 4.76 GiB, plus the
   prebuilt runtime, extracted image, kernel caches and working-space reserve.
+  The lossless packed Engram layout adds **97.66 GiB per host**; only each
+  host's own rank is downloaded, with no local repacking or duplicate part files.
+  Original Engrams are retained so old runners keep working.
 - Internet access for the initial public Hugging Face and GHCR downloads on each host.
   **No HF token is needed.** Never give the launcher a write token.
 

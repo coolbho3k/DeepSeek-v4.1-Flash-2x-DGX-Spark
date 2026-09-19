@@ -43,8 +43,10 @@ def deployment(dual=False):
     nodes=[]
     for i in (0,1):
         root='/srv/head' if i==0 else '/mnt/worker'
+        assets=launch.module(ROOT/'release/runtime/tools/engram_assets.py','test_engram_assets')
         nodes.append(dict(ssh=None if i==0 else s['worker'],kit=root+'/kit',model=root+'/model',
             draft=root+'/draft',cache=root+'/cache',runs=root+'/runs',model_receipt=root+'/verified.json',
+            engram=assets.reference(Path(root+'/packed'),i),
             image='sha256:'+'a'*64,uid=1001+i,gid=1001+i,drm_card='/dev/dri/card'+str(i),
             drm_gid=44+i,rails=s['rails'][i],**s['rails'][i][0]))
     return dict(format='ds41_two_spark_deployment_v1',run_id='ds41-release-v12345',

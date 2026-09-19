@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+LAYOUT = 'page15'
+MAPPED = True
+OVERLAP = True
+UPSTREAM_SHA = 'ac787367615f7e8f25511ea81cb4286c9a3211fe8d27af08a502bf54ea1244c3'

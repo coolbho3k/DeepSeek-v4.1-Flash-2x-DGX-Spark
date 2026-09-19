@@ -16,6 +16,10 @@ source overlay adds signatures absent from the published cache.
    native dependencies are unchanged. Ship its corresponding source in Git,
    refresh overlay and kit pins, and disclose any new Triton cache misses; do
    not imply the old image's source archive already contains the new overlay.
+   The page15 update ships its small, independently pinned native reader in
+   the Git overlay alongside complete corresponding source. That reader was
+   tested in the existing image; users do not compile it. Do not describe this
+   as a source-only update or claim rc2 contains the new reader.
 3. After an intentional host-tool/source change, refresh the staged bundle with
    `python3 -B release/freeze.py`, then run:
 
@@ -70,3 +74,27 @@ not user launch dependencies. The public launcher does not execute historical
 The included source/build context is for inspection, modification and license
 compliance. A bit-for-bit source rebuild of the entire third-party base image
 has not been qualified; public reproduction uses the pinned prebuilt image.
+
+## Atomic Engram publication
+
+Keep the canonical model/draft pins and original Engram paths unchanged.
+`publish_engrams.py` uploads bounded 8-GiB ranges from each host's existing
+packed files to separate rank staging branches, without temporary weight
+copies. It consumes `HF_TOKEN_WRITE` for authentication and never logs it;
+the optional stdin mode is for forwarding that credential over verified SSH,
+not command-line arguments. No credentials are needed by end users.
+
+After both rank receipts are complete, `promote_engrams.py` checks remote part
+sizes/digests, then publishes all parts, the completed inventory and explanatory
+model-card updates in one additive main-branch commit. It refuses changed main
+or an existing layout namespace. The canonical manifest is refreshed only for
+the README/attributes metadata; the recipe still pins the old canonical
+snapshot. Independently verify the original weight identities remain unchanged.
+
+Only after anonymous verification should one Git commit update the packed HF
+revision/manifest pin, compiled reader, corresponding source and portable
+downloader together. Run offline tests, public asset validation, export and
+credential-pattern review before pushing. If the post-commit network check
+fails, inspect the journaled Hub commit; do not blindly republish. Old Git
+revisions continue to read the original files. Never delete either layout as
+part of publication or mutate a kit mounted by a running server.

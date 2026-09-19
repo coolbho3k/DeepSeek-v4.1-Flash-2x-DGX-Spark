@@ -103,7 +103,7 @@ def validate_config(config):
     if not isinstance(nodes, list) or len(nodes) != 2:
         raise ValueError('Exactly two physical Spark hosts are required')
     node_keys = {'ssh','kit','model','model_receipt','image','cache','runs',
-                 'fabric_ip','ifname','hca','gid_index','uid','gid','draft','rails','drm_card','drm_gid'}
+                 'fabric_ip','ifname','hca','gid_index','uid','gid','draft','rails','drm_card','drm_gid','engram'}
     for index, node in enumerate(nodes):
         if (not isinstance(node, dict) or not node_keys <= set(node)
                 or set(node)-node_keys not in (set(),{'model_bindings'})):
@@ -115,6 +115,11 @@ def validate_config(config):
         if not isinstance(node['image'], str) or not re.fullmatch('sha256:[0-9a-f]{64}', node['image']):
             raise ValueError('Use an immutable installed image ID on each host')
         paths = {key:absolute(node[key]) for key in ('kit','model','model_receipt','cache','runs','draft')}
+        from engram_assets import check_reference
+        packed_root = check_reference(node['engram'], index)
+        for value in paths.values():
+            if packed_root.is_relative_to(value) or value.is_relative_to(packed_root):
+                raise ValueError('Packed Engrams must remain separate from other input/output trees')
         for key in ('kit','model','cache'):
             if paths['runs'].is_relative_to(paths[key]) or paths[key].is_relative_to(paths['runs']):
                 raise ValueError('Run outputs must be separate from immutable input trees')
@@ -183,6 +188,8 @@ def docker_command(config, index, owner=None):
         (str(absolute(node['kit'])/'aot'/AOT_NAME),AOT_TARGET,True)]
     mounts += [(source,'/model/'+name,True) for name,source
                in sorted(node.get('model_bindings',{}).items())]
+    from engram_assets import mounts as packed_mounts
+    mounts += packed_mounts(node['engram'], index)
     args = ['docker','create','--name',f"{config['run_id']}-rank{rank}",
         '--restart=no','--pull=never','--runtime=runc','--gpus=all','--network=host',
         '--ipc=private','--cgroupns=private','--memory=9g','--memory-swap=9g','--cpus=6',
@@ -335,6 +342,8 @@ def preflight(config, index):
     images = module(kit,'portable_image_check','tools/verify_runtime_image.py',manifest)
     image = images.verify(images.inspect(node['image']), images.read_identity(kit/'runtime-image-identity.json',IMAGE_SHA))
     weight_check = check_model_receipt(config,index,manifest)
+    packed_check = module(kit,'public_packed_engram_check','tools/engram_assets.py',manifest)
+    packed_check.validate(node['engram'],index)
     profile = read_small(kit/'serving/conservative.yaml').decode()
     pairs = [line.split(':',1) for line in profile.splitlines() if line.strip() and not line.lstrip().startswith('#')]
     if len(pairs) != len(PROFILE) or {k.strip():v.strip() for k,v in pairs} != PROFILE:
@@ -501,6 +510,8 @@ def start(config,index):
         raise ValueError('Public runtime kit changed before start')
     manifest = json_bytes(raw)
     check_model_receipt(config,index,manifest)
+    packed_check = module(kit,'public_start_packed_engram_check','tools/engram_assets.py',manifest)
+    packed_check.validate(node['engram'],index)
     if sha(read_small(kit/'aot'/AOT_NAME/(AOT_NAME+'.so'))) != AOT_SHA:
         raise ValueError('Public AOT library changed before start')
     exclusive(directory/'start-attempt.json',dict(container=observed['container'],sample=sample))
@@ -561,7 +572,7 @@ def aot_maps(config,index):
                 or result.get('attention') != {'implementation': 'image_safe_packed_sparse_attention_v2', 'kernel_sha256': '22839ccef76d501a9191b193a522429dcfe98ae9977f31f51be04455ea51d9e9', 'registration_sha256': 'e61a6b984fc351cf5147603035913b17fa4c99d66e654861a124118a04320a36', 'query_dtype': 'bfloat16', 'probability_bf16_terms': 2, 'partial_dtype': 'float32', 'lse_base': 2, 'main_cache_format': 'fp4', 'swa_cache_format': 'fp8', 'image_visibility_unchanged': True}
                 or result.get('image_prefix') != {'implementation': 'whole_image_prefix_v1', 'bootstrap_sha256': '4f3049b68b0fbdec933c281d0303f2702af729818a94b1af84dbaf0807642ab5', 'override_sha256': 'dd2b90570f6f42a70ce3b2b997e0027d98a6baa75889b441ae5c60c6443173aa', 'partial_image_prefix_hits': False, 'complete_image_prefix_hits_preserved': True, 'original_image_pixels_preserved': True}
                 or result.get('sparse_mapping') != {'implementation': 'stable_fused_dcp2_sparse_slots_v1', 'kernel_sha256': 'acbd5dce12e3a988697268c946f7c1a178cc38a3dc738dbb5a94287b7cc43edb', 'stable_candidate_order': True, 'duplicate_candidates_preserved': True, 'synchronous_bounds_checks': True, 'image_key_membership_unchanged': True, 'maximum_rows': 512, 'maximum_width': 8192, 'persistent_gpu_workspace_bytes': 0}
-                or result.get('native_engram') != {'implementation': 'miaai_parallel_native_engram_v1', 'license': 'AGPL-3.0-only', 'core_sha256': 'c9b751ec4ee4251acc26dece3c7794408bb305a45ea32cf666a784e49033aacb', 'maximum_chunk_tokens': 256, 'maximum_local_heads': 144, 'staging_bytes_per_layer_ceiling': 19759104, 'cache_bytes_per_layer_ceiling': 67108864, 'io_threads': 96, 'resident_tables': False, 'resident_scales': False, 'native_image_hasher_unchanged': True, 'unowned_and_dead_ids_zero': True, 'callback_stream_ordering': True, 'full_model_graph_capture_enabled': True, 'live_tables': 2, 'staging_bounds_verified': True}
+                or result.get('native_engram') != {'implementation': 'miaai_parallel_native_engram_v1', 'license': 'AGPL-3.0-only', 'core_sha256': '79e771e79820c439478ccb51187b329639eb88e2555d31eed4ade9987cd324e7', 'maximum_chunk_tokens': 256, 'maximum_local_heads': 144, 'staging_bytes_per_layer_ceiling': 19759104, 'cache_bytes_per_layer_ceiling': 67108864, 'io_threads': 96, 'resident_tables': False, 'resident_scales': False, 'native_image_hasher_unchanged': True, 'unowned_and_dead_ids_zero': True, 'callback_stream_ordering': True, 'full_model_graph_capture_enabled': True, 'live_tables': 2, 'staging_bounds_verified': True, 'layout': 'page15', 'gpu_readable_host': True, 'deferred_retrieval': True, 'row_bytes_unchanged': True, 'reader_abi': 2}
                 or result.get('grouped_prefill') != {'implementation': 'miaai_grouped_prefill_ds41_v1', 'license': 'AGPL-3.0-only', 'kernel_sha256': '35f11df05fc5b870128db1d521513618a9f7a2ca05953b19a6c1d1194230c097', 'dispatcher_sha256': 'e09cde421ec879a9e6e34aca2cdd6219f437d78d9cf6512e6dccf4a4f57ae839', 'abi': 1003, 'minimum_expert_rows': 16, 'maximum_tokens': 2048, 'maximum_assignments': 12288, 'shared_workspace_bytes': 280173312, 'workspace_allocated_on_first_large_forward': True, 'small_decode_math_unchanged': True, 'device_only_routing': True, 'pre_down_fp32_routing': True, 'fp16_rounding_boundaries_preserved': True}
                 or result.get('dcp_communication') != {'implementation': 'fused_dcp2_communication_v1', 'license': 'AGPL-3.0-only', 'kernel_sha256': '7aa4a5e6d978f4be72db26e65619e75c7c09e75a218426afbf4a8aab1d56ce20', 'maximum_rows': 512, 'maximum_sparse_width': 8192, 'stable_sparse_partition': True, 'duplicate_entries_preserved': True, 'packed_output_lse_collective': True, 'per_chunk_collectives': 2, 'sink_exchange_unchanged': True, 'query_exchange_unchanged': True, 'partial_dtype': 'float32', 'lse_base': 2, 'original_image_visibility': True, 'synchronous_cache_bounds_checks': True, 'persistent_gpu_workspace_bytes': 0, 'maximum_packed_send_bytes': 33619968, 'full_model_graph_capture_enabled': False}
                 or result.get('combined_ready', {}).get('format') != 'ds41_combined_ready_v1'

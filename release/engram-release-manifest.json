@@ -1,0 +1,238 @@
+{
+  "files": {
+    "engram-page15-v1/engram-layer-01-rank0-page15.bin": {
+      "bytes": 52429279232,
+      "hi": 192001740,
+      "layer": 1,
+      "lo": 0,
+      "owned_scale_sha256": "5072b2531661c3dfc85a3f86287a3ce454caef5e32018072041bc76468438250",
+      "owned_weight_sha256": "9872f30663b6b559e21a6fda0cc381236dd29e053f8ddcd21ed3023af7645a84",
+      "parts": [
+        {
+          "bytes": 8589934592,
+          "offset": 0,
+          "path": "engram-page15-v1/engram-layer-01-rank0-page15.bin.part-00000",
+          "sha256": "7af57378584542bda009cb8be96dfeb245c4e4017ff6fc0a6249bb62746eb704"
+        },
+        {
+          "bytes": 8589934592,
+          "offset": 8589934592,
+          "path": "engram-page15-v1/engram-layer-01-rank0-page15.bin.part-00001",
+          "sha256": "3b24a2efac073ca0987a551e256acde6c2c8f31aaa9d3dc8077e2cd382ce5ba3"
+        },
+        {
+          "bytes": 8589934592,
+          "offset": 17179869184,
+          "path": "engram-page15-v1/engram-layer-01-rank0-page15.bin.part-00002",
+          "sha256": "37e0336b484aca786b1580042dc44bda89bf65acb5b8a1986c77412a26f117ee"
+        },
+        {
+          "bytes": 8589934592,
+          "offset": 25769803776,
+          "path": "engram-page15-v1/engram-layer-01-rank0-page15.bin.part-00003",
+          "sha256": "7866ffceab874fcf15b8d3b670385758a24b04b3d73a809b665420caa29e997e"
+        },
+        {
+          "bytes": 8589934592,
+          "offset": 34359738368,
+          "path": "engram-page15-v1/engram-layer-01-rank0-page15.bin.part-00004",
+          "sha256": "8d1d47a1c4eb708014fffeef0bd12c6875cfe7d1132468e69c1ead423a68c9d0"
+        },
+        {
+          "bytes": 8589934592,
+          "offset": 42949672960,
+          "path": "engram-page15-v1/engram-layer-01-rank0-page15.bin.part-00005",
+          "sha256": "4b78e1e078b13fbdb217865d2459def1d4aeb98114e5df1564571bda5f62e73a"
+        },
+        {
+          "bytes": 889671680,
+          "offset": 51539607552,
+          "path": "engram-page15-v1/engram-layer-01-rank0-page15.bin.part-00006",
+          "sha256": "f02a92ef1aa8d84b34ee4556bc82c803edffc7adf47e0f2a7583dd3506535cd2"
+        }
+      ],
+      "rank": 0,
+      "sha256": "0e3b9c7781eb616f2ecb58e1f113e82c1e684ec8f40e30cd1da8f98c06af6aa0",
+      "total_rows": 384006168
+    },
+    "engram-page15-v1/engram-layer-01-rank1-page15.bin": {
+      "bytes": 52430016512,
+      "hi": 384006168,
+      "layer": 1,
+      "lo": 192001740,
+      "owned_scale_sha256": "fc60dfaa4ccecc2c59638c29abfca0ca0924e187bcd5bc7621f1ed8093448501",
+      "owned_weight_sha256": "f6f74e09cbde41ff6adaba5c1c845503e11a2a312530cb612ac05c21df54d02e",
+      "parts": [
+        {
+          "bytes": 8589934592,
+          "offset": 0,
+          "path": "engram-page15-v1/engram-layer-01-rank1-page15.bin.part-00000",
+          "sha256": "490eb9e41fa1db25c377fd96be3be7bf96f1295a03cab44462e239e994d5fcfe"
+        },
+        {
+          "bytes": 8589934592,
+          "offset": 8589934592,
+          "path": "engram-page15-v1/engram-layer-01-rank1-page15.bin.part-00001",
+          "sha256": "0b1d6ea3c43b9b3ff9ff59cab1a3f14f0ef6068fa9339d32c1e8ef464dba98d1"
+        },
+        {
+          "bytes": 8589934592,
+          "offset": 17179869184,
+          "path": "engram-page15-v1/engram-layer-01-rank1-page15.bin.part-00002",
+          "sha256": "59df9b715764154b18ba83525efc9f01269fd7d3fd6ba92adff7e9f72e985fbb"
+        },
+        {
+          "bytes": 8589934592,
+          "offset": 25769803776,
+          "path": "engram-page15-v1/engram-layer-01-rank1-page15.bin.part-00003",
+          "sha256": "27017fcf70010412538e6be9900006592bbb9903539a3629c69e3171b3b814ac"
+        },
+        {
+          "bytes": 8589934592,
+          "offset": 34359738368,
+          "path": "engram-page15-v1/engram-layer-01-rank1-page15.bin.part-00004",
+          "sha256": "7066bf5090a165d8a051e6e099641989a8163a4dc67402a1c69feada3e3bcdcf"
+        },
+        {
+          "bytes": 8589934592,
+          "offset": 42949672960,
+          "path": "engram-page15-v1/engram-layer-01-rank1-page15.bin.part-00005",
+          "sha256": "7f77e90ecc37780ec4021918977f80659b887f67048d1ad5afd0fc784bf67062"
+        },
+        {
+          "bytes": 890408960,
+          "offset": 51539607552,
+          "path": "engram-page15-v1/engram-layer-01-rank1-page15.bin.part-00006",
+          "sha256": "1c0acd2b7b143da47042717ef65d321e7a685406c645db52fec8f5c48a6a01c1"
+        }
+      ],
+      "rank": 1,
+      "sha256": "608e209fd70f6a62b618beb3f3a4d2260dfc777391519d3e10f01f35ebbf4acf",
+      "total_rows": 384006168
+    },
+    "engram-page15-v1/engram-layer-14-rank0-page15.bin": {
+      "bytes": 52430721024,
+      "hi": 192007016,
+      "layer": 14,
+      "lo": 0,
+      "owned_scale_sha256": "2beced5800c4471b26f0509b9eda3ecd5331207231451d45da09bb7cd31e5460",
+      "owned_weight_sha256": "0fa65458d55f48cfeca1890a55bb036bdc671442d75788a377cb59ba5731d953",
+      "parts": [
+        {
+          "bytes": 8589934592,
+          "offset": 0,
+          "path": "engram-page15-v1/engram-layer-14-rank0-page15.bin.part-00000",
+          "sha256": "f0c44d4000a99977c4c66cdc5f630832260d260b8f726f86e5abb0a6c57a4553"
+        },
+        {
+          "bytes": 8589934592,
+          "offset": 8589934592,
+          "path": "engram-page15-v1/engram-layer-14-rank0-page15.bin.part-00001",
+          "sha256": "b5c1cf6dfb4109cf2b9839a6acda753875f88b4f1779d020460315ed097cd62c"
+        },
+        {
+          "bytes": 8589934592,
+          "offset": 17179869184,
+          "path": "engram-page15-v1/engram-layer-14-rank0-page15.bin.part-00002",
+          "sha256": "4d5a3f9206c1cbeee9a400ab6995bcd4208822e6810f31e0efe9082698730f28"
+        },
+        {
+          "bytes": 8589934592,
+          "offset": 25769803776,
+          "path": "engram-page15-v1/engram-layer-14-rank0-page15.bin.part-00003",
+          "sha256": "02b5933152bf865e06dd69b9e7be013cd105cd45ba127d52d1f904a3ca3f2945"
+        },
+        {
+          "bytes": 8589934592,
+          "offset": 34359738368,
+          "path": "engram-page15-v1/engram-layer-14-rank0-page15.bin.part-00004",
+          "sha256": "0dc83addbcf9ef4335486cca46633f33131322d97568d8aef77d64a54e3ab71f"
+        },
+        {
+          "bytes": 8589934592,
+          "offset": 42949672960,
+          "path": "engram-page15-v1/engram-layer-14-rank0-page15.bin.part-00005",
+          "sha256": "437c5139b096f23b9954bd25b5e062d0b1964c50f12fddd60ddd2c64622996c3"
+        },
+        {
+          "bytes": 891113472,
+          "offset": 51539607552,
+          "path": "engram-page15-v1/engram-layer-14-rank0-page15.bin.part-00006",
+          "sha256": "cea9f6b30c5346c128d92dc9ff705c47a26c2e5655b965c0392233f27e7119ba"
+        }
+      ],
+      "rank": 0,
+      "sha256": "38da1b685aac78f0f3435ab954edf8124ebf76d68f31d12fab90bff6973af49f",
+      "total_rows": 384016682
+    },
+    "engram-page15-v1/engram-layer-14-rank1-page15.bin": {
+      "bytes": 52431446016,
+      "hi": 384016682,
+      "layer": 14,
+      "lo": 192007016,
+      "owned_scale_sha256": "4e26074da5ad7caaac4c3f9893d38b1a9f16130362fea002e7e5e480fbb42b19",
+      "owned_weight_sha256": "79ac102e38c5636b6fe91d038c716ebdb05918219d00ed6ca456b26754b639d7",
+      "parts": [
+        {
+          "bytes": 8589934592,
+          "offset": 0,
+          "path": "engram-page15-v1/engram-layer-14-rank1-page15.bin.part-00000",
+          "sha256": "9284ba04670e7ac021fbcf7e2d7cb7fae7a888f3197ede70f9bfad0374d7fa2d"
+        },
+        {
+          "bytes": 8589934592,
+          "offset": 8589934592,
+          "path": "engram-page15-v1/engram-layer-14-rank1-page15.bin.part-00001",
+          "sha256": "71c491583572f2fdaf97ee1aaf0682103ffd8276855acdad7bf31ccc5d859170"
+        },
+        {
+          "bytes": 8589934592,
+          "offset": 17179869184,
+          "path": "engram-page15-v1/engram-layer-14-rank1-page15.bin.part-00002",
+          "sha256": "24ad000e64a57ac29f292de3d1a0536297a9d9f199890b396b545a6127f924c2"
+        },
+        {
+          "bytes": 8589934592,
+          "offset": 25769803776,
+          "path": "engram-page15-v1/engram-layer-14-rank1-page15.bin.part-00003",
+          "sha256": "366e71048c6bb333cbd7873befcaa7f8f0e9af257f633e01eb21acb788005024"
+        },
+        {
+          "bytes": 8589934592,
+          "offset": 34359738368,
+          "path": "engram-page15-v1/engram-layer-14-rank1-page15.bin.part-00004",
+          "sha256": "c78d089e245383d12b764d7333a731c4379aa583bb4727665d1457ae806a6b96"
+        },
+        {
+          "bytes": 8589934592,
+          "offset": 42949672960,
+          "path": "engram-page15-v1/engram-layer-14-rank1-page15.bin.part-00005",
+          "sha256": "6fc9c9b30d137fbd1f7014adcda280267890926941bd3bf5e022ad187c201783"
+        },
+        {
+          "bytes": 891838464,
+          "offset": 51539607552,
+          "path": "engram-page15-v1/engram-layer-14-rank1-page15.bin.part-00006",
+          "sha256": "57e400e53d6e65e1282acb4acc1e030f210f02410e79dbef476e1728c1ac65e0"
+        }
+      ],
+      "rank": 1,
+      "sha256": "fd83ce840e18a06ce5bd16a99174a3030f8934e2667e622895d2c0b70acfc556",
+      "total_rows": 384016682
+    }
+  },
+  "format": "ds41_engram_page15_release_v1",
+  "layout": "page15",
+  "lossless": true,
+  "page_bytes": 4096,
+  "reader_abi": 2,
+  "repo_id": "coolbho3k/DeepSeek-V4.1-Flash-EXL3-3bpw",
+  "row_bytes": 264,
+  "rows_per_page": 15,
+  "source_model": {
+    "manifest_sha256": "6d79a9ae5cfd121df7c559b76cde87b50551adbe68ae0dc94c97973e85e8e1d1",
+    "repo": "coolbho3k/DeepSeek-V4.1-Flash-EXL3-3bpw",
+    "revision": "5571a3c9ee09f9495e9118b54e022ac591b85373"
+  },
+  "tensor_parallel_size": 2
+}

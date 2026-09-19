@@ -64,3 +64,11 @@ this recipe's additions to that foundation, also **AGPL-3.0-only**. They retain
 the existing attention/merge arithmetic and use vLLM's existing communicator;
 no NCCL implementation is vendored. Their measured gains are this recipe's
 results, not an upstream MiaAI performance claim.
+
+The page15 Engram layout, asynchronous retrieval schedule and GPU-readable host
+staging adapt MiaAI's original native reader/cache/callback and packed dense
+row format (`979e68a62c90b24d928f5638596e0ceed90e9f34`). Full credit for that
+foundation remains with MiaAI Lab / Wesley Young and upstream contributors.
+The adaptations, native reader source and portable download integration are
+**AGPL-3.0-only**. Their limited performance results are reported separately;
+the packed data does not change or relicense DeepSeek's original weight bytes.

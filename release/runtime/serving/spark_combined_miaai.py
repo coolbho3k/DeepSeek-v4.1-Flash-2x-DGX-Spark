@@ -37,8 +37,8 @@ PINS = {
     'spark_fused_moe_async': '5000f91b5b8690a4b08a6220e254035914f8675bb9210787e2b005261c304816',
     'spark_b12x_decode_graph': '5b47f0733788c53a3d4b6c1539d5b1564d032f150159c30053cb764fce6fc7fb',
     'spark_grouped_prefill': 'e09cde421ec879a9e6e34aca2cdd6219f437d78d9cf6512e6dccf4a4f57ae839',
-    'miaai_engram': 'c9b751ec4ee4251acc26dece3c7794408bb305a45ea32cf666a784e49033aacb',
-    'spark_native_engram': 'e407bc2281c481f3de875b616580ef3cf4ef00236591ea0b090b62a104ceb9d5',
+    'miaai_engram': '79e771e79820c439478ccb51187b329639eb88e2555d31eed4ade9987cd324e7',
+    'spark_native_engram': 'aa36cb389b9cc0933fce562afe4bc0077ce363c0c9e793130e24e3a1bfb29aaa',
     'spark_indexer_k_math': '5ee4f01443af118a6bc50393a967860a30980f7314e38207800a3fbf9840ac57',
     'spark_packed_wo_a': '5bf809bed67f28e2b94b345d039e5e808cb8fcb556d49dc1edfecefe1bbf4fe5',
 }

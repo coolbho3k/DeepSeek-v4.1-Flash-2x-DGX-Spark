@@ -2,6 +2,7 @@
 """Fail-closed publication check; optional small HTTP metadata requests only."""
 import argparse
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 import re
@@ -22,12 +23,40 @@ def validate(lock,online=False):
     for spec in (lock['model'],lock['draft']) + (() if runtime.get('transport') == 'ghcr' else (runtime,)):
         if not re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+',spec['repo']) or not re.fullmatch('[0-9a-f]{40}',spec['revision']):
             raise ValueError('Repository and immutable revision required')
+    packed=lock['engram']
+    if (not re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+',packed['repo'])
+            or not re.fullmatch('[0-9a-f]{40}',packed['revision'])
+            or packed['manifest_path']!='engram-page15-v1/manifest.json'):
+        raise ValueError('Immutable packed Engram publication pin required')
+    raw=(ROOT/'release/engram-release-manifest.json').read_bytes()
+    module_spec=importlib.util.spec_from_file_location('validate_engram_pin',ROOT/'release/runtime/tools/engram_assets.py')
+    helper=importlib.util.module_from_spec(module_spec);module_spec.loader.exec_module(helper)
+    manifest=helper.parse_manifest(raw)
+    if (hashlib.sha256(raw).hexdigest()!=packed['manifest_sha256']
+            or helper.MANIFEST_SHA!=packed['manifest_sha256']
+            or manifest['source_model']!=lock['model'] or manifest['repo_id']!=packed['repo']):
+        raise ValueError('Packed reader, data and canonical source pins do not agree')
     if runtime.get('transport') == 'ghcr':registry.validate(runtime)
     for name in (registry.ASSETS if runtime.get('transport') == 'ghcr' else ('runtime-image.tar.gz','kernel-cache.tar','runtime-source.tar.gz')):
         row=runtime['files'][name]
         if type(row['bytes']) is not int or row['bytes']<=0 or not re.fullmatch('[0-9a-f]{64}',row['sha256']):
             raise ValueError('Invalid runtime payload pin: '+name)
     if online:
+        base=f"https://huggingface.co/{packed['repo']}/resolve/{packed['revision']}/"
+        with urllib.request.urlopen(base+packed['manifest_path'],timeout=30) as response:
+            remote=response.read(65537)
+        if remote!=raw:raise ValueError('Public packed inventory differs')
+        # Verify every referenced part exists at this immutable revision,
+        # without downloading weights or using publisher authentication.
+        url=f"https://huggingface.co/api/models/{packed['repo']}/revision/{packed['revision']}?blobs=true"
+        with urllib.request.urlopen(url,timeout=30) as response:info=json.loads(response.read(2**20))
+        files={row['rfilename']:row for row in info['siblings']}
+        if info.get('private') or info['sha']!=packed['revision']:raise ValueError('Packed assets must be public and pinned')
+        for table in manifest['files'].values():
+            for part in table['parts']:
+                remote=files.get(part['path'],{});lfs=remote.get('lfs',{})
+                if remote.get('size')!=part['bytes'] or lfs.get('sha256')!=part['sha256']:
+                    raise ValueError('Missing or mismatched immutable public packed part')
         for name in ('model','draft'):
             spec=lock[name]
             url=f"https://huggingface.co/{spec['repo']}/resolve/{spec['revision']}/release-manifest.json"

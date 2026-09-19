@@ -197,12 +197,12 @@ def prepare(settings, lock):
     bootstrap = module(ROOT/'release/bootstrap.py', 'public_bootstrap')
     def peer_prepare():
         run(['python3', '-B', remote_dir+'/release/bootstrap.py', '--lock', remote_dir+'/recipe-lock.json',
-             '--cache-dir', remote_cache, '--kit', remote_dir+'/release/runtime'], worker)
+             '--cache-dir', remote_cache, '--kit', remote_dir+'/release/runtime', '--rank', '1'], worker)
         return json_run(['python3', '-c', 'import pathlib,sys; print(pathlib.Path(sys.argv[1]).read_text())',
                          remote_cache+'/prepared.json'], worker)
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
         future = pool.submit(peer_prepare)
-        head = bootstrap.bootstrap(lock, Path(settings['cache']), ROOT/'release/runtime')
+        head = bootstrap.bootstrap(lock, Path(settings['cache']), ROOT/'release/runtime', rank=0)
         peer = future.result()
     for i, n in enumerate((head, peer)):
         n.pop('lock_sha256', None)
