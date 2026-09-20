@@ -1,5 +1,25 @@
 # Release validation
 
+## Startup portability fixes (issues #1 and #3)
+
+The candidate launcher pins each rank's `VLLM_HOST_IP` to its own primary
+fabric address, enables NCCL transport `INFO` logs, and emits fixed-text,
+ownership-checked startup hints without copying raw prompt/log contents into
+the controller journal. The one-hour readiness deadline, memory margins,
+container ownership checks, weights, serving kernels and GHCR image are unchanged.
+
+Loaded-driver checks require `580.173.02` on both hosts before downloads or a
+`--restart` stop, and again in node preflight/start. The `595.84` failure is
+reporter-provided A/B evidence, not a local reproduction. The control-IP omission
+is reproduced in CPU tests; its relationship to the reporter's full startup
+hang still needs confirmation on their machines.
+
+Validation is CPU-only regression/packaging testing and read-only loaded-driver
+inspection. No GPU boot, driver update, new KV allocation or live-server restart
+is part of this change. Frozen existing deployments keep their original helper
+code; the new source-manifest pin applies to newly prepared public deployments,
+not to an explicitly reused older `EXISTING_DEPLOYMENT` kit.
+
 ## Current overlay/data update: lossless packed Engrams
 
 The tested page15 native reader, GPU-readable host staging and deferred

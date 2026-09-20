@@ -175,9 +175,10 @@ def docker_command(config, index, owner=None):
         NCCL_IB_GID_INDEX=str(node['gid_index']), NCCL_IB_ROCE_VERSION_NUM='2',
         NCCL_IB_ADDR_FAMILY='AF_INET', NCCL_IB_ADDR_RANGE=config['fabric_network'],
         NCCL_SOCKET_IFNAME=node['ifname'], GLOO_SOCKET_IFNAME=node['ifname'],
+        VLLM_HOST_IP=node['fabric_ip'],
         TP_SOCKET_IFNAME=node['ifname'], NCCL_NVLS_ENABLE='0', NCCL_CROSS_NIC='0',
         NCCL_IB_MERGE_NICS='0', NCCL_CUMEM_ENABLE='0', NCCL_IGNORE_CPU_AFFINITY='1',
-        NCCL_DEBUG='WARN', NCCL_MAX_CTAS='8', NCCL_BUFFSIZE='1048576', NCCL_LL128_BUFFSIZE='262144', NCCL_PROTO='^LL128', NCCL_MAX_NCHANNELS='8', TORCH_NCCL_ASYNC_ERROR_HANDLING='1')
+        NCCL_DEBUG='INFO', NCCL_MAX_CTAS='8', NCCL_BUFFSIZE='1048576', NCCL_LL128_BUFFSIZE='262144', NCCL_PROTO='^LL128', NCCL_MAX_NCHANNELS='8', TORCH_NCCL_ASYNC_ERROR_HANDLING='1')
     from launch_profile import environment as profile_environment
     env.update(profile_environment(config['serving']))
     env.update(MALLOC_ARENA_MAX='2',MALLOC_TRIM_THRESHOLD_='131072',VLLM_SPARSE_INDEXER_MAX_LOGITS_MB='128')
@@ -472,6 +473,41 @@ def inspect_owned(config,index):
                 state=nodes[0]['State'],memory=memory())
 
 
+def startup_log_summary(text):
+    """Return fixed hints only, never prompt text or arbitrary log contents."""
+    if 'register display IO:' in text and 'CUDA_ERROR_INVALID_VALUE' in text:
+        return dict(last_observed_stage='display_io_registration_failed', hint=
+            'CUDA rejected registration of the DRM mapping. Check the loaded driver '
+            'against qualified 580.173.02; see docs/display-memory.md. '
+            'Do not increase GPU utilization to address this error.')
+    if any(marker in text for marker in ('Starting to load model',
+            'Loading safetensors checkpoint shards', 'Model loading took')):
+        return dict(last_observed_stage='model_load_or_later', hint=
+            'Model loading was observed; initial distributed setup progressed. '
+            'Check both inference logs for load/profile/KV/warmup progress.')
+    if "Using ['PYNCCL'] all-reduce backends" in text:
+        return dict(last_observed_stage='tp_communicator_selected', hint=
+            'If both ranks remain here before model loading, inspect the vLLM '
+            'ZeroMQ control handshake and TCP reachability between their primary '
+            'fabric IPs, including dynamic ports. This is not proof of an NCCL '
+            'failure; an RDMA bandwidth test does not test this TCP path.')
+    return dict(last_observed_stage='unknown', hint=
+        'No recognized startup marker in the bounded log tail. '
+        'Inspect both inference logs; absence of a marker does not identify a hang.')
+
+
+def startup_diagnostics(config,index):
+    observed = inspect_owned(config,index)
+    # Python/vLLM and NCCL can log on different streams; inspect both, but
+    # never copy arbitrary log text into the controller's diagnostic journal.
+    tail = subprocess.check_output(
+        ['docker','logs','--tail','120',observed['container']],
+        text=True, stderr=subprocess.STDOUT, timeout=5)
+    return dict(node=index,container=observed['container'],
+                control_ip=config['nodes'][index]['fabric_ip'],
+                **startup_log_summary(tail))
+
+
 def recover_created(config,index):
     """Resolve only an already-attempted create; never creates/starts/restarts."""
     directory = run_dir(config,index)
@@ -604,7 +640,7 @@ def main():
     source.add_argument('--config',type=Path)
     source.add_argument('--config-stdin',action='store_true')
     parser.add_argument('--node',type=int,choices=(0,1),required=True)
-    parser.add_argument('--action',choices=('plan','preflight','create','recover-created','start','inspect','stop','health','aot'),default='plan')
+    parser.add_argument('--action',choices=('plan','preflight','create','recover-created','start','inspect','stop','health','aot','startup-diagnostics'),default='plan')
     args = parser.parse_args()
     raw = sys.stdin.buffer.read(65537) if args.config_stdin else read_small(args.config.absolute())
     if len(raw) > 65536:
@@ -617,6 +653,7 @@ def main():
         functions = dict(preflight=preflight,create=create,start=start,inspect=inspect_owned,
                          stop=stop,health=health,aot=aot_maps)
         functions['recover-created'] = recover_created
+        functions['startup-diagnostics'] = startup_diagnostics
         result = functions[args.action](config,args.node)
     print(json.dumps(result,sort_keys=True),flush=True)
 
@@ -674,7 +711,10 @@ def display_flags(node):
 
 
 def sample_start(node):
+    from display_driver import observe
+    driver = observe()
     sample=_public_sample_start(node)
+    sample['driver']=driver
     sample['rails']=[]
     for rail in node['rails']:
         base=Path('/sys/class/infiniband')/rail['hca']/'ports/1'
@@ -687,6 +727,8 @@ def sample_start(node):
     return sample
 
 def validate_start_sample(node,sample):
+    from display_driver import validate
+    validate(sample.get('driver'), node['ssh'] or 'head')
     _public_validate_start_sample(node,sample)
     if sample['display']!=dict(modeset='Y',fbdev='N',card_exists=True,card_gid=node['drm_gid']):
         raise ValueError('Display KV needs nvidia_drm modeset=1 fbdev=0 and the configured DRM card; see docs/display-memory.md. No settings were changed.')

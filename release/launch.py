@@ -150,6 +150,23 @@ def host_info(worker, card):
         card], worker)
 
 
+def check_display_drivers(settings):
+    """Fail before downloads or --restart stop; inspect both running drivers."""
+    path = ROOT/'release/runtime/tools/display_driver.py'
+    policy = module(path, 'public_display_driver')
+    for index, host in enumerate((None, settings['worker'])):
+        label = 'head' if index == 0 else 'worker '+host
+        try:
+            sample = json_run(['python3', '-B', '-'], host,
+                              input=path.read_bytes(), timeout=30)
+        except (OSError, ValueError, subprocess.SubprocessError) as error:
+            raise ValueError(f'{label}: cannot inspect the loaded NVIDIA driver '
+                             f'({type(error).__name__}); display-KV requires '
+                             f'{policy.QUALIFIED_DRIVER}. Existing server was not touched.') from error
+        policy.validate(sample, label)
+        print(f'{label}: loaded NVIDIA driver {sample["loaded"]} qualified for display-KV', flush=True)
+
+
 def prepare_existing(settings):
     """Reuse explicitly pinned local assets; never adopt or restart an old run."""
     values = settings['values']
@@ -317,6 +334,7 @@ def logs(state, args):
 
 def doctor(settings):
     """Read-only host inspection. Does not run containers or allocate GPU memory."""
+    check_display_drivers(settings)
     for i, host in enumerate((None, settings['worker'])):
         prefix = 'HEAD' if i == 0 else 'WORKER'
         print('\n'+prefix+' (read-only)', flush=True)
@@ -382,6 +400,9 @@ def main():
     with (STATE/'operation.lock').open('a') as lockfile:
         fcntl.flock(lockfile,fcntl.LOCK_EX|fcntl.LOCK_NB)
         state = read_state()
+        # A failed compatibility check must not stop a healthy owned server,
+        # stage runtime files or start large model downloads.
+        check_display_drivers(settings)
         if args.restart:stop(state)
         elif state and controller_alive(state):
             raise ValueError('An owned server is running. Use status/logs; changing settings requires an explicit restart.')

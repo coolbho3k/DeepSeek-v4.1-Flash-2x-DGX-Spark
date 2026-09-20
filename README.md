@@ -20,6 +20,11 @@ See [credits](CREDITS.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
 > never changes drivers, boot settings or networking.
 > This is experimental and driver-dependent; a headless setup is strongly
 > recommended, not a guarantee against unified-memory exhaustion.
+> **Loaded NVIDIA driver `580.173.02` is required by the launcher on both hosts.**
+> Driver `595.84` was reported to reject CUDA registration of the display buffer.
+> The launcher checks before downloading assets or stopping a server for
+> `--restart`; it never installs/downgrades a driver. See
+> [driver compatibility](docs/display-memory.md#driver-compatibility).
 
 > **Public prebuilt runtime:** `20260917-rc2` is available on
 > [GHCR](https://github.com/users/coolbho3k/packages/container/package/deepseek-v4.1-flash-exl3-3bpw-2x-dgx-spark),
@@ -79,8 +84,9 @@ author's original workspace to run the recipe.
 
 - Two **128 GB NVIDIA DGX Sparks / GB10**, headless and otherwise idle. These
   instructions target Ubuntu-based DGX OS, with cgroup v2. The measured setup
-  used NVIDIA driver **580.173.02**; other driver/firmware combinations are not
-  qualified. Do not blindly downgrade an otherwise working system.
+  used NVIDIA driver **580.173.02**, now checked on both hosts; other driver
+  versions are refused until qualified. This does not mean every other driver
+  is broken. Do not blindly downgrade an otherwise working system.
 - Working NVIDIA drivers, NVIDIA Container Toolkit and non-root Docker access
   on both. Python 3.11+, `ssh`, `rsync`, `ip` and `ss` on both; `git`, `curl` and
   `rdma` for the setup/checks below.
@@ -719,11 +725,23 @@ Before a deployment/container exists, its corresponding log/status command may
 not be available. Read the error printed by `prepare` or the controller log
 first; startup does not always reach container creation.
 
+The launcher sets each rank's `VLLM_HOST_IP` to its **own primary fabric IP**.
+NCCL/Gloo interface selection alone does not select vLLM's ZeroMQ control
+address. Both Sparks need bidirectional TCP reachability on that fabric,
+including dynamically selected control ports—not just a working RoCE link or
+the configured master port. No firewall or routing changes are made for you.
+NCCL `INFO` logging is enabled for transport diagnosis. While waiting for
+readiness, the controller adds bounded, fixed-text startup hints after three
+minutes and then every five minutes; hints are not proof of the failure cause.
+These do not shorten the existing startup deadline or change RAM safeguards.
+
 | Symptom | What to check |
 | --- | --- |
 | SSH or Docker permission failure | Run the step 1 `BatchMode` SSH/Docker check using the exact `WORKER_HOST`. Reconnect after a Docker-group change. Do not use root SSH or `sudo start-server.sh`. |
 | GPU busy / another server detected | Stop that workload using its own controls, then retry. This launcher will not adopt or terminate unrelated containers. |
 | Display allocator unavailable | Check both hosts' `modeset=Y`, `fbdev=N`, actual NVIDIA DRM cards and 2 GB firmware reservation. Do not reload modules under a running server. |
+| Unqualified driver / `register display IO: CUDA_ERROR_INVALID_VALUE` | Check the **loaded** driver on both hosts: `cat /sys/module/nvidia/version` and `nvidia-smi --query-gpu=driver_version --format=csv,noheader`. This recipe requires `580.173.02`; see [driver compatibility](docs/display-memory.md#driver-compatibility). An installed package version alone is insufficient. This error is not an instruction to increase utilization. |
+| Both ranks stop after `Using ['PYNCCL'] all-reduce backends`, before loading weights | Inspect the controller's `startup_control_plane` / `startup_diagnostics` records and both rank logs. Verify the per-rank fabric IPs and TCP reachability, including dynamic ports; a fast RDMA benchmark does not test ZeroMQ's ready handshake. Wrong control addresses are one possible cause, not a confirmed diagnosis of every hang. |
 | RoCE/GID preflight fails | Match every rail's IP, interface, case-sensitive HCA, port 1 and RoCE v2 IPv4 GID index on both hosts. Ordinary LAN connectivity is insufficient. Clear all six secondary fields for one rail. |
 | Disk space failure | Check both hosts' asset and Docker filesystems; startup also requires 32 GiB free on the runs filesystem. Do not broadly prune Docker or delete unrelated checkpoints. |
 | RAM preflight/watchdog failure | Stop background jobs/desktops and inspect available RAM on both hosts. Do not raise utilization, bypass checks or globally flush caches as the first remedy. |

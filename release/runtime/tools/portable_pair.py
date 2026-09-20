@@ -36,7 +36,8 @@ def node_command(config,index,action):
 
 def call(config,index,action):
     result = subprocess.run(node_command(config,index,action),input=node.encoded(config),
-        stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=600 if action=='create' else 65)
+        stdout=subprocess.PIPE,stderr=subprocess.PIPE,
+        timeout=600 if action=='create' else (15 if action=='startup-diagnostics' else 65))
     if result.returncode:
         # Bounded diagnostic text; do not dump image inspect/environment data.
         raise RuntimeError(f'node{index} {action} failed: '+result.stderr.decode(errors='replace')[-3000:])
@@ -84,6 +85,13 @@ def watch(config,cids,record,caller=call,sleep=time.sleep,clock=time.monotonic,o
     ready = False
     started_at = None
     pending_reason = None
+    next_diagnostic = 180
+    record(dict(time=now(),stage='startup_control_plane',
+        nodes=[dict(node=i,control_ip=n['fabric_ip'],interface=n['ifname'])
+               for i,n in enumerate(config['nodes'])],
+        hint='VLLM_HOST_IP is pinned per rank. ZeroMQ also needs bidirectional TCP '
+             'on dynamic ports over the primary fabric, not only NCCL/RoCE. '
+             'No host networking settings were changed.'))
     while True:
         observed = both(config,'inspect',caller)
         if any(not row['ok'] for row in observed):
@@ -106,7 +114,8 @@ def watch(config,cids,record,caller=call,sleep=time.sleep,clock=time.monotonic,o
         if started_at is None:
             started_at = [row['state']['StartedAt'] for row in rows]
         if not ready:
-            if clock()-beginning > 3600:
+            elapsed = clock()-beginning
+            if elapsed > 3600:
                 pending_reason = 'startup_deadline'
                 continue
             try:
@@ -126,6 +135,13 @@ def watch(config,cids,record,caller=call,sleep=time.sleep,clock=time.monotonic,o
                 record(proof)
                 on_ready(proof)
                 ready = True
+            elif elapsed >= next_diagnostic:
+                # Diagnostics are hints, never a new safety-stop condition.
+                # Keep the existing one-hour readiness deadline and RAM floor.
+                record(dict(time=now(),stage='startup_diagnostics',
+                    elapsed_seconds=int(elapsed),
+                    results=both(config,'startup-diagnostics',caller)))
+                next_diagnostic = elapsed+300
         sleep(10)
 
 
