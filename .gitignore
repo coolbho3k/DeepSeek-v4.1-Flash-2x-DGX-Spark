@@ -23,6 +23,7 @@
 !/docs/kernel-batch-performance.md
 !/docs/dcp-overlap-performance.md
 !/docs/engram-io-performance.md
+!/docs/upstream-api-cache.md
 !/docs/repository-review.md
 !/probes/
 /probes/*

@@ -577,6 +577,7 @@ CLI options override the configuration file for that invocation:
 | GPU memory utilization | `0.92` | `0.85..0.925`; only 0.92 is the reported profile |
 | Prefill batch tokens | `2048` | `2048` or `3072`; 2048 is the reported profile |
 | Long-prefill threshold | `2048` | `0`, or `1056..batch` |
+| Prefix-cache retention interval | `4096` | `0` (semantic-only), or multiples of `256` through `1048576` |
 | Parallelism / speculation | TP2, DCP2, DSpark K=3 | Fixed in this pinned release |
 | KV backing | 1792 MiB display / GPU | Fixed; zero ordinary KV allocation |
 | KV formats | FP4 main, MXFP4 indexer, FP8 sliding window | Fixed; original image visibility retained |
@@ -586,6 +587,13 @@ profiling, allocation checks and the **512 MiB host-memory watchdog** remain.
 For another utilization, set `ALLOW_STARTUP_MEMORY_SHORTFALL=0`. Raising
 utilization does not enlarge the fixed display KV pool. Six sequence slots do
 not reserve six independent 1M contexts. See [configuration](docs/configuration.md).
+
+Agent cache reuse: `PREFIX_CACHE_RETENTION_INTERVAL=4096` retains periodic
+sliding-window checkpoints inside the same evictable KV pool. Set it to `0`
+to restore semantic-only retention. Both ranks enable cached-token reporting
+(`usage.prompt_tokens_details.cached_tokens`), and Responses API `input_text`
+and `output_text` blocks are supported. These are credited MiaAI/mrexodia
+[PR12/PR21 adaptations](docs/upstream-api-cache.md), not a decode kernel change.
 
 Full native image visibility is retained; images are not disabled or restricted
 to a text-sized attention window. Automatic tool choice and DeepSeek V4.1 tool

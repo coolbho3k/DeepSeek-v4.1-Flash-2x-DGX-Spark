@@ -350,13 +350,13 @@ def main():
     parser.add_argument('--no-follow', action='store_true')
     for flag, typ in (('port',int),('host',str),('worker',str),('gpu-memory-utilization',float),
                       ('max-model-len',int),('max-num-seqs',int),('max-num-batched-tokens',int),
-                      ('long-prefill-token-threshold',int)):
+                      ('long-prefill-token-threshold',int),('prefix-cache-retention-interval',int)):
         parser.add_argument('--'+flag, type=typ)
     args = parser.parse_args()
     if args.restart and args.action != 'start':
         parser.error('--restart is only valid for start')
     overrides = {k.upper():v for k,v in vars(args).items() if k in
-                 ('gpu_memory_utilization','max_model_len','max_num_seqs','max_num_batched_tokens','long_prefill_token_threshold')}
+                 ('gpu_memory_utilization','max_model_len','max_num_seqs','max_num_batched_tokens','long_prefill_token_threshold','prefix_cache_retention_interval')}
     overrides.update(API_PORT=args.port, API_HOST=args.host, WORKER_HOST=args.worker)
     if args.action in ('status','logs','stop'):
         if args.dry_run:

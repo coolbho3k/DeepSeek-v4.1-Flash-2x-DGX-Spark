@@ -19,7 +19,9 @@ Pinned source lineage:
 
 | Component | Upstream revision / location |
 | --- | --- |
-| Latest incorporated MiaAI snapshot | `8404ac7d389c418300d0bee960d52313247930e1` |
+| Kernel snapshot (unchanged) | `8404ac7d389c418300d0bee960d52313247930e1` |
+| Responses content compatibility; mrexodia / MiaAI PR12 | `a2c8d28a2355f193c4008430e07061293fb47a6b` |
+| Agent cache reporting and periodic retention; mrexodia / MiaAI PR21 | `14ebc3937d4cef76c3f7369607df817f703e21a1`, `0b5654dfbbfb8aa88c7c4d70e21104403e1fb236` |
 | Cooperative-MoE merge | `b9c49e90bdcc6f1e0192feb57214df11b67d36aa` |
 | Earlier Engram / grouped-prefill integration | `979e68a` (full pins in the corresponding `UPSTREAM.json`) |
 | Cooperative ExLlamaV3 dependency | `02aef45cd681b960a00afcd0749a4ab99e6c1bfe`, original MIT notices retained |
@@ -30,6 +32,13 @@ adaptations. The native cooperative source adapted for up to 24 rows is in
 sources and build instructions accompany their native libraries. SPDX notices
 are retained in the derived sources. The corresponding source is shipped with
 the recipe/runtime, not available only in a private campaign directory.
+
+The PR12/PR21 adaptations are **AGPL-3.0-only**, with credit to mrexodia,
+MiaAI Lab and Wesley Young. We map Responses `input_text`/`output_text`
+through a pinned in-memory adapter instead of editing installed vLLM files.
+We adopt cache-hit reporting and configurable 4096-token periodic retention,
+preserving our replay-tail/image correctness patches and 2048-token prefill.
+We do not adopt upstream's launch scripts or text-only serving profile.
 
 ## Other foundations
 

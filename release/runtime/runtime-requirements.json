@@ -109,7 +109,7 @@
   "loaded_backend_verification": {
     "format": "ds41_loaded_combined_miaai_v9",
     "inspector": "serving/spark_backend_attestation.py",
-    "sha256": "b2fe078ae820d615f16ec07bd01ad8c3614a2de1ea862fe9f33d59c165f4ed5d"
+    "sha256": "8e8c9ba7c6006d7af9ef34641e73aef8dbed8d4e4e2e34c880cf57ae0bb07b4b"
   },
   "model_revision": "df42c109f1defefcbfcedbe7d905718a12266e40",
   "mxfp8_aot_serving_1m_reuse_verified": false,
@@ -397,5 +397,27 @@
     "prefill_reclaim_interval_steps": 16
   },
   "tested_local_image_id": "sha256:a5ef1cecb16259d16e49578c334b05f60dc58873eeac94cc4a29c5c246d0bcbf",
+  "upstream_api_cache": {
+    "authors": [
+      "MiaAI Lab / Wesley Young",
+      "mrexodia"
+    ],
+    "changes": [
+      "Responses input_text/output_text normalization",
+      "prompt token details",
+      "configurable periodic prefix retention; default4096, rollback0"
+    ],
+    "commits": [
+      "a2c8d28a2355f193c4008430e07061293fb47a6b",
+      "14ebc3937d4cef76c3f7369607df817f703e21a1",
+      "0b5654dfbbfb8aa88c7c4d70e21104403e1fb236"
+    ],
+    "gpu_allocation_and_safety_boundaries_unchanged": true,
+    "inherited_qualification_applies_to_parent_only": true,
+    "license": "AGPL-3.0-only",
+    "native_kernels_unchanged": true,
+    "upstream": "MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks",
+    "weights_unchanged": true
+  },
   "vllm_commit": "e47aa780bccf59f59dfa2cbb18e17a10b4fe69ba"
 }

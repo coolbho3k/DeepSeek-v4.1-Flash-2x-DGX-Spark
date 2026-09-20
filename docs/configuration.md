@@ -61,7 +61,8 @@ settings, requires no sudo, and removes the helper when the read finishes.
 
 CLI overrides: `--port`, `--host`, `--worker`, `--gpu-memory-utilization`,
 `--max-model-len`, `--max-num-seqs`, `--max-num-batched-tokens`, and
-`--long-prefill-token-threshold`. These are launch-time settings: editing the
+`--long-prefill-token-threshold`, and `--prefix-cache-retention-interval`.
+These are launch-time settings: editing the
 file does not mutate a live server. Use an explicit `--restart` when appropriate.
 
 The tested defaults are 0.92 utilization, six sequence slots, a 1,048,576-token
@@ -72,6 +73,15 @@ The image-safe minimum is retained; arbitrary tiny prefill batches are refused.
 `LONG_PREFILL_TOKEN_THRESHOLD=0` disables that fairness threshold; otherwise use
 1056 through the configured batch size. Scheduler changes alter the tradeoff
 between prompt admission and interactive decode. They are not free speedups.
+
+`PREFIX_CACHE_RETENTION_INTERVAL=4096` keeps periodic reusable sliding-window
+checkpoints, in addition to the existing semantic/replay-tail checkpoints.
+This helps conversations branching from earlier prefixes. Use `0` to restore
+semantic-only retention; other supported values are multiples of 256 through
+1048576. Retained checkpoints are evictable and use the same fixed KV pool,
+not a separate allocation. Cache reuse is exposed in Chat Completions as
+`usage.prompt_tokens_details.cached_tokens`.
+See [upstream integration and validation](upstream-api-cache.md).
 
 The startup memory exception is explicitly opted into with
 `ALLOW_STARTUP_MEMORY_SHORTFALL=1` and is scoped to 0.92. Set it to 0 for other

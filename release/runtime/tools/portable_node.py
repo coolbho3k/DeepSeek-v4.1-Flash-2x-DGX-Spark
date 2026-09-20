@@ -214,7 +214,7 @@ def docker_command(config, index, owner=None):
         '--master-addr',config['nodes'][0]['fabric_ip'],'--master-port',str(config['api']['master_port']),
         '--host',config['api']['host'],'--port',str(config['api']['port']),'--served-model-name',config['api']['model_name'],
         '--enable-auto-tool-choice','--tool-call-parser','deepseek_v41',
-        '--reasoning-parser','deepseek_v41']
+        '--reasoning-parser','deepseek_v41','--enable-prompt-tokens-details']
     for key,value in config['serving'].items():
         if key != 'kv_cap_mib': tail += ['--'+key.replace('_','-'),str(value)]
     if rank == 1:

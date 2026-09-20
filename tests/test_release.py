@@ -58,9 +58,22 @@ class Configuration(unittest.TestCase):
     def test_tested_defaults(self):
         s=settings();self.assertEqual(s['serving']['max_num_seqs'],6)
         self.assertEqual(s['serving']['kv_cap_mib'],0)
+        self.assertEqual(s['serving']['prefix_cache_retention_interval'],4096)
         self.assertEqual(s['api']['port'],8888)
     def test_no_personal_defaults(self):
         with self.assertRaisesRegex(ValueError,'set:'):config.load(ROOT,environ={})
+    def test_prefix_retention_validation_matches_workers(self):
+        node_module()
+        from launch_profile import validate
+        for value in ('0','256','4096','1048576'):
+            s=settings(PREFIX_CACHE_RETENTION_INTERVAL=value)
+            self.assertEqual(validate(s['serving'])['prefix_cache_retention_interval'],int(value))
+        for value in ('-1','128','4097','1048832','1.5','none',''):
+            with self.subTest(value=value),self.assertRaises(ValueError):
+                settings(PREFIX_CACHE_RETENTION_INTERVAL=value)
+        for value in (-1,128,4097,1048832,True,4096.0):
+            with self.subTest(value=value),self.assertRaises(ValueError):
+                validate(dict(settings()['serving'],prefix_cache_retention_interval=value))
     def test_cli_overrides(self):
         s=settings(); v=config.load(ROOT,{'MAX_NUM_SEQS':4,'API_PORT':9876},s['values'])
         self.assertEqual(v['serving']['max_num_seqs'],4);self.assertEqual(v['api']['port'],9876)
@@ -90,6 +103,10 @@ class PortableNodes(unittest.TestCase):
             self.assertEqual(out['env']['NCCL_IB_MERGE_NICS'],'0')
             self.assertIn('--device='+c['nodes'][i]['drm_card']+':/dev/dri/card0',out['command'])
             self.assertIn('--enable-auto-tool-choice',out['cmd'])
+            self.assertEqual(out['cmd'].count('--enable-prompt-tokens-details'),1)
+            self.assertEqual(out['cmd'].count('--prefix-cache-retention-interval'),1)
+            self.assertEqual(out['cmd'][out['cmd'].index('--prefix-cache-retention-interval')+1],'4096')
+            self.assertEqual(out['env']['DS41_PREFIX_CACHE_RETENTION_INTERVAL'],'4096')
             self.assertEqual('--headless' in out['cmd'],i==1)
             self.assertEqual(out['env']['DS41_MAX_NUM_SEQS'],'6')
             self.assertEqual(out['env']['DS41_KV_CAP_MIB'],'0')

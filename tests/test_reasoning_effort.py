@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 """CPU-only reasoning alias and release-overlay checks; no vLLM/GPU imports."""
 import hashlib
+import copy
 import importlib.machinery
 import importlib.util
 from pathlib import Path
@@ -22,6 +23,16 @@ class ReasoningEffort(unittest.TestCase):
         spec.loader.exec_module(self.adapter)
         self.mapping = dict(self.adapter.ORIGINAL)
         self.tokenizer = ModuleType('vllm.tokenizers.deepseek_v41')
+        def normalize(messages):
+            messages = copy.deepcopy(messages)
+            for message in messages:
+                if isinstance(message.get('content'), list):
+                    for block in message['content']:
+                        if block['type'] not in ('text', 'image_url', 'input_image', 'image_pil'):
+                            raise ValueError('unsupported content type')
+            return messages
+        normalize.__module__ = self.tokenizer.__name__
+        self.tokenizer._normalize_messages = normalize
         self.encoding = ModuleType('vllm.tokenizers.deepseek_v41_encoding')
         self.encoding.DEFAULT_REASONING_EFFORT = 'high'
         payloads = {}
@@ -96,6 +107,34 @@ class ReasoningEffort(unittest.TestCase):
         self.adapter.register()
         self.mapping['xhigh'] = 75
         with self.assertRaisesRegex(RuntimeError, 'Unexpected runtime'):
+            self.adapter.register()
+
+    def test_responses_aliases_preserve_images_tools_and_input(self):
+        messages = [dict(role='user', content=[dict(type='input_text', text='hello'),
+                    dict(type='image_url', image_url={'url':'fixture'})]),
+                    dict(role='assistant', reasoning='thought', tool_calls=[{'id':'call1'}],
+                         content=[dict(type='output_text', text='world')]),
+                    dict(role='tool', tool_call_id='call1', content='result')]
+        before = copy.deepcopy(messages)
+        self.adapter.register()
+        result = self.tokenizer._normalize_messages(messages)
+        expected = copy.deepcopy(before)
+        expected[0]['content'][0]['type'] = 'text'
+        expected[1]['content'][0]['type'] = 'text'
+        self.assertEqual(result, expected)
+        self.assertEqual(messages, before)
+        result[0]['content'][1]['image_url']['url'] = 'changed'
+        self.assertEqual(messages, before)
+
+    def test_unknown_content_still_rejected(self):
+        self.adapter.register()
+        with self.assertRaisesRegex(ValueError, 'unsupported'):
+            self.tokenizer._normalize_messages([dict(role='user',content=[dict(type='audio')])])
+
+    def test_normalizer_tampering_rejected(self):
+        self.adapter.register()
+        self.tokenizer._normalize_messages = lambda messages: messages
+        with self.assertRaisesRegex(RuntimeError, 'message normalizer'):
             self.adapter.register()
 
 

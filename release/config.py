@@ -18,6 +18,7 @@ DEFAULTS = {
     'GPU_MEMORY_UTILIZATION': '0.92', 'MAX_MODEL_LEN': '1048576',
     'MAX_NUM_SEQS': '6', 'MAX_NUM_BATCHED_TOKENS': '2048',
     'LONG_PREFILL_TOKEN_THRESHOLD': '2048',
+    'PREFIX_CACHE_RETENTION_INTERVAL': '4096',
     'ALLOW_STARTUP_MEMORY_SHORTFALL': '1',
     'HEAD_DRM_CARD': '/dev/dri/card0', 'WORKER_DRM_CARD': '/dev/dri/card0',
     'DS41_CACHE_DIR': '', 'REMOTE_CACHE_DIR': '', 'REMOTE_DIR': '',
@@ -67,8 +68,12 @@ def load(root, overrides=None, environ=None):
         raise ValueError('Use the same number of rails on both hosts and distinct fabric IPs')
     profile = {k: (float(values[k.upper()]) if k == 'gpu_memory_utilization' else int(values[k.upper()]))
                for k in ('gpu_memory_utilization', 'max_model_len', 'max_num_seqs',
-                         'max_num_batched_tokens', 'long_prefill_token_threshold')}
+                         'max_num_batched_tokens', 'long_prefill_token_threshold',
+                         'prefix_cache_retention_interval')}
     profile['kv_cap_mib'] = 0  # This release uses the proven display-only KV allocator.
+    retention = profile['prefix_cache_retention_interval']
+    if not 0 <= retention <= 1048576 or retention % 256:
+        raise ValueError('PREFIX_CACHE_RETENTION_INTERVAL must be 0 or a multiple of 256 through 1048576')
     # Do not import worker code to validate user settings.
     util = profile['gpu_memory_utilization']
     if not math.isfinite(util) or not .85 <= util <= .925:
