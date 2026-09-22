@@ -15,7 +15,7 @@ import threading
 
 import torch
 
-from . import fp4_main_kv as codec
+from . import fp4_main_kv as codec, swa_kv
 from .fp4_rope_store import rope_quant_insert
 
 FORMAT = 'ds41_fp4_e2m1_e4m3_g16'
@@ -34,7 +34,7 @@ _installed_collective_chunk = None
 _installed_indexer_mode = None
 _installed_attention_mode = None
 _installed_attention_impl = None
-FUSED_ATTENTION_SHA256 = '22839ccef76d501a9191b193a522429dcfe98ae9977f31f51be04455ea51d9e9'
+FUSED_ATTENTION_SHA256 = '3fb9ec54743dda386c1171a454390d956c0c4dc170058e2b715eb27d63c55d4d'
 
 
 def _attention_mode():
@@ -80,6 +80,8 @@ def _main_pages(cache):
 def _mixed_gather(cache, slots):
     if cache.shape[-1] == codec.STATE_BYTES:
         return codec.gather(cache, slots)
+    if cache.shape[-1] == 592:
+        return swa_kv.gather(cache, slots)
     from .dcp_attention import gather_packed_cache
     return gather_packed_cache(cache, slots)
 
@@ -95,6 +97,9 @@ def _insert(latent, positions, cos_sin_cache, kv_cache, slot_mapping,
 def register():
     global _installed, _forward, _installed_collective_chunk, _installed_indexer_mode
     global _installed_attention_mode, _installed_attention_impl
+    swa_kv.validate_selection()
+    if codec.quantization_mode() != codec.QUANTIZATION_MODE:
+        raise RuntimeError('FP4 KV quantization mode cannot change after import; restart workers')
     collective_chunk = _collective_chunk_size()
     attention_mode = _attention_mode()
     indexer_mode = os.environ.get('DS41_ENABLE_FP4_INDEXER', '0')
@@ -172,10 +177,11 @@ def register():
         arithmetic.attention_forward = forward
         try:
             dcp_hooks = runtime.prepare_hooks()
-            hooks = (*dcp_hooks,
+            swa_hooks = swa_kv.make_hooks(attention.DeepseekV4Attention)
+            hooks = (*dcp_hooks, *swa_hooks,
                 (attention.DeepseekV4Attention,'get_kv_cache_spec',main_spec),
                 (compressor,'rope_quant_insert',_insert))
-            expected = 15 if indexer_mode == '1' else 13
+            expected = 17 if indexer_mode == '1' else 15
             if len(hooks) != expected or len({(id(o),n) for o,n,_ in hooks}) != expected:
                 raise RuntimeError('Incomplete coordinated FP4/DCP hook set')
             runtime.install_hooks(hooks)

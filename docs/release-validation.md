@@ -1,5 +1,44 @@
 # Release validation
 
+## Group-32 FP8 SWA with BF16 RoPE
+
+The sliding-window default is now group 32, retaining bit-exact BF16 RoPE;
+group 64 remains selectable. GPU and actual display-memory probes passed 11
+writer cases and 12 attention comparisons, including graph replay, padded
+slots/heads and strided-page canaries. Tested groups had zero error regressions;
+ordinary random values mostly tied, while the mixed-magnitude fixture improved.
+Decode timings were essentially unchanged and measured prefill writer overhead
+was under 2%. Both formats fit the existing 19008-byte aligned SWA page.
+The staged Git export passes all 212 included tests; the working-tree suite
+passes 226 including unrelated local experiments. See [sources, timings and numerical scope](../release/experimental/swa_kv/README.md).
+
+Both ranks were restarted with four-over-six and 32/BF16 on 2026-09-22.
+Backend verification and graph capture passed. All 11 live checks passed,
+including uncached 6036-token retrieval, decode, six concurrent requests, and
+5888-/4096-token prefix reuse. The pool remains 1792 MiB display-only per rank,
+with zero ordinary KV and the same 3,313,955 reported token capacity.
+See the [serving receipt](../release/experimental/swa_kv/serving-results.json).
+
+## NVFP4 four-over-six main KV
+
+The new default keeps the paper's E2M1/E4M3 group-16 format (4.5 bpw) and
+selects the lower reconstruction-error scale from `/4` and the previous `/6`.
+Legacy quantization remains selectable. GPU validation found 25,432 improved
+and zero regressed groups among 63,936, with 4,461,660 exact rounding checks.
+Both modes retain the same display-backed pool and packed attention readers.
+Native FP4 conversion, exact integer error comparison, and measured launch
+geometry keep decode and 2048-row DCP prefill writer times near the previous
+path. The full timing matrix includes slower cases and the optimized legacy
+option; this is not an end-to-end speed claim.
+
+The existing pair was restarted on 2026-09-22 with four-over-six. Backend
+attestation, graph capture, 1792 MiB display-only KV per rank, uncached
+6036-token retrieval, decode and six concurrent requests passed. All 219
+offline tests and the exported-checkout suite passed. Existing images and
+weights were reused; fresh public installation and broad model-quality A/B
+remain untested. See [implementation, paper comparison and recorded results](../release/experimental/nvfp4_kv/README.md).
+
+
 ## Startup portability fixes (issues #1 and #3)
 
 The candidate launcher pins each rank's `VLLM_HOST_IP` to its own primary

@@ -19,7 +19,7 @@ class KernelRelease(unittest.TestCase):
 
     def test_exact_qualified_kernel_payloads(self):
         expected = {
-            'serving/ds41/online_decode_attention.py': '198b1dc6e54b6980c6db96e465778773d75f334b7dade43f1b73ce71e46abca7',
+            'serving/ds41/online_decode_attention.py': '8bd906b9b00feeb7ae848c8dd078eb8e015f8ac5aca5eaa2f1bd6b3079ec3c7d',
             'serving/ds41/length_aware_topk.py': '83990e153b30aad6f98dd299ec5db57afc85f0654c326455aca535613c1ec20f',
             'serving/ds41/length_aware_topk_native.py': 'fc98239082a24a0125ce891ba702618ca28f42072fcd3fb43ea1ad11c8d1d377',
             'serving/topk-native/topk.so': '2ee6bde332658f6c3fd0eba299a6ed9cbdc3a72b78f17fb9c7bd149d0246f672',

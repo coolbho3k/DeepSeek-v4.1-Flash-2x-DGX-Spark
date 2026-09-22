@@ -10,7 +10,7 @@ import os
 from pathlib import Path
 
 CORE_SHA='7aa4a5e6d978f4be72db26e65619e75c7c09e75a218426afbf4a8aab1d56ce20'
-FP4_SHA='e61a6b984fc351cf5147603035913b17fa4c99d66e654861a124118a04320a36'
+FP4_SHA='4d2783a7182755b7577d9a2f8905ecae9dac8e652835ef6184fbc06039954547'
 DESCRIPTOR=dict(implementation='fused_dcp2_communication_v1',license='AGPL-3.0-only',
     kernel_sha256=CORE_SHA,maximum_rows=64,maximum_sparse_width=8192,
     stable_sparse_partition=True,duplicate_entries_preserved=True,

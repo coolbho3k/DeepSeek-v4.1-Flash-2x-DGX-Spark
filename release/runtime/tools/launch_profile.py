@@ -5,10 +5,15 @@ import os
 
 DEFAULTS = dict(gpu_memory_utilization=.92, max_model_len=1048576,
     max_num_seqs=2, max_num_batched_tokens=3072, long_prefill_token_threshold=2816,
-    kv_cap_mib=1536, prefix_cache_retention_interval=4096)
+    kv_cap_mib=1536, prefix_cache_retention_interval=4096, fp4_kv_mode='nvfp4_4over6', swa_kv_group_size=32)
 ENV = {key:'DS41_'+key.upper() for key in DEFAULTS}
 
 def validate(values):
+    # Older deployment descriptors inherit the new default when restarted.
+    if isinstance(values, dict):
+        values = dict(values)
+        for key in ('fp4_kv_mode', 'swa_kv_group_size'):
+            values.setdefault(key, DEFAULTS[key])
     if not isinstance(values, dict) or set(values) != set(DEFAULTS):
         raise ValueError('Unknown or missing serving profile fields')
     for key, default in DEFAULTS.items():
@@ -30,6 +35,10 @@ def validate(values):
     retention = values['prefix_cache_retention_interval']
     if not 0 <= retention <= 1048576 or retention % 256:
         raise ValueError('Prefix retention must be 0 or a multiple of 256 through 1048576')
+    if values['fp4_kv_mode'] not in ('nvfp4_4over6', 'legacy'):
+        raise ValueError('FP4 KV mode must be nvfp4_4over6 or legacy')
+    if values['swa_kv_group_size'] not in (32, 64):
+        raise ValueError('SWA KV group size must be 32 or 64; RoPE stays BF16')
     return values
 
 def from_environment():

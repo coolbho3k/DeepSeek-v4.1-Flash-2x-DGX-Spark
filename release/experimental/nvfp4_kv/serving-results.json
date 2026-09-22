@@ -1,0 +1,211 @@
+{
+  "api_port": 8888,
+  "deployment_kit_manifest_sha256": "865c1d9aaf1ee0e69dfb8067ae2e9aafbd45f030cec7b89230b12e5f4773266d",
+  "display_kv_bytes_per_rank": 1879048192,
+  "end_to_end_speed_ab": false,
+  "existing_images_and_weights_reused": true,
+  "full_model_quality_ab": false,
+  "loaded_backend_health_ready": true,
+  "mode": "nvfp4_4over6",
+  "ordinary_kv_bytes_per_rank": 0,
+  "public_clean_clone_gpu_tested": false,
+  "ranks": 2,
+  "source_sha256": {
+    "fp4_main_kv.py": "fc5b8ae2e00e0c2ee854b5b08a7feb747b0ab4dc24ca78a7e5e6690d2f1062bf",
+    "fp4_rope_store.py": "2c2f9303d1adfbdcbc098c3a6bb9bb2d21a9d329fc8957078b34d66cba9697c4"
+  },
+  "startup_memory_accounting": "MemAvailable; same .89*MemTotal + 2GiB reserve; GPUs idle before startup",
+  "status": "pass",
+  "tests": [
+    {
+      "content": "323",
+      "finish_reason": "stop",
+      "first_content_seconds": 0.33185625100304605,
+      "name": "arithmetic",
+      "passed": true,
+      "reasoning": "",
+      "total_seconds": 0.8587172480038134,
+      "usage": {
+        "completion_tokens": 2,
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_tokens": 18,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0
+        },
+        "total_tokens": 20
+      }
+    },
+    {
+      "content": "AMBER-731",
+      "finish_reason": "stop",
+      "first_content_seconds": 5.815033700004278,
+      "name": "long_prefill_retrieval",
+      "passed": true,
+      "reasoning": "",
+      "total_seconds": 5.99464901900501,
+      "usage": {
+        "completion_tokens": 5,
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_tokens": 6036,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0
+        },
+        "total_tokens": 6041
+      }
+    },
+    {
+      "content": "The sky looks blue because sunlight hits the tiny gas molecules in the air and gets scattered in all directions. Blue light gets scattered much more than red light, so it bounces around the whole sky and reaches your eyes from every direction. That's why you see blue everywhere overhead instead of just the white sun.",
+      "finish_reason": "stop",
+      "first_content_seconds": 0.37368222599616274,
+      "name": "decode",
+      "passed": true,
+      "reasoning": "",
+      "total_seconds": 2.2162964819945046,
+      "usage": {
+        "completion_tokens": 63,
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_tokens": 19,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0
+        },
+        "total_tokens": 82
+      }
+    },
+    {
+      "content": "30",
+      "finish_reason": "stop",
+      "first_content_seconds": 0.6487283650058089,
+      "name": "concurrent_0",
+      "passed": true,
+      "reasoning": "",
+      "total_seconds": 0.8058512690040516,
+      "usage": {
+        "completion_tokens": 2,
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_tokens": 17,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0
+        },
+        "total_tokens": 19
+      }
+    },
+    {
+      "content": "31",
+      "finish_reason": "stop",
+      "first_content_seconds": 0.6475240680010756,
+      "name": "concurrent_1",
+      "passed": true,
+      "reasoning": "",
+      "total_seconds": 0.8050404140012688,
+      "usage": {
+        "completion_tokens": 2,
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_tokens": 17,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0
+        },
+        "total_tokens": 19
+      }
+    },
+    {
+      "content": "32",
+      "finish_reason": "stop",
+      "first_content_seconds": 0.6475697330024559,
+      "name": "concurrent_2",
+      "passed": true,
+      "reasoning": "",
+      "total_seconds": 0.8047975489971577,
+      "usage": {
+        "completion_tokens": 2,
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_tokens": 17,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0
+        },
+        "total_tokens": 19
+      }
+    },
+    {
+      "content": "33",
+      "finish_reason": "stop",
+      "first_content_seconds": 0.6475002770021092,
+      "name": "concurrent_3",
+      "passed": true,
+      "reasoning": "",
+      "total_seconds": 0.8041973529980169,
+      "usage": {
+        "completion_tokens": 2,
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_tokens": 17,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0
+        },
+        "total_tokens": 19
+      }
+    },
+    {
+      "content": "34",
+      "finish_reason": "stop",
+      "first_content_seconds": 0.646155706999707,
+      "name": "concurrent_4",
+      "passed": true,
+      "reasoning": "",
+      "total_seconds": 0.804239928998868,
+      "usage": {
+        "completion_tokens": 2,
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_tokens": 17,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0
+        },
+        "total_tokens": 19
+      }
+    },
+    {
+      "content": "35",
+      "finish_reason": "stop",
+      "first_content_seconds": 0.6457850009974209,
+      "name": "concurrent_5",
+      "passed": true,
+      "reasoning": "",
+      "total_seconds": 0.8032499699984328,
+      "usage": {
+        "completion_tokens": 2,
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_tokens": 17,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0
+        },
+        "total_tokens": 19
+      }
+    }
+  ],
+  "validation_date": "2026-09-22"
+}

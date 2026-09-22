@@ -14,11 +14,11 @@ from .fused_sparse_attention import _selected
 def _segment(q, cache, indices, length, maximum, total, high, low, error,
              WIDTH: tl.constexpr, CAPACITY: tl.constexpr, PAGE_STRIDE: tl.constexpr,
              STATES: tl.constexpr, FP4: tl.constexpr, SCALE: tl.constexpr,
-             BN: tl.constexpr, SPLIT, SPLITS: tl.constexpr):
+             BN: tl.constexpr, SPLIT, SPLITS: tl.constexpr, SCALE_BYTES: tl.constexpr = 8):
     for begin in range(SPLIT, tl.cdiv(length, BN), SPLITS):
         position = begin * BN + tl.arange(0, BN)
         kv, live, invalid = _selected(cache, indices, position, length, WIDTH,
-                                      CAPACITY, PAGE_STRIDE, STATES, FP4)
+                                      CAPACITY, PAGE_STRIDE, STATES, FP4, SCALE_BYTES)
         tl.atomic_or(error, 1, mask=tl.sum(invalid.to(tl.int32), 0) > 0, sem='relaxed')
         scores = tl.dot(q, tl.trans(kv)).to(tl.float32) * SCALE
         scores = tl.where(live[None, :], scores, float('-inf'))
@@ -44,7 +44,8 @@ def _online(query, swa, si, sl, main, ci, cl, sinks, partial, local_lse, error,
             CW: tl.constexpr, CC: tl.constexpr, CP: tl.constexpr, CS: tl.constexpr,
             MAIN: tl.constexpr, MAIN_FP4: tl.constexpr, SINKS: tl.constexpr,
             SINK_STRIDE: tl.constexpr, SCALE: tl.constexpr,
-            BH: tl.constexpr, BN: tl.constexpr, SPLITS: tl.constexpr):
+            BH: tl.constexpr, BN: tl.constexpr, SPLITS: tl.constexpr,
+            SB: tl.constexpr = 8, CB: tl.constexpr = 8):
     token, tile, split = tl.program_id(0), tl.program_id(1), tl.program_id(2)
     h = tile * BH + tl.arange(0, BH)
     d = tl.arange(0, 512)
@@ -59,11 +60,11 @@ def _online(query, swa, si, sl, main, ci, cl, sinks, partial, local_lse, error,
     low = tl.full((BH, 512), 0., tl.float32)
     length = tl.minimum(tl.maximum(tl.load(sl + token), 0), SW)
     maximum, total, high, low = _segment(q, swa, si + token * SW, length,
-        maximum, total, high, low, error, SW, SC, SP, SS, False, SCALE, BN, split, SPLITS)
+        maximum, total, high, low, error, SW, SC, SP, SS, False, SCALE, BN, split, SPLITS, SB)
     if MAIN:
         length = tl.minimum(tl.maximum(tl.load(cl + token), 0), CW)
         maximum, total, high, low = _segment(q, main, ci + token * CW, length,
-            maximum, total, high, low, error, CW, CC, CP, CS, MAIN_FP4, SCALE, BN, split, SPLITS)
+            maximum, total, high, low, error, CW, CC, CP, CS, MAIN_FP4, SCALE, BN, split, SPLITS, CB)
     lse = tl.where(maximum == float('-inf'), float('-inf'), maximum + tl.log(total))
     value = tl.where(((total > 0) & (tl.abs(lse) < float('inf')))[:, None],
                       (high + low) / total[:, None], 0.)

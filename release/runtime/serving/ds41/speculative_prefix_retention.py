@@ -37,7 +37,7 @@ def register():
              retention_interval=None, reachable_boundaries=(), dcp_world_size=1):
         if use_eagle and retention_interval is not None and alignment_tokens is not None:
             if (kv_cache_spec.block_size != 32 or kv_cache_spec.sliding_window != 128
-                    or kv_cache_spec.state_content_size_bytes != 584 or dcp_world_size != 1):
+                    or kv_cache_spec.state_content_size_bytes not in (584, 592) or dcp_world_size != 1):
                 raise ValueError('Only the existing replicated FP8 DS41 SWA layout is supported')
             reachable_boundaries = replay_boundaries(reachable_boundaries, 32)
         return original(cls, start_block, end_block, alignment_tokens, kv_cache_spec,

@@ -69,9 +69,12 @@ and the [preceding DCP attention results](docs/dcp-overlap-performance.md).
 - **FP4 main KV, MXFP4 indexer and FP8 sliding-window KV**, with TP2/DCP2 and
   DSpark K=3. The six-session profile supports up to 1,048,576 tokens per request;
   historical testing reached about **3.15M input tokens in aggregate**, not 6M.
-  Main KV uses DeepSeek's prescribed FP4 format. The sliding-window path retains
-  vLLM's mixed FP8/BF16 RoPE layout and scale grouping; it is not numerically
-  identical to DeepSeek's reference implementation.
+  Main KV uses the same 4.5-bit E2M1/E4M3 layout with **NVFP4 four-over-six**
+  scale selection by default; `--fp4-kv-mode legacy` restores the previous writer.
+  See the [accuracy checks](release/experimental/nvfp4_kv/README.md). Sliding-window KV
+  defaults to **FP8 per 32 non-RoPE values with BF16 RoPE preserved**;
+  `--swa-kv-group-size 64` restores the old grouping. Both layouts allocate the
+  same page size. See [SWA accuracy and memory](release/experimental/swa_kv/README.md).
 - An experimental display-buffer allocator supplies **1.75 GiB (1792 MiB) of KV
   backing per GPU** from the display reservation. The nominal remaining 256 MiB
   is not extra host-RAM safety margin. Images, reasoning and tool calling remain
@@ -587,7 +590,9 @@ CLI options override the configuration file for that invocation:
 | Prefix-cache retention interval | `4096` | `0` (semantic-only), or multiples of `256` through `1048576` |
 | Parallelism / speculation | TP2, DCP2, DSpark K=3 | Fixed in this pinned release |
 | KV backing | 1792 MiB display / GPU | Fixed; zero ordinary KV allocation |
-| KV formats | FP4 main, MXFP4 indexer, FP8 sliding window | Fixed; original image visibility retained |
+| KV formats | 4.5-bit NVFP4 main, MXFP4 indexer, FP8 sliding window | Original image visibility retained |
+| Main KV writer | `nvfp4_4over6` | `--fp4-kv-mode legacy` restores the previous writer |
+| Sliding-window KV | FP8 group 32 / BF16 RoPE | `--swa-kv-group-size 64` restores group 64 / BF16 |
 
 Defaults explicitly enable the tested 0.92 startup-admission exception. Actual
 profiling, allocation checks and the **512 MiB host-memory watchdog** remain.

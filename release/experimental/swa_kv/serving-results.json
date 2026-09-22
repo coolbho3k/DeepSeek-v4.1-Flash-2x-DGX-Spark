@@ -1,0 +1,266 @@
+{
+  "aligned_swa_page_bytes": 19008,
+  "allocated_blocks": 16311,
+  "allocated_kv_capacity_tokens": 3313955,
+  "api_port": 8888,
+  "deployment_kit_manifest_sha256": "ad6aacc19dffa7ede254dbc93dff455f67c88656c794d4d9e489bce59f6efe57",
+  "display_kv_bytes_per_rank": 1879048192,
+  "end_to_end_speed_ab": false,
+  "existing_images_and_weights_reused": true,
+  "full_model_quality_ab": false,
+  "graph_capture_passed": true,
+  "loaded_backend_health_ready": true,
+  "mode": "nvfp4_4over6",
+  "ordinary_kv_bytes_per_rank": 0,
+  "public_clean_clone_gpu_tested": false,
+  "ranks": 2,
+  "rope_dtype": "bfloat16",
+  "source_sha256": {
+    "ds41/dcp_overlap/packed.py": "3eea248ad2d711bb35712c379cc72588d11a5b956bdd2aabb98c7b1bd7fff04a",
+    "ds41/fp4_main_kv.py": "fc5b8ae2e00e0c2ee854b5b08a7feb747b0ab4dc24ca78a7e5e6690d2f1062bf",
+    "ds41/fp4_rope_store.py": "2c2f9303d1adfbdcbc098c3a6bb9bb2d21a9d329fc8957078b34d66cba9697c4",
+    "ds41/fused_sparse_attention.py": "3fb9ec54743dda386c1171a454390d956c0c4dc170058e2b715eb27d63c55d4d",
+    "ds41/online_decode_attention.py": "8bd906b9b00feeb7ae848c8dd078eb8e015f8ac5aca5eaa2f1bd6b3079ec3c7d",
+    "ds41/online_sparse_attention.py": "c99629e80291f0c22ebfde68bd5f48455894ab262e431dcf97c9f0c366bbbfee",
+    "ds41/swa_kv.py": "b3fcc3a4c004c63498f66d73ead55ff21e9e8d1d05944941c4029134e03ee9a0",
+    "ds41/vllm_fp4_main.py": "4d2783a7182755b7577d9a2f8905ecae9dac8e652835ef6184fbc06039954547",
+    "libds41_swa32.so": "7f1780ae862047e01b45f50a7788f6c5da2e6bb01c5310fd5772790905eec982"
+  },
+  "staged_export_cpu_tests": 212,
+  "status": "pass",
+  "swa_group_size": 32,
+  "tests": [
+    {
+      "content": "323",
+      "finish_reason": "stop",
+      "first_content_seconds": 0.3270906899997499,
+      "name": "arithmetic",
+      "passed": true,
+      "reasoning": "",
+      "total_seconds": 0.8497926890049712,
+      "usage": {
+        "completion_tokens": 2,
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_tokens": 18,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0
+        },
+        "total_tokens": 20
+      }
+    },
+    {
+      "content": "AMBER-731",
+      "finish_reason": "stop",
+      "first_content_seconds": 8.921337281004526,
+      "name": "long_prefill_retrieval",
+      "passed": true,
+      "reasoning": "",
+      "total_seconds": 9.166175489001034,
+      "usage": {
+        "completion_tokens": 5,
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_tokens": 6036,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0
+        },
+        "total_tokens": 6041
+      }
+    },
+    {
+      "content": "AMBER-731",
+      "finish_reason": "stop",
+      "first_content_seconds": 2.69595063199813,
+      "name": "prefix_repeat",
+      "passed": true,
+      "reasoning": "",
+      "total_seconds": 2.9445661249992554,
+      "usage": {
+        "completion_tokens": 5,
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_tokens": 6036,
+        "prompt_tokens_details": {
+          "cached_tokens": 5888,
+          "created_cache_tokens": 0
+        },
+        "total_tokens": 6041
+      }
+    },
+    {
+      "content": "AMBER-731",
+      "finish_reason": "stop",
+      "first_content_seconds": 1.1844926830017357,
+      "name": "prefix_branch",
+      "passed": true,
+      "reasoning": "",
+      "total_seconds": 1.4321334490014124,
+      "usage": {
+        "completion_tokens": 5,
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_tokens": 4956,
+        "prompt_tokens_details": {
+          "cached_tokens": 4096,
+          "created_cache_tokens": 0
+        },
+        "total_tokens": 4961
+      }
+    },
+    {
+      "content": "The sky looks blue because sunlight hits the tiny gas molecules in the air and gets scattered in all directions. Blue light gets scattered much more than red light, so it bounces around the sky and reaches your eyes from every direction. That's why you see blue overhead instead of the white sunlight you'd see in space.",
+      "finish_reason": "stop",
+      "first_content_seconds": 0.3844164300026023,
+      "name": "decode",
+      "passed": true,
+      "reasoning": "",
+      "total_seconds": 2.7029388820010354,
+      "usage": {
+        "completion_tokens": 65,
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_tokens": 19,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0
+        },
+        "total_tokens": 84
+      }
+    },
+    {
+      "content": "30",
+      "finish_reason": "stop",
+      "first_content_seconds": 0.3812084750024951,
+      "name": "concurrent_0",
+      "passed": true,
+      "reasoning": "",
+      "total_seconds": 0.5543322939993232,
+      "usage": {
+        "completion_tokens": 2,
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_tokens": 17,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0
+        },
+        "total_tokens": 19
+      }
+    },
+    {
+      "content": "31",
+      "finish_reason": "stop",
+      "first_content_seconds": 0.3792657119993237,
+      "name": "concurrent_1",
+      "passed": true,
+      "reasoning": "",
+      "total_seconds": 0.5525021720022778,
+      "usage": {
+        "completion_tokens": 2,
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_tokens": 17,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0
+        },
+        "total_tokens": 19
+      }
+    },
+    {
+      "content": "32",
+      "finish_reason": "stop",
+      "first_content_seconds": 0.37860113200440537,
+      "name": "concurrent_2",
+      "passed": true,
+      "reasoning": "",
+      "total_seconds": 0.5520183449989418,
+      "usage": {
+        "completion_tokens": 2,
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_tokens": 17,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0
+        },
+        "total_tokens": 19
+      }
+    },
+    {
+      "content": "33",
+      "finish_reason": "stop",
+      "first_content_seconds": 0.37804264899750706,
+      "name": "concurrent_3",
+      "passed": true,
+      "reasoning": "",
+      "total_seconds": 0.5508837469969876,
+      "usage": {
+        "completion_tokens": 2,
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_tokens": 17,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0
+        },
+        "total_tokens": 19
+      }
+    },
+    {
+      "content": "34",
+      "finish_reason": "stop",
+      "first_content_seconds": 0.37689995400432963,
+      "name": "concurrent_4",
+      "passed": true,
+      "reasoning": "",
+      "total_seconds": 0.5507837300028768,
+      "usage": {
+        "completion_tokens": 2,
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_tokens": 17,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0
+        },
+        "total_tokens": 19
+      }
+    },
+    {
+      "content": "35",
+      "finish_reason": "stop",
+      "first_content_seconds": 0.37665233799634734,
+      "name": "concurrent_5",
+      "passed": true,
+      "reasoning": "",
+      "total_seconds": 0.5495795320020989,
+      "usage": {
+        "completion_tokens": 2,
+        "completion_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "prompt_tokens": 17,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "created_cache_tokens": 0
+        },
+        "total_tokens": 19
+      }
+    }
+  ],
+  "workspace_cpu_tests": 226
+}

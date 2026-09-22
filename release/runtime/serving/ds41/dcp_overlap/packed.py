@@ -18,7 +18,7 @@ def attention(query,swa,si,sl,main,ci,cl,sinks,output,normalizers,error,
               CW:tl.constexpr,CC:tl.constexpr,CP:tl.constexpr,CS:tl.constexpr,
               MAIN:tl.constexpr,MAIN_FP4:tl.constexpr,SINKS:tl.constexpr,
               SINK_STRIDE:tl.constexpr,SCALE:tl.constexpr,BH:tl.constexpr,BN:tl.constexpr,
-              SINGLE_ACC:tl.constexpr=False,OUTPUT_HEAD_MAJOR:tl.constexpr=False):
+              SINGLE_ACC:tl.constexpr=False,OUTPUT_HEAD_MAJOR:tl.constexpr=False,SB:tl.constexpr=8,CB:tl.constexpr=8):
     token,tile=tl.program_id(0),tl.program_id(1)
     head=tile*BH+tl.arange(0,BH)
     channel=tl.arange(0,512)
@@ -33,11 +33,11 @@ def attention(query,swa,si,sl,main,ci,cl,sinks,output,normalizers,error,
     high=tl.full((BH,512),0.,tl.float32)
     low=tl.full((BH,512),0.,tl.float32)
     maximum,total,high,low=_segment(q,swa,si+token*SW,length,maximum,total,high,low,
-        error,SW,SC,SP,SS,False,SCALE,BN,SINGLE_ACC)
+        error,SW,SC,SP,SS,False,SCALE,BN,SINGLE_ACC,SB)
     if MAIN:
         main_length=tl.minimum(tl.maximum(tl.load(cl+token),0),CW)
         maximum,total,high,low=_segment(q,main,ci+token*CW,main_length,maximum,total,high,low,
-            error,CW,CC,CP,CS,MAIN_FP4,SCALE,BN,SINGLE_ACC)
+            error,CW,CC,CP,CS,MAIN_FP4,SCALE,BN,SINGLE_ACC,CB)
     lse=tl.where(maximum==float('-inf'),float('-inf'),maximum+tl.log(total))
     result=tl.where((total>0)[:,None]&(tl.abs(lse)<float('inf'))[:,None],
         (high+low)/total[:,None],0.)

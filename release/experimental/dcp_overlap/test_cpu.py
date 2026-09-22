@@ -316,7 +316,7 @@ class PackedKernelTests(unittest.TestCase):
             self.assertEqual(len(seen), 3)
 
     def test_only_output_addresses_changed(self):
-        packed = Path(__file__).parent / 'packed.py'
+        packed = RUNTIME / 'serving/ds41/dcp_overlap/packed.py'
         prefill = function_source(RUNTIME / 'serving/ds41/online_sparse_attention.py', 'attention')
         prefill = prefill.replace('(token*HEADS+head[:,None])*512', '(token*HEADS+head[:,None])*513')
         prefill = prefill.replace('normalizers+token*HEADS+head,', 'normalizers+(token*HEADS+head)*513,')

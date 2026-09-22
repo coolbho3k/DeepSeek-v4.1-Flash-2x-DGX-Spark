@@ -3,6 +3,7 @@
 This thin overlay leaves the baked plugin/runtime paths intact. Enable before
 their first registration with DS41_ENABLE_FP4_MAIN_KV=1. SWA stays FP8;
 DS41_ENABLE_FP4_INDEXER=1 additionally selects the coordinated MXFP4 indexer.
+DS41_ENABLE_FUSED_SPARSE_ATTENTION=1 selects the qualified image-safe kernel.
 No weights, CUDA buffers or groups are created.
 """
 from dataclasses import replace
@@ -14,7 +15,7 @@ import threading
 
 import torch
 
-from . import fp4_main_kv as codec
+from . import fp4_main_kv as codec, swa_kv
 from .fp4_rope_store import rope_quant_insert
 
 FORMAT = 'ds41_fp4_e2m1_e4m3_g16'
@@ -31,6 +32,23 @@ _installed = ()
 _forward = None
 _installed_collective_chunk = None
 _installed_indexer_mode = None
+_installed_attention_mode = None
+_installed_attention_impl = None
+FUSED_ATTENTION_SHA256 = '3fb9ec54743dda386c1171a454390d956c0c4dc170058e2b715eb27d63c55d4d'
+
+
+def _attention_mode():
+    value = os.environ.get('DS41_ENABLE_FUSED_SPARSE_ATTENTION', '0')
+    if value not in ('0', '1'):
+        raise ValueError('DS41_ENABLE_FUSED_SPARSE_ATTENTION must be exactly0 or1')
+    return value
+
+
+def _fused_attention():
+    from . import fused_sparse_attention as fused
+    if hashlib.sha256(Path(fused.__file__).read_bytes()).hexdigest() != FUSED_ATTENTION_SHA256:
+        raise RuntimeError('Fused attention source differs from GPU qualification')
+    return fused.packed_sparse_attention_with_lse
 
 
 def _collective_chunk_size():
@@ -62,6 +80,8 @@ def _main_pages(cache):
 def _mixed_gather(cache, slots):
     if cache.shape[-1] == codec.STATE_BYTES:
         return codec.gather(cache, slots)
+    if cache.shape[-1] == 592:
+        return swa_kv.gather(cache, slots)
     from .dcp_attention import gather_packed_cache
     return gather_packed_cache(cache, slots)
 
@@ -76,7 +96,12 @@ def _insert(latent, positions, cos_sin_cache, kv_cache, slot_mapping,
 
 def register():
     global _installed, _forward, _installed_collective_chunk, _installed_indexer_mode
+    global _installed_attention_mode, _installed_attention_impl
+    swa_kv.validate_selection()
+    if codec.quantization_mode() != codec.QUANTIZATION_MODE:
+        raise RuntimeError('FP4 KV quantization mode cannot change after import; restart workers')
     collective_chunk = _collective_chunk_size()
+    attention_mode = _attention_mode()
     indexer_mode = os.environ.get('DS41_ENABLE_FP4_INDEXER', '0')
     if indexer_mode not in ('0', '1'):
         raise ValueError('DS41_ENABLE_FP4_INDEXER must be exactly0 or1')
@@ -90,6 +115,8 @@ def register():
             raise ValueError('Larger collective batches require the FP4 main-cache variant')
         if indexer_mode != '0':
             raise ValueError('FP4 indexer requires FP4 main-cache registration')
+        if attention_mode != '0':
+            raise ValueError('Fused attention requires FP4 main-cache registration')
         return
     if os.environ.get('DS41_ENABLE_DCP2') != '1':
         raise ValueError('FP4 main KV requires the coordinated DCP2 runtime')
@@ -97,11 +124,15 @@ def register():
     from . import vllm_prefill_workspace as workspace
     with _lock:
         if _installed:
+            if attention_mode != _installed_attention_mode:
+                raise RuntimeError('Attention kernel cannot change after startup')
             if indexer_mode != _installed_indexer_mode:
                 raise RuntimeError('FP4 indexer format cannot change after startup')
             if collective_chunk != _installed_collective_chunk:
                 raise RuntimeError('FP4 collective batching cannot change after startup')
             if (arithmetic.attention_forward is not _forward
+                    or _forward.__globals__.get('bf16_sparse_attention_with_lse') is not _installed_attention_impl
+                    or (attention_mode == '1' and _fused_attention() is not _installed_attention_impl)
                     or any(getattr(owner, name) is not function for owner,name,function in _installed)):
                 raise RuntimeError('Registered FP4 main-cache hooks changed')
             runtime.register()
@@ -130,8 +161,9 @@ def register():
             return replace(spec, cache_dtype_str=FORMAT, state_content_bytes=288,
                 alignment=512, page_size_padded=None, kv_quant_mode=KVQuantMode.NONE)
 
-        mixed_attention = arithmetic._compile(arithmetic.bf16_sparse_attention_with_lse,
-            [], {'gather_packed_cache':_mixed_gather})
+        mixed_attention = (_fused_attention() if attention_mode == '1' else
+            arithmetic._compile(arithmetic.bf16_sparse_attention_with_lse,
+                [], {'gather_packed_cache':_mixed_gather}))
         old_forward = arithmetic.attention_forward
         forward = arithmetic._compile(old_forward, [
             ('compressed = None if swa_only else _packed_pages(self_kv_cache)',
@@ -139,14 +171,17 @@ def register():
             *_collective_chunk_replacements(),
         ], {'_fp4_main_pages':_main_pages,'bf16_sparse_attention_with_lse':mixed_attention,
             '_ds41_collective_chunk':collective_chunk})
+        from .dcp_overlap.integration import wrap_forward
+        forward = wrap_forward(forward)
         workspace.register()
         arithmetic.attention_forward = forward
         try:
             dcp_hooks = runtime.prepare_hooks()
-            hooks = (*dcp_hooks,
+            swa_hooks = swa_kv.make_hooks(attention.DeepseekV4Attention)
+            hooks = (*dcp_hooks, *swa_hooks,
                 (attention.DeepseekV4Attention,'get_kv_cache_spec',main_spec),
                 (compressor,'rope_quant_insert',_insert))
-            expected = 15 if indexer_mode == '1' else 13
+            expected = 17 if indexer_mode == '1' else 15
             if len(hooks) != expected or len({(id(o),n) for o,n,_ in hooks}) != expected:
                 raise RuntimeError('Incomplete coordinated FP4/DCP hook set')
             runtime.install_hooks(hooks)
@@ -159,3 +194,5 @@ def register():
         _installed, _forward = hooks, forward
         _installed_collective_chunk = collective_chunk
         _installed_indexer_mode = indexer_mode
+        _installed_attention_mode = attention_mode
+        _installed_attention_impl = mixed_attention

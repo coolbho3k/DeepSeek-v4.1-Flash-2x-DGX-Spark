@@ -61,9 +61,29 @@ settings, requires no sudo, and removes the helper when the read finishes.
 
 CLI overrides: `--port`, `--host`, `--worker`, `--gpu-memory-utilization`,
 `--max-model-len`, `--max-num-seqs`, `--max-num-batched-tokens`, and
-`--long-prefill-token-threshold`, and `--prefix-cache-retention-interval`.
+`--long-prefill-token-threshold`, `--prefix-cache-retention-interval`,
+`--fp4-kv-mode`, and `--swa-kv-group-size`.
 These are launch-time settings: editing the
 file does not mutate a live server. Use an explicit `--restart` when appropriate.
+
+`DS41_FP4_KV_MODE=nvfp4_4over6` is the default main-cache writer. It chooses
+between rounded `/6` and `/4` group scales by reconstruction error. Use
+`./start-server.sh --restart --fp4-kv-mode legacy` (or set `DS41_FP4_KV_MODE=legacy` in
+`.env.ds41`) for the previous writer; select `nvfp4_4over6` to switch back.
+Both modes use exactly 288 bytes per 512-channel main-cache state (4.5 bits
+per value) in the same 1792 MiB display-only pool. The MXFP4 indexer is unchanged.
+The main-cache selection reaches both workers and is fixed for
+their lifetime; changing it requires a restart. New Triton signatures compile
+on first use. A separately frozen `EXISTING_DEPLOYMENT` needs an updated kit
+to support this setting. See the [numerical validation](../release/experimental/nvfp4_kv/README.md)
+for the measured improvement and the limits of that accuracy claim.
+
+`DS41_SWA_KV_GROUP_SIZE=32` is the sliding-window default: FP8 with a power-of-two
+scale per 32 non-RoPE values, keeping all 64 RoPE values in BF16. Use
+`./start-server.sh --restart --swa-kv-group-size 64` for the original group-64/BF16
+writer, or `32` to switch back. This choice is independent of `--fp4-kv-mode`.
+Both layouts fit the same 19008-byte aligned 32-token page and retain display-only
+backing. See [SWA validation and padding](../release/experimental/swa_kv/README.md).
 
 The tested defaults are 0.92 utilization, six sequence slots, a 1,048,576-token
 per-request limit, and 2048-token prefill chunks. Both 2048 and 3072 chunks are

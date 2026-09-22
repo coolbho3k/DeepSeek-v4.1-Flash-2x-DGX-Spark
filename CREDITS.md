@@ -99,3 +99,11 @@ and recovery lessons. KV-only projection and Markov-addition integration are
 local adaptations around the existing native operations. Experimental results
 are documented separately; inclusion of their source is not a claim that every
 experiment improved performance or is enabled in the released default.
+
+## SWA group-32 native writer
+
+The fused Q/RoPE/sliding-window writer adapts **vLLM contributors' Apache-2.0**
+implementation. The original source, license and provenance are retained under
+`release/runtime/vendor/vllm-swa32-apache/`; the corresponding adapted source
+and build script are shipped with the SWA results. The local adaptation changes
+FP8 scale grouping and exact scale-exponent selection while retaining BF16 RoPE.

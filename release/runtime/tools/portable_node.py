@@ -217,7 +217,7 @@ def docker_command(config, index, owner=None):
         '--enable-auto-tool-choice','--tool-call-parser','deepseek_v41',
         '--reasoning-parser','deepseek_v41','--enable-prompt-tokens-details']
     for key,value in config['serving'].items():
-        if key != 'kv_cap_mib': tail += ['--'+key.replace('_','-'),str(value)]
+        if key not in ('kv_cap_mib', 'fp4_kv_mode', 'swa_kv_group_size'): tail += ['--'+key.replace('_','-'),str(value)]
     if rank == 1:
         tail += ['--headless']
     return dict(command=args+[node['image']]+tail, cmd=tail, env=env, mounts=mounts)
@@ -610,7 +610,7 @@ def aot_maps(config,index):
             '/opt/ds41-venv/bin/python','-I','-S','/opt/ds41-serving/spark_backend_attestation.py',
             '--rank',str(NODE_RANKS[index]),'--source-sha',digest]).encode())
         if (result.get('status') != 'qualified_loaded_combined_miaai_with_native_draft_graphs'
-                or result.get('attention') != {'implementation': 'image_safe_packed_sparse_attention_v2', 'kernel_sha256': '22839ccef76d501a9191b193a522429dcfe98ae9977f31f51be04455ea51d9e9', 'registration_sha256': 'e61a6b984fc351cf5147603035913b17fa4c99d66e654861a124118a04320a36', 'query_dtype': 'bfloat16', 'probability_bf16_terms': 2, 'partial_dtype': 'float32', 'lse_base': 2, 'main_cache_format': 'fp4', 'swa_cache_format': 'fp8', 'image_visibility_unchanged': True}
+                or result.get('attention') != {'implementation': 'image_safe_packed_sparse_attention_v2', 'kernel_sha256': '3fb9ec54743dda386c1171a454390d956c0c4dc170058e2b715eb27d63c55d4d', 'registration_sha256': '4d2783a7182755b7577d9a2f8905ecae9dac8e652835ef6184fbc06039954547', 'query_dtype': 'bfloat16', 'probability_bf16_terms': 2, 'partial_dtype': 'float32', 'lse_base': 2, 'main_cache_format': 'fp4', 'swa_cache_format': 'fp8', 'image_visibility_unchanged': True}
                 or result.get('image_prefix') != {'implementation': 'whole_image_prefix_v1', 'bootstrap_sha256': '4f3049b68b0fbdec933c281d0303f2702af729818a94b1af84dbaf0807642ab5', 'override_sha256': 'dd2b90570f6f42a70ce3b2b997e0027d98a6baa75889b441ae5c60c6443173aa', 'partial_image_prefix_hits': False, 'complete_image_prefix_hits_preserved': True, 'original_image_pixels_preserved': True}
                 or result.get('sparse_mapping') != {'implementation': 'stable_fused_dcp2_sparse_slots_v1', 'kernel_sha256': 'acbd5dce12e3a988697268c946f7c1a178cc38a3dc738dbb5a94287b7cc43edb', 'stable_candidate_order': True, 'duplicate_candidates_preserved': True, 'synchronous_bounds_checks': True, 'image_key_membership_unchanged': True, 'maximum_rows': 512, 'maximum_width': 8192, 'persistent_gpu_workspace_bytes': 0}
                 or result.get('native_engram') != {'implementation': 'miaai_parallel_native_engram_v1', 'license': 'AGPL-3.0-only', 'core_sha256': '79e771e79820c439478ccb51187b329639eb88e2555d31eed4ade9987cd324e7', 'maximum_chunk_tokens': 256, 'maximum_local_heads': 144, 'staging_bytes_per_layer_ceiling': 19759104, 'cache_bytes_per_layer_ceiling': 67108864, 'io_threads': 96, 'resident_tables': False, 'resident_scales': False, 'native_image_hasher_unchanged': True, 'unowned_and_dead_ids_zero': True, 'callback_stream_ordering': True, 'full_model_graph_capture_enabled': True, 'live_tables': 2, 'staging_bounds_verified': True, 'layout': 'page15', 'gpu_readable_host': True, 'deferred_retrieval': True, 'row_bytes_unchanged': True, 'reader_abi': 2}

@@ -19,6 +19,8 @@ DEFAULTS = {
     'MAX_NUM_SEQS': '6', 'MAX_NUM_BATCHED_TOKENS': '2048',
     'LONG_PREFILL_TOKEN_THRESHOLD': '2048',
     'PREFIX_CACHE_RETENTION_INTERVAL': '4096',
+    'DS41_FP4_KV_MODE': 'nvfp4_4over6',
+    'DS41_SWA_KV_GROUP_SIZE': '32',
     'ALLOW_STARTUP_MEMORY_SHORTFALL': '1',
     'HEAD_DRM_CARD': '/dev/dri/card0', 'WORKER_DRM_CARD': '/dev/dri/card0',
     'DS41_CACHE_DIR': '', 'REMOTE_CACHE_DIR': '', 'REMOTE_DIR': '',
@@ -70,6 +72,12 @@ def load(root, overrides=None, environ=None):
                for k in ('gpu_memory_utilization', 'max_model_len', 'max_num_seqs',
                          'max_num_batched_tokens', 'long_prefill_token_threshold',
                          'prefix_cache_retention_interval')}
+    if values['DS41_SWA_KV_GROUP_SIZE'] not in ('32', '64'):
+        raise ValueError('DS41_SWA_KV_GROUP_SIZE must be 32 or 64')
+    profile['swa_kv_group_size'] = int(values['DS41_SWA_KV_GROUP_SIZE'])
+    profile['fp4_kv_mode'] = values['DS41_FP4_KV_MODE']
+    if profile['fp4_kv_mode'] not in ('nvfp4_4over6', 'legacy'):
+        raise ValueError('DS41_FP4_KV_MODE must be nvfp4_4over6 or legacy')
     profile['kv_cap_mib'] = 0  # This release uses the proven display-only KV allocator.
     retention = profile['prefix_cache_retention_interval']
     if not 0 <= retention <= 1048576 or retention % 256:

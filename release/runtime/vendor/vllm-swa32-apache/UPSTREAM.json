@@ -1,0 +1,32 @@
+{
+  "files": {
+    "LICENSE": {
+      "bytes": 11357,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    "csrc/cuda_compat.h": {
+      "bytes": 1896,
+      "sha256": "959bc9e0e73e020d777530b18bf12160d35cc4eb976335955395729700b2f975"
+    },
+    "csrc/libtorch_stable/dispatch_utils.h": {
+      "bytes": 10029,
+      "sha256": "0397432fab9020f2b39f3053d019f8b4fee78d78f4ac41c72490dd1b84a41fed"
+    },
+    "csrc/libtorch_stable/fused_deepseek_v4_qnorm_rope_kv_insert_kernel.cu": {
+      "bytes": 58652,
+      "sha256": "35a73219da57acd0fb78d6d56f53b1b5b5f00b2f25da0c47bba7da349cf20da8"
+    },
+    "csrc/libtorch_stable/torch_utils.h": {
+      "bytes": 3258,
+      "sha256": "f619e1943039a67a3254f7e0679e1f3e0faa9d8fccae795f3b20df9e91a8a429"
+    },
+    "csrc/libtorch_stable/type_convert.cuh": {
+      "bytes": 6205,
+      "sha256": "9274a7464c53de92976f6b5a19cc548b315f5d85e68b825515a6ff1fd73be4ca"
+    }
+  },
+  "license": "Apache-2.0",
+  "project": "vLLM",
+  "runtime_image": "ds41-vllm:e47aa780-sm121-dcp-v3",
+  "source": "https://github.com/vllm-project/vllm"
+}

@@ -1,0 +1,13 @@
+{
+  "all_midpoints_checked": true,
+  "codec_sha256": "fc5b8ae2e00e0c2ee854b5b08a7feb747b0ab4dc24ca78a7e5e6690d2f1062bf",
+  "combinations": 4461660,
+  "finite_bf16_abs_max": 2688,
+  "probe_sha256": "73623f6fec790db0f03f791922f3432a4140920d57a8baa5e451d6c9078c4735",
+  "scales": 126,
+  "signed_zero_checked": true,
+  "status": "pass",
+  "subnormals_checked": true,
+  "validation_date": "2026-09-22",
+  "values": 35410
+}

@@ -15,7 +15,7 @@ import triton.language as tl
 @triton.jit
 def _selected(cache, indices, position, length, WIDTH: tl.constexpr,
               CAPACITY: tl.constexpr, PAGE_STRIDE: tl.constexpr,
-              STATES: tl.constexpr, FP4: tl.constexpr):
+              STATES: tl.constexpr, FP4: tl.constexpr, SCALE_BYTES: tl.constexpr = 8):
     channel = tl.arange(0, 512)
     slot = tl.load(indices + position, (position < length) & (position < WIDTH), other=-1)
     live = (slot >= 0) & (slot < CAPACITY)
@@ -40,8 +40,8 @@ def _selected(cache, indices, position, length, WIDTH: tl.constexpr,
         nope_mask = live[:, None] & (channel[None, :] < 448)
         raw = tl.load(cache + offset + channel[None, :], nope_mask, other=0)
         quantized = raw.to(tl.float8e4nv, bitcast=True).to(tl.float32)
-        exponent = tl.load(cache + page + STATES * 576 + state[:, None] * 8
-                           + channel[None, :] // 64, nope_mask, other=127).to(tl.float32) - 127.
+        exponent = tl.load(cache + page + STATES * 576 + state[:, None] * SCALE_BYTES
+                           + channel[None, :] // (512 // SCALE_BYTES), nope_mask, other=127).to(tl.float32) - 127.
         nope = quantized * tl.exp2(exponent)
         rope_mask = live[:, None] & (channel[None, :] >= 448)
         rope_offset = 448 + 2 * tl.maximum(channel - 448, 0)
@@ -57,11 +57,11 @@ def _normalizer(q, cache, indices, length, maximum, total, error,
                 WIDTH: tl.constexpr, CAPACITY: tl.constexpr,
                 PAGE_STRIDE: tl.constexpr, STATES: tl.constexpr,
                 FP4: tl.constexpr, SCALE: tl.constexpr, BN: tl.constexpr,
-                SPLIT, SPLITS: tl.constexpr):
+                SPLIT, SPLITS: tl.constexpr, SCALE_BYTES: tl.constexpr = 8):
     for begin in range(SPLIT, tl.cdiv(length, BN), SPLITS):
         position = begin * BN + tl.arange(0, BN)
         kv, live, invalid = _selected(cache, indices, position, length, WIDTH,
-                                      CAPACITY, PAGE_STRIDE, STATES, FP4)
+                                      CAPACITY, PAGE_STRIDE, STATES, FP4, SCALE_BYTES)
         tl.atomic_or(error, 1, mask=tl.sum(invalid.to(tl.int32), 0) > 0, sem="relaxed")
         scores = tl.dot(q, tl.trans(kv)).to(tl.float32) * SCALE
         scores = tl.where(live[None, :], scores, float('-inf'))
@@ -78,11 +78,11 @@ def _weighted_values(q, cache, indices, length, lse, high, low,
                      WIDTH: tl.constexpr, CAPACITY: tl.constexpr,
                      PAGE_STRIDE: tl.constexpr, STATES: tl.constexpr,
                      FP4: tl.constexpr, SCALE: tl.constexpr, BN: tl.constexpr,
-                     SPLIT, SPLITS: tl.constexpr):
+                     SPLIT, SPLITS: tl.constexpr, SCALE_BYTES: tl.constexpr = 8):
     for begin in range(SPLIT, tl.cdiv(length, BN), SPLITS):
         position = begin * BN + tl.arange(0, BN)
         kv, live, invalid = _selected(cache, indices, position, length, WIDTH,
-                                      CAPACITY, PAGE_STRIDE, STATES, FP4)
+                                      CAPACITY, PAGE_STRIDE, STATES, FP4, SCALE_BYTES)
         scores = tl.dot(q, tl.trans(kv)).to(tl.float32) * SCALE
         p = tl.where(live[None, :] & (tl.abs(lse[:, None]) < float('inf')),
                      tl.exp(scores - lse[:, None]), 0.)
@@ -100,7 +100,7 @@ def _attention(query, swa, si, sl, main, ci, cl, sinks, output, normalizers, err
                CW: tl.constexpr, CC: tl.constexpr, CP: tl.constexpr, CS: tl.constexpr,
                MAIN: tl.constexpr, MAIN_FP4: tl.constexpr, SINKS: tl.constexpr,
                SINK_STRIDE: tl.constexpr, SCALE: tl.constexpr,
-               BH: tl.constexpr, BN: tl.constexpr):
+               BH: tl.constexpr, BN: tl.constexpr, SB: tl.constexpr = 8, CB: tl.constexpr = 8):
     token, tile = tl.program_id(0), tl.program_id(1)
     h = tile * BH + tl.arange(0, BH)
     d = tl.arange(0, 512)
@@ -113,19 +113,19 @@ def _attention(query, swa, si, sl, main, ci, cl, sinks, output, normalizers, err
         maximum = tl.full((BH,), float('-inf'), tl.float32)
         total = tl.full((BH,), 0., tl.float32)
     maximum, total = _normalizer(q, swa, si + token * SW, length, maximum, total,
-                                error, SW, SC, SP, SS, False, SCALE, BN, 0, 1)
+                                error, SW, SC, SP, SS, False, SCALE, BN, 0, 1, SB)
     if MAIN:
         main_length = tl.minimum(tl.maximum(tl.load(cl + token), 0), CW)
         maximum, total = _normalizer(q, main, ci + token * CW, main_length, maximum,
-                                    total, error, CW, CC, CP, CS, MAIN_FP4, SCALE, BN, 0, 1)
+                                    total, error, CW, CC, CP, CS, MAIN_FP4, SCALE, BN, 0, 1, CB)
     lse = tl.where(maximum == float('-inf'), float('-inf'), maximum + tl.log(total))
     high = tl.full((BH, 512), 0., tl.float32)
     low = tl.full((BH, 512), 0., tl.float32)
     high, low = _weighted_values(q, swa, si + token * SW, length, lse, high, low,
-                                 SW, SC, SP, SS, False, SCALE, BN, 0, 1)
+                                 SW, SC, SP, SS, False, SCALE, BN, 0, 1, SB)
     if MAIN:
         high, low = _weighted_values(q, main, ci + token * CW, main_length, lse, high, low,
-                                     CW, CC, CP, CS, MAIN_FP4, SCALE, BN, 0, 1)
+                                     CW, CC, CP, CS, MAIN_FP4, SCALE, BN, 0, 1, CB)
     tl.store(output + (token * HEADS + h[:, None]) * 512 + d[None, :], high + low)
     tl.store(normalizers + token * HEADS + h, lse * 1.4426950408889634)
 
@@ -137,7 +137,7 @@ def _split_attention(query, swa, si, sl, main, ci, cl, sinks, partial, local_lse
                      CW: tl.constexpr, CC: tl.constexpr, CP: tl.constexpr, CS: tl.constexpr,
                      MAIN: tl.constexpr, MAIN_FP4: tl.constexpr, SINKS: tl.constexpr,
                      SINK_STRIDE: tl.constexpr, SCALE: tl.constexpr,
-                     BH: tl.constexpr, BN: tl.constexpr, SPLITS: tl.constexpr, STAGE: tl.constexpr):
+                     BH: tl.constexpr, BN: tl.constexpr, SPLITS: tl.constexpr, STAGE: tl.constexpr, SB: tl.constexpr = 8, CB: tl.constexpr = 8):
     token, tile, split = tl.program_id(0), tl.program_id(1), tl.program_id(2)
     h = tile * BH + tl.arange(0, BH)
     d = tl.arange(0, 512)
@@ -154,10 +154,10 @@ def _split_attention(query, swa, si, sl, main, ci, cl, sinks, partial, local_lse
             maximum = tl.full((BH,), float('-inf'), tl.float32)
             total = tl.full((BH,), 0., tl.float32)
         maximum, total = _normalizer(q, swa, si + token * SW, length, maximum, total,
-                                    error, SW, SC, SP, SS, False, SCALE, BN, split, SPLITS)
+                                    error, SW, SC, SP, SS, False, SCALE, BN, split, SPLITS, SB)
         if MAIN:
             maximum, total = _normalizer(q, main, ci + token * CW, main_length, maximum,
-                                        total, error, CW, CC, CP, CS, MAIN_FP4, SCALE, BN, split, SPLITS)
+                                        total, error, CW, CC, CP, CS, MAIN_FP4, SCALE, BN, split, SPLITS, CB)
         lse = tl.where(maximum == float('-inf'), float('-inf'), maximum + tl.log(total))
         tl.store(local_lse + (token * HEADS + h) * SPLITS + split, lse)
     else:
@@ -165,10 +165,10 @@ def _split_attention(query, swa, si, sl, main, ci, cl, sinks, partial, local_lse
         high = tl.full((BH, 512), 0., tl.float32)
         low = tl.full((BH, 512), 0., tl.float32)
         high, low = _weighted_values(q, swa, si + token * SW, length, lse, high, low,
-                                     SW, SC, SP, SS, False, SCALE, BN, split, SPLITS)
+                                     SW, SC, SP, SS, False, SCALE, BN, split, SPLITS, SB)
         if MAIN:
             high, low = _weighted_values(q, main, ci + token * CW, main_length, lse, high, low,
-                                         CW, CC, CP, CS, MAIN_FP4, SCALE, BN, split, SPLITS)
+                                         CW, CC, CP, CS, MAIN_FP4, SCALE, BN, split, SPLITS, CB)
         tl.store(partial + ((token * HEADS + h[:, None]) * SPLITS + split) * 512 + d[None, :], high + low)
 
 
@@ -229,12 +229,12 @@ def packed_sparse_attention_with_lse(query, swa_cache, swa_indices, swa_lengths,
         raise ValueError('Expected inference BF16 CUDA [0..64 tokens, 32/64 heads, 512]')
     if torch.cuda.is_current_stream_capturing():
         raise ValueError('Bounds-checked eager attention cannot run inside graph capture')
-    _validate_segment(query, swa_cache, swa_indices, swa_lengths, (584,))
+    _validate_segment(query, swa_cache, swa_indices, swa_lengths, (584, 592))
     present = compressed_indices is not None
     if present != (compressed_lengths is not None) or present != (compressed_cache is not None):
         raise ValueError('Compressed cache, indices and lengths must be supplied together')
     if present:
-        _validate_segment(query, compressed_cache, compressed_indices, compressed_lengths, (288, 584))
+        _validate_segment(query, compressed_cache, compressed_indices, compressed_lengths, (288, 584, 592))
     if sinks is not None and (sinks.device != query.device or sinks.ndim != 1
             or sinks.numel() != query.shape[1] or sinks.dtype not in (torch.float32, torch.bfloat16)
             or sinks.requires_grad):
@@ -259,8 +259,9 @@ def packed_sparse_attention_with_lse(query, swa_cache, swa_indices, swa_lengths,
     common = dict(
         HEADS=query.shape[1], Q0=query.stride(0), Q1=query.stride(1), Q2=query.stride(2),
         SW=swa_indices.shape[-1], SC=swa_cache.shape[0] * swa_cache.shape[1],
-        SP=swa_cache.stride(0), SS=swa_cache.shape[1],
+        SP=swa_cache.stride(0), SS=swa_cache.shape[1], SB=swa_cache.shape[2]-576,
         CW=ci.shape[-1], CC=main.shape[0] * main.shape[1], CP=main.stride(0), CS=main.shape[1],
+        CB=8 if main.shape[-1] == 288 else main.shape[-1]-576,
         MAIN=present, MAIN_FP4=main.shape[-1] == 288, SINKS=sinks is not None,
         SINK_STRIDE=sinks.stride(0) if sinks is not None else 1, SCALE=scale,
         BH=16, BN=32, num_warps=8, num_stages=1, enable_fp_fusion=False)

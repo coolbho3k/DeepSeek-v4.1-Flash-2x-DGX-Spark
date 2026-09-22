@@ -8,6 +8,8 @@ Preserved notices and provenance are shipped in:
 
 - `release/runtime/vendor/miaai-*/LICENSE*` and `UPSTREAM.json`.
 - `release/runtime/native-source/LICENSE*`.
+- `release/runtime/vendor/vllm-swa32-apache/LICENSE` and `UPSTREAM.json` for the
+  Apache-2.0 fused Q/RoPE/SWA writer and its group-32 adaptation.
 - `release/runtime/kernel-rebuild/vendor/exllamav3/LICENSE`.
 - `release/runtime/notices/FLASHINFER-LICENSE` and CUTLASS notices.
 - `release/runtime/kernel-generated/LICENSE`.

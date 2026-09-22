@@ -50,7 +50,7 @@ class Packaging(unittest.TestCase):
                          (kit/'serving/ds41/launch_profile.py').read_bytes())
         source = (kit/'serving/ds41/speculative_prefix_retention.py').read_bytes()
         self.assertEqual(hashlib.sha256(source).hexdigest(),
-                         'c183e62741c8bf6176514414d2c80cf2514a5ee7a8f5f9cedccba06a8d3e5f65')
+                         '578f11d8d46e0ba1bc59728c46ea44e5695b0ed79251fe5f66d54349b81e83d5')
 
 
 if __name__ == '__main__':

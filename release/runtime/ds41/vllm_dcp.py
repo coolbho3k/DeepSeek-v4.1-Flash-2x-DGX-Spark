@@ -99,7 +99,7 @@ def _compile(function, replacements, extra_globals):
 def _packed_pages(cache):
     if cache.ndim == 4 and cache.shape[-2] == 1:
         cache = cache.squeeze(-2)
-    if cache.ndim != 3 or cache.dtype != torch.uint8 or cache.shape[-1] != 584:
+    if cache.ndim != 3 or cache.dtype != torch.uint8 or cache.shape[-1] not in (584, 592):
         raise ValueError('DCP probe requires the packed FP8 DSV4 cache, not per-tensor FP8 or BF16 pages')
     return cache
 
