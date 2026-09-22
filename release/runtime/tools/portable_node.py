@@ -252,10 +252,14 @@ def validate_start_sample(node, sample):
             or not 120*GIB <= mem['MemTotal'] <= 128*GIB
             or not (0 <= mem['MemFree'] <= mem['MemTotal'] and 0 <= mem['MemAvailable'] <= mem['MemTotal'])):
         raise ValueError('Expected complete Spark unified-memory accounting')
-    required = int(.89*mem['MemTotal'])
-    if (sample['gpu_processes'] or mem['MemFree'] < required-GIB
-            or mem['MemAvailable'] < required+2*GIB):
-        raise ValueError('GPU must be idle with the 0.89 ceiling with unchanged startup RAM reserves')
+    # MemAvailable already accounts for free and estimated reclaimable memory.
+    # Keep the existing reserve without requiring caches/page pools to be empty.
+    required = int(.89*mem['MemTotal']) + 2*GIB
+    if mem['MemAvailable'] < required:
+        raise ValueError(
+            f'Insufficient startup RAM: MemAvailable={mem["MemAvailable"]/GIB:.2f} GiB; '
+            f'require {required/GIB:.2f} GiB (0.89 * MemTotal + 2 GiB reserve). '
+            f'MemFree={mem["MemFree"]/GIB:.2f} GiB is diagnostic only.')
     addresses = {row.get('local') for interface in sample['addresses'] for row in interface.get('addr_info',[])
                  if row.get('family') == 'inet'}
     if ('ACTIVE' not in sample['ib_state'] or node['fabric_ip'] not in addresses

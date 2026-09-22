@@ -143,6 +143,88 @@ class DriverPreflight(unittest.TestCase):
                 display=dict(modeset='N', fbdev='Y', card_exists=True, card_gid=44)))
 
 
+class MemoryPreflight(unittest.TestCase):
+    def setUp(self):
+        self.node = node_module()
+        self.config = deployment()
+
+    def sample(self, index=0):
+        host = self.config['nodes'][index]
+        address = host['fabric_ip']
+        rail = dict(ib_state='4: ACTIVE', gid='::ffff:'+address,
+                    gid_type='RoCE v2',
+                    addresses=[dict(addr_info=[dict(family='inet', local=address)])])
+        return dict(memory=dict(MemTotal=128*2**30, MemFree=1*2**30,
+                                MemAvailable=120*2**30),
+                    gpu_processes='', uid=host['uid'], gid_number=host['gid'],
+                    driver=dict(loaded='595.84', reported=['595.84']),
+                    display=dict(modeset='Y', fbdev='N', card_exists=True,
+                                 card_gid=host['drm_gid']),
+                    rails=[rail], **rail)
+
+    def test_low_free_with_sufficient_available_passes_both_hosts(self):
+        for index in (0, 1):
+            for free in (0, 1*2**30, 10*2**30):
+                with self.subTest(index=index, free=free):
+                    sample = self.sample(index)
+                    sample['memory']['MemFree'] = free
+                    self.node.validate_start_sample(self.config['nodes'][index], sample)
+
+    def test_reserve_unchanged_at_exact_boundary(self):
+        sample = self.sample()
+        required = int(.89*sample['memory']['MemTotal']) + 2*2**30
+        sample['memory']['MemAvailable'] = required
+        self.node.validate_start_sample(self.config['nodes'][0], sample)
+        sample['memory']['MemAvailable'] = required - 1
+        with self.assertRaisesRegex(ValueError, 'Insufficient startup RAM'):
+            self.node.validate_start_sample(self.config['nodes'][0], sample)
+
+    def test_free_not_added_to_available_and_failure_is_actionable(self):
+        sample = self.sample()
+        sample['memory'].update(MemFree=100*2**30, MemAvailable=110*2**30)
+        with self.assertRaises(ValueError) as caught:
+            self.node.validate_start_sample(self.config['nodes'][0], sample)
+        message = str(caught.exception)
+        self.assertIn('MemAvailable=110.00 GiB', message)
+        self.assertIn('require 115.92 GiB', message)
+        self.assertIn('0.89 * MemTotal + 2 GiB reserve', message)
+
+    def test_busy_gpu_still_refused(self):
+        sample = self.sample()
+        sample['gpu_processes'] = '1234'
+        with self.assertRaisesRegex(ValueError, 'GPU is busy'):
+            self.node.validate_start_sample(self.config['nodes'][0], sample)
+
+    def test_invalid_memory_accounting_still_refused(self):
+        for key, value in (
+            ('MemTotal', 0), ('MemAvailable', -1), ('MemAvailable', 129*2**30),
+            ('MemAvailable', True), ('MemAvailable', '120'), ('MemFree', -1),
+        ):
+            with self.subTest(key=key, value=value):
+                sample = self.sample()
+                sample['memory'][key] = value
+                with self.assertRaisesRegex(ValueError, 'complete Spark unified-memory accounting'):
+                    self.node.validate_start_sample(self.config['nodes'][0], sample)
+        sample = self.sample()
+        del sample['memory']['MemAvailable']
+        with self.assertRaisesRegex(ValueError, 'complete Spark unified-memory accounting'):
+            self.node.validate_start_sample(self.config['nodes'][0], sample)
+
+    def test_network_and_user_validation_still_applies(self):
+        for key, value in (('ib_state', 'DOWN'), ('uid', -1)):
+            with self.subTest(key=key):
+                sample = self.sample()
+                sample[key] = value
+                with self.assertRaisesRegex(ValueError, 'Actual host user/interface/RoCE GID'):
+                    self.node.validate_start_sample(self.config['nodes'][0], sample)
+
+    def test_display_settings_still_required(self):
+        sample = self.sample()
+        sample['display']['fbdev'] = 'Y'
+        with self.assertRaisesRegex(ValueError, 'modeset=1 fbdev=0'):
+            self.node.validate_start_sample(self.config['nodes'][0], sample)
+
+
 class StartupDiagnostics(unittest.TestCase):
     def test_control_handshake_hint_does_not_claim_nccl_failure(self):
         node = node_module()

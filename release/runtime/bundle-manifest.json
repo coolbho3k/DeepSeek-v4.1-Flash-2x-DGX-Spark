@@ -2202,8 +2202,8 @@
       "sha256": "e3145599f8204c86ecd59b3f311fd93dff4a78f98ab43cf125b603bbaddcb039"
     },
     "tools/portable_node.py": {
-      "bytes": 48018,
-      "sha256": "83337dfdffc1535084da8e170b2f3d491b462a744e2706372f9ac8a2554206da"
+      "bytes": 48274,
+      "sha256": "90c73d035da7750a13bac842bbdde179b69d5d8aa16c4882b2f3c1157bddf14f"
     },
     "tools/portable_pair.py": {
       "bytes": 12514,
