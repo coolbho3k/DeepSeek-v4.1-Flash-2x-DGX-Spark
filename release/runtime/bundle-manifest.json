@@ -2182,8 +2182,8 @@
       "sha256": "2c543060034df1800dec078687a610690272034b57c664a301c01a438a9ae406"
     },
     "tools/display_driver.py": {
-      "bytes": 1609,
-      "sha256": "0e2247794552df8af4fab9cf49d99c20721a6eaa647033221aef8e6c1c012ec0"
+      "bytes": 1898,
+      "sha256": "5712d94f923bc44467da7ef17097b7f610153597d82236c5fce57009297baf16"
     },
     "tools/engram_assets.py": {
       "bytes": 11034,
@@ -2202,8 +2202,8 @@
       "sha256": "e3145599f8204c86ecd59b3f311fd93dff4a78f98ab43cf125b603bbaddcb039"
     },
     "tools/portable_node.py": {
-      "bytes": 47912,
-      "sha256": "837bda0edee294f3865f7447993b36284bf690cb9eaa3d04a2644886fdd1a906"
+      "bytes": 48018,
+      "sha256": "83337dfdffc1535084da8e170b2f3d491b462a744e2706372f9ac8a2554206da"
     },
     "tools/portable_pair.py": {
       "bytes": 12514,

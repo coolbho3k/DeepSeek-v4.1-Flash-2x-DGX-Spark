@@ -8,15 +8,19 @@ ownership-checked startup hints without copying raw prompt/log contents into
 the controller journal. The one-hour readiness deadline, memory margins,
 container ownership checks, weights, serving kernels and GHCR image are unchanged.
 
-Loaded-driver checks require `580.173.02` on both hosts before downloads or a
-`--restart` stop, and again in node preflight/start. The `595.84` failure is
-reporter-provided A/B evidence, not a local reproduction. The control-IP omission
+Loaded-driver checks require kernel/NVML agreement on each host, not a specific
+version. `595.84` and mixed-driver pairs are allowed; versions without local
+evidence warn rather than fail. The `595.84` failure is reporter-provided A/B
+evidence, not a local reproduction. The control-IP omission
 is reproduced in CPU tests; its relationship to the reporter's full startup
 hang still needs confirmation on their machines.
 
-Validation is CPU-only regression/packaging testing and read-only loaded-driver
-inspection. No GPU boot, driver update, new KV allocation or live-server restart
-is part of this change. Frozen existing deployments keep their original helper
+The earlier startup fixes had CPU-only regression/packaging validation. A later
+local mixed580.173.02/595.84 canary on kernel6.17.0-1029-nvidia passed full
+display-KV registration, graph capture and two short generation checks. See
+[driver compatibility](display-memory.md#driver-compatibility) for scope and
+limitations. Removing the version allowlist needs no server restart, driver
+change, new weights or GHCR rebuild. Frozen deployments keep their original helper
 code; the new source-manifest pin applies to newly prepared public deployments,
 not to an explicitly reused older `EXISTING_DEPLOYMENT` kit.
 

@@ -151,7 +151,7 @@ def host_info(worker, card):
 
 
 def check_display_drivers(settings):
-    """Fail before downloads or --restart stop; inspect both running drivers."""
+    """Check kernel/NVML agreement before downloads or --restart, not versions."""
     path = ROOT/'release/runtime/tools/display_driver.py'
     policy = module(path, 'public_display_driver')
     for index, host in enumerate((None, settings['worker'])):
@@ -161,10 +161,10 @@ def check_display_drivers(settings):
                               input=path.read_bytes(), timeout=30)
         except (OSError, ValueError, subprocess.SubprocessError) as error:
             raise ValueError(f'{label}: cannot inspect the loaded NVIDIA driver '
-                             f'({type(error).__name__}); display-KV requires '
-                             f'{policy.QUALIFIED_DRIVER}. Existing server was not touched.') from error
+                             f'({type(error).__name__}); cannot verify kernel/NVML agreement. '
+                             'Existing server was not touched.') from error
         policy.validate(sample, label)
-        print(f'{label}: loaded NVIDIA driver {sample["loaded"]} qualified for display-KV', flush=True)
+        print(f'{label}: loaded NVIDIA driver {sample["loaded"]} (kernel/NVML agree)', flush=True)
 
 
 def prepare_existing(settings):

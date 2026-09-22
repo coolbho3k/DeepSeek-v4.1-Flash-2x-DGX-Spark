@@ -477,8 +477,9 @@ def startup_log_summary(text):
     """Return fixed hints only, never prompt text or arbitrary log contents."""
     if 'register display IO:' in text and 'CUDA_ERROR_INVALID_VALUE' in text:
         return dict(last_observed_stage='display_io_registration_failed', hint=
-            'CUDA rejected registration of the DRM mapping. Check the loaded driver '
-            'against qualified 580.173.02; see docs/display-memory.md. '
+            'CUDA rejected registration of the DRM mapping. Check modeset=1 fbdev=0, '
+            'the selected DRM card, and the kernel/driver/firmware combination; '
+            'a driver version alone does not establish the cause. See docs/display-memory.md. '
             'Do not increase GPU utilization to address this error.')
     if any(marker in text for marker in ('Starting to load model',
             'Loading safetensors checkpoint shards', 'Model loading took')):

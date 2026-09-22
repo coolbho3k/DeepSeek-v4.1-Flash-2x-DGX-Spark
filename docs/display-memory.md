@@ -24,12 +24,14 @@ take another 1.75 GiB from ordinary RAM or reduce image support.
 
 ## Driver compatibility
 
-The launcher requires **loaded NVIDIA driver `580.173.02` on both hosts**.
+The launcher has **no driver-version allowlist**. It allows `595.84` and newer
+versions; versions without local serving evidence produce a warning, not a
+version-based rejection. The two hosts need not use identical driver versions.
 `doctor`, `prepare`, and `start` check `/sys/module/nvidia/version` against
 `nvidia-smi` before downloads or stopping an existing pair for `--restart`.
-Node preflight and start check again. These are read-only version checks, not
-a CUDA allocation probe or proof that every firmware/kernel combination works.
-Other versions are unqualified, not necessarily incompatible.
+Node preflight and start check again. Missing observations or a kernel/NVML
+mismatch on a host still fail. These are read-only consistency checks, not a
+CUDA allocation probe or proof that every firmware/kernel combination works.
 
 ```bash
 cat /sys/module/nvidia/version
@@ -44,15 +46,24 @@ profile boot successfully on `580.173.02`. The failure is specifically at
 before obtaining a CUDA device pointer. It is not evidence of a quantization
 problem or a request to raise memory utilization.
 
-Our working hypothesis is a compatibility change in the DRM-to-CUDA I/O-memory
-mapping path. The precise driver change is **not established**; we have not
-reproduced the failure locally on `595.84`. CUDA's I/O registration depends on
-the mapping's attributes and physical-page layout, not just free memory.
+On September21,2026 (PDT), an NVIDIA-branded Spark on `595.84` and kernel
+`6.17.0-1029-nvidia` passed the unchanged1.75GiB allocator's GPU pattern and
+CUDA graph checks. A mixed pair with an ASUS GX10 on `580.173.02` then completed
+model loading, display-KV registration on both ranks, graph capture and two
+short generation checks, with a3,313,955-token planned KV pool. Both used the
+same kernel, `modeset=1 fbdev=0`, and unchanged memory limits. This was a local
+existing-assets canary, not a fresh-clone or long-context qualification.
+
+We have **not reproduced the reporter's registration failure**, and its cause
+is not established. These results rule out a blanket claim that595.84 breaks
+this technique everywhere; platform/firmware, kernel and mapping differences
+remain possible. CUDA's I/O registration depends on mapping attributes and
+physical-page layout, not just free memory.
 Keep a supported OS/kernel/driver combination and use your platform's official
 driver installation/recovery procedure while idle. With Secure Boot, ensure
 the chosen modules are signed and trusted. The recipe does not automate driver
 downgrades, edit DKMS policy, or change Secure Boot. A package install without
-loading the matching module does not satisfy this check.
+loading the matching module does not establish kernel/userspace consistency.
 
 ## Required state on both hosts
 

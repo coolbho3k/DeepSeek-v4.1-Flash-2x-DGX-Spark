@@ -33,23 +33,34 @@ class DriverPreflight(unittest.TestCase):
     def policy(self):
         return launch.module(ROOT/'release/runtime/tools/display_driver.py', 'test_display_driver')
 
-    def test_qualified_pair(self):
+    def test_observed_versions_pass_without_warning(self):
         policy = self.policy()
-        sample = dict(loaded='580.173.02', reported=['580.173.02'])
-        self.assertEqual(policy.validate(sample, 'worker'), sample)
+        for version in ('580.173.02', '595.84'):
+            sample = dict(loaded=version, reported=[version])
+            with self.subTest(version=version), contextlib.redirect_stderr(io.StringIO()) as err:
+                self.assertEqual(policy.validate(sample, 'worker'), sample)
+            self.assertEqual(err.getvalue(), '')
 
-    def test_unqualified_or_inconsistent_or_missing_versions_fail(self):
+    def test_other_versions_warn_but_are_not_blocked(self):
+        policy = self.policy()
+        for version in ('580.178.04', '595.91.07', '610.1'):
+            sample = dict(loaded=version, reported=[version])
+            with self.subTest(version=version), contextlib.redirect_stderr(io.StringIO()) as err:
+                self.assertEqual(policy.validate(sample, 'worker'), sample)
+            self.assertIn('continuing', err.getvalue())
+
+    def test_inconsistent_or_missing_versions_fail(self):
         policy = self.policy()
         for sample in (
-            dict(loaded='595.84', reported=['595.84']),
-            dict(loaded='580.178.04', reported=['580.178.04']),
             dict(loaded='580.173.02', reported=['595.84']),
             dict(loaded='', reported=['580.173.02']),
             dict(loaded='580.173.02', reported=[]),
             dict(loaded='580.173.02', reported=['580.173.02', '595.84']),
+            dict(loaded='not-a-version', reported=['not-a-version']),
+            dict(loaded=['595.84'], reported=[['595.84']]),
             {}, None,
         ):
-            with self.subTest(sample=sample), self.assertRaisesRegex(ValueError, '580.173.02'):
+            with self.subTest(sample=sample), self.assertRaisesRegex(ValueError, 'mismatch or incomplete'):
                 policy.validate(sample, 'worker')
 
     def test_observation_is_read_only_and_no_cuda(self):
@@ -74,10 +85,22 @@ class DriverPreflight(unittest.TestCase):
 
     def test_peer_failure_identifies_peer(self):
         good = dict(loaded='580.173.02', reported=['580.173.02'])
-        bad = dict(loaded='595.84', reported=['595.84'])
+        bad = dict(loaded='595.84', reported=['580.173.02'])
         with patch.object(launch, 'json_run', side_effect=[good, bad]), \
                 contextlib.redirect_stdout(io.StringIO()), \
                 self.assertRaisesRegex(ValueError, 'worker.*595.84'):
+            launch.check_display_drivers(settings())
+
+    def test_mixed_driver_pair_allowed(self):
+        samples = [dict(loaded=v, reported=[v]) for v in ('580.173.02', '595.84')]
+        with patch.object(launch, 'json_run', side_effect=samples), \
+                contextlib.redirect_stdout(io.StringIO()) as out:
+            launch.check_display_drivers(settings())
+        self.assertIn('595.84 (kernel/NVML agree)', out.getvalue())
+
+    def test_observation_failure_is_actionable(self):
+        with patch.object(launch, 'json_run', side_effect=OSError('unavailable')), \
+                self.assertRaisesRegex(ValueError, 'cannot verify kernel/NVML agreement'):
             launch.check_display_drivers(settings())
 
     def test_restart_checks_before_stopping_or_preparing(self):
@@ -96,11 +119,28 @@ class DriverPreflight(unittest.TestCase):
         stop.assert_not_called()
         prepare.assert_not_called()
 
-    def test_node_rechecks_before_memory_or_asset_validation(self):
+    def test_node_rechecks_consistency_before_memory_or_asset_validation(self):
         node = node_module()
-        with self.assertRaisesRegex(ValueError, '580.173.02'):
+        with self.assertRaisesRegex(ValueError, 'mismatch or incomplete'):
             node.validate_start_sample(deployment()['nodes'][0],
-                                       {'driver': dict(loaded='595.84', reported=['595.84'])})
+                                       {'driver': dict(loaded='595.84', reported=['580.173.02'])})
+
+    def test_595_node_still_checks_memory(self):
+        node = node_module()
+        with patch.object(node, '_public_validate_start_sample',
+                          side_effect=ValueError('memory sentinel')) as check:
+            with self.assertRaisesRegex(ValueError, 'memory sentinel'):
+                node.validate_start_sample(deployment()['nodes'][0],
+                    {'driver': dict(loaded='595.84', reported=['595.84'])})
+        check.assert_called_once()
+
+    def test_595_node_still_checks_display_settings(self):
+        node = node_module()
+        with patch.object(node, '_public_validate_start_sample'), \
+                self.assertRaisesRegex(ValueError, 'modeset=1 fbdev=0'):
+            node.validate_start_sample(deployment()['nodes'][0], dict(
+                driver=dict(loaded='595.84', reported=['595.84']),
+                display=dict(modeset='N', fbdev='Y', card_exists=True, card_gid=44)))
 
 
 class StartupDiagnostics(unittest.TestCase):
@@ -117,7 +157,8 @@ class StartupDiagnostics(unittest.TestCase):
         node = node_module()
         row = node.startup_log_summary('private request text\nregister display IO: CUDA_ERROR_INVALID_VALUE (1)')
         self.assertEqual(row['last_observed_stage'], 'display_io_registration_failed')
-        self.assertIn('580.173.02', row['hint'])
+        self.assertIn('kernel/driver/firmware', row['hint'])
+        self.assertNotIn('qualified 580.173.02', row['hint'])
         self.assertNotIn('private request text', json.dumps(row))
 
     def test_loading_marker_prevents_misleading_early_handshake_hint(self):
