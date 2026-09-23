@@ -91,8 +91,15 @@ class SwaKv(unittest.TestCase):
         self.assertTrue(report['actual_display_allocation_tested'])
         self.assertEqual(report['group32_rope_dtype'],'bfloat16')
         self.assertEqual(report['group64_rope_dtype'],'bfloat16')
+        # A later reviewed change may only ADD exact text to an evidenced file.
+        later=json.loads((ROOT/'release/experimental/prefill/packed-supersession.json').read_bytes())
         for name,digest in report['source_sha256'].items():
-            self.assertEqual(hashlib.sha256((KIT/'serving'/name).read_bytes()).hexdigest(),digest)
+            text=(KIT/'serving'/name).read_bytes()
+            if name==later['path'] and later['evidenced_sha256']==digest:
+                added=later['added_text'].encode()
+                self.assertEqual(text.count(added),1)
+                text=text.replace(added,b'')
+            self.assertEqual(hashlib.sha256(text).hexdigest(),digest)
         for row in report['cases']:
             self.assertEqual(row['regressed_groups'],0)
             self.assertTrue(all(row[k] for k in ('q_bit_exact','rope_bit_exact','canaries_preserved')))

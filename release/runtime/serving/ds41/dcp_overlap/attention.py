@@ -19,7 +19,7 @@ import triton.language as tl
 from triton.language.extra.cuda import libdevice
 
 from .policy import head_schedule
-from .packed import attention as packed_attention, merge as packed_merge
+from .packed import attention as packed_attention, merge as packed_merge, to_wire
 
 _deferred_errors = ContextVar('ds41_overlap_deferred_errors', default=None)
 
@@ -146,20 +146,25 @@ def _merge(Local0, Lse0, Local1, Lse1, Peers, Output,
            L1T: tl.constexpr, L1H: tl.constexpr,
            DT: tl.constexpr, DH: tl.constexpr, DC: tl.constexpr,
            ROWS: tl.constexpr, RANK: tl.constexpr, SPLIT_OWN: tl.constexpr,
-           HEAD_MAJOR: tl.constexpr, LOG_BASE: tl.constexpr):
+           HEAD_MAJOR: tl.constexpr, LOG_BASE: tl.constexpr,
+           WIRE_BF16: tl.constexpr, PeerWords):
     row = tl.program_id(0)
     token, head = row // 32, row % 32
     col = tl.arange(0, 512)
-    remote = ((1 - RANK) * ROWS * 32 + row) * 513
+    record = (1 - RANK) * ROWS * 32 + row
     if HEAD_MAJOR:
-        remote = ((1 - RANK) * 32 * ROWS + head * ROWS + token) * 513
+        record = (1 - RANK) * 32 * ROWS + head * ROWS + token
+    remote = record * (514 if WIRE_BF16 else 513)
     if SPLIT_OWN and head >= 16:
         local_lse = tl.load(Lse1 + token * L1T + (head - 16) * L1H).to(tl.float32) * LOG_BASE
         own = tl.load(Local1 + token * O1T + (head - 16) * O1H + col * O1C).to(tl.float32)
     else:
         local_lse = tl.load(Lse0 + token * L0T + head * L0H).to(tl.float32) * LOG_BASE
         own = tl.load(Local0 + token * O0T + head * O0H + col * O0C).to(tl.float32)
-    peer_lse = tl.load(Peers + remote + 512).to(tl.float32) * LOG_BASE
+    if WIRE_BF16:
+        peer_lse = tl.load(PeerWords + record * 257 + 256).to(tl.float32, bitcast=True) * LOG_BASE
+    else:
+        peer_lse = tl.load(Peers + remote + 512).to(tl.float32) * LOG_BASE
     if RANK == 0:
         a, b = local_lse, peer_lse
     else:
@@ -194,14 +199,17 @@ class PendingMerge:
         rows = len(a)
         if (tuple(self.destination.shape) != (rows, 32, 512)
                 or self.destination.dtype != torch.bfloat16
-                or peers.shape != (2, rows, 32, 513)
-                or peers.dtype != torch.float32 or not peers.is_contiguous()
+                or (peers.shape, peers.dtype) not in (((2, rows, 32, 513), torch.float32),
+                                                      ((2, rows, 32, 514), torch.bfloat16))
+                or not peers.is_contiguous()
                 or any(t.device != a.device for t in (al, b, bl, peers, self.destination))):
             raise ValueError('Changed DCP local/remote merge contract')
         _merge[(rows * 32,)](a, al, b, bl, peers, self.destination,
             *a.stride(), *al.stride(), *b.stride(), *bl.stride(),
             *self.destination.stride(), rows, self.rank, len(self.locals) == 2,
-            self.head_major, math.log(2.), num_warps=4, enable_fp_fusion=False)
+            self.head_major, math.log(2.), peers.dtype == torch.bfloat16,
+            peers.view(torch.int32) if peers.dtype == torch.bfloat16 else peers,
+            num_warps=4, enable_fp_fusion=False)
 
 
 def step(transfer, query, swa, indices, lengths, sinks, scale, extra,
@@ -223,12 +231,15 @@ def step(transfer, query, swa, indices, lengths, sinks, scale, extra,
         split_k = 8 if len(query) <= 2 else 2 if len(query) <= 8 else 1
         remote = allocate_outputs(query, split_k)
         payload, head_major = pack_result(*remote)
+        # Experimental: exchange the peer's partials as BF16 plus exact FP32 LSE.
+        wire = torch.empty((*payload.shape[:2], 514), device=payload.device, dtype=torch.bfloat16)
         def produce():
             attention(transfer.destination[1 - rank], swa, indices, lengths,
                 sinks=sinks[(1 - rank) * 32:(2 - rank) * 32], scale=scale,
                 _outputs=remote, **extra)
+            to_wire[(payload.shape[0] * 32,)](payload, wire, wire.view(torch.int32), num_warps=4)
         with joined_errors():
-            result = transport.remote_result(transfer, payload, produce)
+            result = transport.remote_result(transfer, wire, produce)
             own = attention(query, swa, indices, lengths,
                 sinks=sinks[rank * 32:(rank + 1) * 32], scale=scale, **extra)
             PendingMerge(result, (own,), destination, rank, head_major).finish()

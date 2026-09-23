@@ -51,6 +51,18 @@ def attention(query,swa,si,sl,main,ci,cl,sinks,output,normalizers,error,
 
 
 @tr.jit
+def to_wire(source, values, words):
+    # Experimental BF16 exchange: round the 512 partial values to BF16 (RNE)
+    # and carry the FP32 LSE bit-exactly in the record's last two BF16 slots.
+    record = tl.program_id(0)
+    channel = tl.arange(0, 512)
+    value = tl.load(source + record * 513 + channel)
+    tl.store(values + record * 514 + channel, value.to(tl.bfloat16))
+    lse = tl.load(source + record * 513 + 512)
+    tl.store(words + record * 257 + 256, lse.to(tl.int32, bitcast=True))
+
+
+@tr.jit
 def merge(partial, local_lse, output, normalizers, SPLITS: tl.constexpr):
     row, tile = tl.program_id(0), tl.program_id(1)
     d = tile * 128 + tl.arange(0, 128)

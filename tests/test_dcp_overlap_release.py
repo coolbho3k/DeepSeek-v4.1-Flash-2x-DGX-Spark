@@ -8,13 +8,14 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 KIT = ROOT / 'release/runtime'
+# attention/packed/transport include the BF16 result exchange (prefill campaign).
 EXPECTED = {
     '__init__': '60cd06da8801cf7403d06e37398b92409f2bab7c9dea47744ba56df72b83599d',
-    'attention': '9d186d63cc310c4e3a4fb81448e0bc7b862a2e87d22f69af265ae310a065e466',
+    'attention': 'e00f7bbc66497fdea9f238a5280760491b4c103bc9640581320edc0b4be8fa94',
     'integration': '2b40d6f1c2bcfc204b006c97d5b737c816f34ea1e80954253b5b22c3160e58cb',
-    'packed': '3eea248ad2d711bb35712c379cc72588d11a5b956bdd2aabb98c7b1bd7fff04a',
+    'packed': '319aa5aa7743622b1d6e948d72fac06493a0b7604e177f4efaf106055698b094',
     'policy': '74d7e3f8527f9079110f8033dde63ed9b0c2d3b135cb1035e043b259e4f2d806',
-    'transport': '10f1e338b31db54db30959d127f6bfa8964281aa909f579570297b7015217af3',
+    'transport': 'fe5d5141c7f4f4cac936cf9ae24c50ce6d738812131ca9830452288fed4fa97f',
 }
 
 

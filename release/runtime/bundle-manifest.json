@@ -1706,8 +1706,8 @@
       "sha256": "7c467b82c1e1f9022a2683cffc27a387bb155115dbd08781bdc3ddd1806017fb"
     },
     "runtime-requirements.json": {
-      "bytes": 23085,
-      "sha256": "57e65d2021e9ae9bcf12a77619788197a487895be13e8357f0d926a4bc89c64f"
+      "bytes": 23408,
+      "sha256": "d09bc4a7aa36ffbb33bb56063b7ad0dd2163dae4cfa9391773c87143d06a5995"
     },
     "scripts/build_cooperative_moe.py": {
       "bytes": 2599,
@@ -1838,24 +1838,24 @@
       "sha256": "60cd06da8801cf7403d06e37398b92409f2bab7c9dea47744ba56df72b83599d"
     },
     "serving/ds41/dcp_overlap/attention.py": {
-      "bytes": 12205,
-      "sha256": "9d186d63cc310c4e3a4fb81448e0bc7b862a2e87d22f69af265ae310a065e466"
+      "bytes": 12924,
+      "sha256": "e00f7bbc66497fdea9f238a5280760491b4c103bc9640581320edc0b4be8fa94"
     },
     "serving/ds41/dcp_overlap/integration.py": {
       "bytes": 7019,
       "sha256": "2b40d6f1c2bcfc204b006c97d5b737c816f34ea1e80954253b5b22c3160e58cb"
     },
     "serving/ds41/dcp_overlap/packed.py": {
-      "bytes": 3502,
-      "sha256": "3eea248ad2d711bb35712c379cc72588d11a5b956bdd2aabb98c7b1bd7fff04a"
+      "bytes": 4007,
+      "sha256": "319aa5aa7743622b1d6e948d72fac06493a0b7604e177f4efaf106055698b094"
     },
     "serving/ds41/dcp_overlap/policy.py": {
       "bytes": 1701,
       "sha256": "74d7e3f8527f9079110f8033dde63ed9b0c2d3b135cb1035e043b259e4f2d806"
     },
     "serving/ds41/dcp_overlap/transport.py": {
-      "bytes": 9980,
-      "sha256": "10f1e338b31db54db30959d127f6bfa8964281aa909f579570297b7015217af3"
+      "bytes": 10086,
+      "sha256": "fe5d5141c7f4f4cac936cf9ae24c50ce6d738812131ca9830452288fed4fa97f"
     },
     "serving/ds41/dcp_sparse_slots.py": {
       "bytes": 4500,
@@ -2087,7 +2087,7 @@
     },
     "serving/overlay-manifest.json": {
       "bytes": 11084,
-      "sha256": "424099dab7228735a23f3f25ceb1a2ff76f60d679b349843ce0b06cc72e26959"
+      "sha256": "f43f043f1e4e52cd71276b033f96ecdf7043675045afe8fe0630632cf3f28eeb"
     },
     "serving/row_store_core.cpp": {
       "bytes": 18571,
@@ -2115,7 +2115,7 @@
     },
     "serving/spark_backend_attestation.py": {
       "bytes": 31187,
-      "sha256": "81de5885b473c76f2f8168e2801e9598ec1e5c01b059257a073ca23e6a99ff2f"
+      "sha256": "795fdde61df9378fff62f7c1fe3ce3b5c6bbacc0a5bd220a40605502085d3008"
     },
     "serving/spark_combined_miaai.py": {
       "bytes": 26406,

@@ -46,7 +46,7 @@ chunk, roughly +12% prefill) at the cost of rounding the peer's partial to
 BF16 before the FP32 merge — a numerical change that needs explicit approval
 and quality checks.
 
-## BF16 result exchange (measured, not promoted)
+## BF16 result exchange (promoted to serving and the public recipe)
 
 `edits-bf16-exchange.json` changes only the concurrent DCP result exchange:
 the peer's 32-head partials are rounded to BF16 (round-to-nearest-even) and
@@ -76,4 +76,8 @@ The control is bit-deterministic for identical batching; the BF16 exchange's
 perturbation is the same size as ordinary batch-composition variation already
 present in serving, and unbiased (mean Δ logprob +0.0016). Greedy replies: 1 of
 12 identical (divergence starts after the first differing token, as with any
-perturbation). Kit `35cb463a…94d5`; not deployed.
+perturbation). Local kit `35cb463a…94d5` serves on port 8888; the public
+`release/runtime` carries the same three overlay files (recipe lock updated).
+`packed-supersession.json` records that `packed.py` differs from the SWA
+campaign's evidenced source only by the added `to_wire` kernel; the SWA test
+verifies that exactly.

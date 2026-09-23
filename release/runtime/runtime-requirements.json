@@ -136,7 +136,7 @@
   "loaded_backend_verification": {
     "format": "ds41_loaded_combined_miaai_v9",
     "inspector": "serving/spark_backend_attestation.py",
-    "sha256": "81de5885b473c76f2f8168e2801e9598ec1e5c01b059257a073ca23e6a99ff2f"
+    "sha256": "795fdde61df9378fff62f7c1fe3ce3b5c6bbacc0a5bd220a40605502085d3008"
   },
   "model_fusion": {
     "additional_persistent_gpu_bytes": 0,
@@ -454,6 +454,16 @@
     "minimum_aggregate_tokens": 3145728,
     "ordinary_kv_cap_mib": 0,
     "prefill_reclaim_interval_steps": 16
+  },
+  "source_edits": {
+    "dcp_bf16_result_exchange": {
+      "edits_sha256": "8bae9b333a4b355e1ead4e157091076ae2076d7000af438c2b69fab1fd032800",
+      "files": [
+        "serving/ds41/dcp_overlap/attention.py",
+        "serving/ds41/dcp_overlap/packed.py",
+        "serving/ds41/dcp_overlap/transport.py"
+      ]
+    }
   },
   "swa_kv": {
     "aligned_32_token_page_bytes": 19008,

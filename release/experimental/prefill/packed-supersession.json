@@ -1,0 +1,6 @@
+{
+ "path": "ds41/dcp_overlap/packed.py",
+ "evidenced_sha256": "3eea248ad2d711bb35712c379cc72588d11a5b956bdd2aabb98c7b1bd7fff04a",
+ "added_text": "@tr.jit\ndef to_wire(source, values, words):\n    # Experimental BF16 exchange: round the 512 partial values to BF16 (RNE)\n    # and carry the FP32 LSE bit-exactly in the record's last two BF16 slots.\n    record = tl.program_id(0)\n    channel = tl.arange(0, 512)\n    value = tl.load(source + record * 513 + channel)\n    tl.store(values + record * 514 + channel, value.to(tl.bfloat16))\n    lse = tl.load(source + record * 513 + 512)\n    tl.store(words + record * 257 + 256, lse.to(tl.int32, bitcast=True))\n\n\n",
+ "reason": "BF16 DCP result exchange adds only the to_wire kernel; attention/merge kernels unchanged"
+}

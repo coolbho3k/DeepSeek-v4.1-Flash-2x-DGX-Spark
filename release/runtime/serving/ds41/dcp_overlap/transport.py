@@ -157,8 +157,10 @@ class Transport:
         caller = torch.cuda.current_stream(self.device)
         if (caller.cuda_stream != self.caller_stream or query.transport is not self
                 or query.joined or self.pending != [query] or not callable(produce)
-                or payload.shape != (*query.source.shape[:2], CHANNELS + 1)
-                or payload.dtype != torch.float32 or payload.device != self.device
+                or (payload.shape, payload.dtype) not in (
+                    ((*query.source.shape[:2], CHANNELS + 1), torch.float32),
+                    ((*query.source.shape[:2], CHANNELS + 2), torch.bfloat16))
+                or payload.device != self.device
                 or not payload.is_contiguous() or payload.requires_grad):
             raise ValueError('Invalid concurrent DCP fork')
         destination = torch.empty((2, *payload.shape), device=self.device, dtype=payload.dtype)
