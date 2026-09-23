@@ -1706,8 +1706,8 @@
       "sha256": "7c467b82c1e1f9022a2683cffc27a387bb155115dbd08781bdc3ddd1806017fb"
     },
     "runtime-requirements.json": {
-      "bytes": 22122,
-      "sha256": "99daa9297c5bb1091808ebf4a46f43b9a44bdedeafe3f0d7738834de03df04bd"
+      "bytes": 22556,
+      "sha256": "ca6ddeb7a6d25fc519b2822b4635b034453f9cd4f989421a7b6312be66833c78"
     },
     "scripts/build_cooperative_moe.py": {
       "bytes": 2599,
@@ -1762,8 +1762,8 @@
       "sha256": "87184d112fb8c1b592d5fa25fc25702bb112ea6c87f15b5e9f85f8e52755275a"
     },
     "serving/conservative.yaml": {
-      "bytes": 1281,
-      "sha256": "3b1baf3d1c5ba75858f7bcf355e05280fbb9e12e7acc654deea9e959c3ff4fa3"
+      "bytes": 1321,
+      "sha256": "3bb8185cf669c13f6ffd174f9593e1c58a05fd8ed253143e94f1ee3e4db91332"
     },
     "serving/cooperative-native.json": {
       "bytes": 1178,
@@ -1926,8 +1926,8 @@
       "sha256": "7aa2124c6adf257695416a557c6d3ab2cf751e0c2e09ed7b914c145dc3598deb"
     },
     "serving/ds41/launch_profile.py": {
-      "bytes": 2633,
-      "sha256": "eb4ecc045b2738ff1c3d9efb4c50ecc1bbd8dc4c15c2e1400b631705972b5b88"
+      "bytes": 2630,
+      "sha256": "c9b4828012fdf91f744dec788d036cb630688b9f3e863767745a47fc460342f1"
     },
     "serving/ds41/length_aware_topk.py": {
       "bytes": 3497,
@@ -2087,7 +2087,7 @@
     },
     "serving/overlay-manifest.json": {
       "bytes": 11084,
-      "sha256": "2e56dd58e0995ce9d63113d16abfe112577c567ba71a31fc902c3eb7631aa6eb"
+      "sha256": "337a652ea47da4b953128342de0c0c61aebf8230445c412f35767f872bc5862e"
     },
     "serving/row_store_core.cpp": {
       "bytes": 18571,
@@ -2115,7 +2115,7 @@
     },
     "serving/spark_backend_attestation.py": {
       "bytes": 31187,
-      "sha256": "0da020de33164232d3384571b7e6aa472cc9eaad6d2c4b4788610d572c3459b9"
+      "sha256": "3db175d3ea173c524f1e30a9ebf8efcaf5a4a51f75035d67725bb79200d3c659"
     },
     "serving/spark_combined_miaai.py": {
       "bytes": 26406,
@@ -2250,12 +2250,12 @@
       "sha256": "052bba3801bdd25aebd5e597e6636cc05e6d88c40875ea95e5ff31c0804fdb48"
     },
     "tools/launch_profile.py": {
-      "bytes": 2633,
-      "sha256": "eb4ecc045b2738ff1c3d9efb4c50ecc1bbd8dc4c15c2e1400b631705972b5b88"
+      "bytes": 2630,
+      "sha256": "c9b4828012fdf91f744dec788d036cb630688b9f3e863767745a47fc460342f1"
     },
     "tools/portable_node.py": {
-      "bytes": 48316,
-      "sha256": "d3dc7701481d81f33d946b0af092e14e08900290a52adebe1efa271193e7ebba"
+      "bytes": 48356,
+      "sha256": "ffbe77699e72e826058c97f506983f65a38f1a9c8b314628b746fae2e1a1c37e"
     },
     "tools/portable_pair.py": {
       "bytes": 12514,
@@ -3515,7 +3515,7 @@
     }
   },
   "format": "ds41_runtime_inputs_v5",
-  "parent_manifest_sha256": "4a15576d7ccb238c9473977c1791cc612f180c5e01eb905687ea93aaad1075cc",
+  "parent_manifest_sha256": "43a6f042769809d7b7b2208b8c889542351d9d2d40e2ff8fc3846bda2fe03fe4",
   "public_fresh_clone_gpu_qualified": false,
   "publication_approved": false,
   "serving_qualified": false,

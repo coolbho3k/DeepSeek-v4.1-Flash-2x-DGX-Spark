@@ -416,6 +416,12 @@ slots, 1,048,576-token context limit, 2048-token prefill batches/threshold and
 `ALLOW_STARTUP_MEMORY_SHORTFALL=1`. The default API listens on the head's LAN
 port **8888**. Keep both hosts otherwise idle; the memory margin is small.
 
+Fixed K3 now uses **probabilistic draft sampling** by default. The selected
+shared-row projection and fused prefill gather are also enabled, alongside
+four-over-six NVFP4 main KV and group-32 FP8 sliding KV with BF16 RoPE. See
+[fusion measurements](release/experimental/model_fusion/RESULTS.md) and
+[sampling measurements and limits](release/experimental/draft_sampling/RESULTS.md).
+
 **Choose storage before downloading.** By default, the head uses this checkout's
 `.assets/`, and the worker uses its SSH user's `~/.cache/ds41/`. If you want a
 different disk, set dedicated, absolute paths in `.env.ds41`, for example:

@@ -60,6 +60,19 @@ class Configuration(unittest.TestCase):
         self.assertEqual(s['serving']['kv_cap_mib'],0)
         self.assertEqual(s['serving']['prefix_cache_retention_interval'],4096)
         self.assertEqual(s['api']['port'],8888)
+        node=node_module()
+        from launch_profile import from_environment
+        with patch.dict(os.environ,{},clear=True):
+            self.assertEqual(from_environment(),s['serving'])
+        worker=ROOT/'release/runtime/serving/ds41/launch_profile.py'
+        self.assertEqual(worker.read_bytes(),(ROOT/'release/runtime/tools/launch_profile.py').read_bytes())
+        lines=(ROOT/'release/runtime/serving/conservative.yaml').read_text().splitlines()
+        yaml_profile=dict((k.strip(),v.strip()) for k,v in
+            (line.split(':',1) for line in lines if line.strip() and not line.lstrip().startswith('#')))
+        self.assertEqual(node.PROFILE,yaml_profile)
+        for key in ('max_num_seqs','max_num_batched_tokens','long_prefill_token_threshold'):
+            self.assertEqual(int(node.PROFILE[key.replace('_','-')]),s['serving'][key])
+        self.assertEqual(json.loads(node.PROFILE['speculative-config'])['draft_sample_method'],'probabilistic')
     def test_no_personal_defaults(self):
         with self.assertRaisesRegex(ValueError,'set:'):config.load(ROOT,environ={})
     def test_prefix_retention_validation_matches_workers(self):

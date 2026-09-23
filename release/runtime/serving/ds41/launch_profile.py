@@ -4,8 +4,8 @@ import math
 import os
 
 DEFAULTS = dict(gpu_memory_utilization=.92, max_model_len=1048576,
-    max_num_seqs=2, max_num_batched_tokens=3072, long_prefill_token_threshold=2816,
-    kv_cap_mib=1536, prefix_cache_retention_interval=4096, fp4_kv_mode='nvfp4_4over6', swa_kv_group_size=32)
+    max_num_seqs=6, max_num_batched_tokens=2048, long_prefill_token_threshold=2048,
+    kv_cap_mib=0, prefix_cache_retention_interval=4096, fp4_kv_mode='nvfp4_4over6', swa_kv_group_size=32)
 ENV = {key:'DS41_'+key.upper() for key in DEFAULTS}
 
 def validate(values):

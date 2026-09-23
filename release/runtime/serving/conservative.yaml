@@ -3,9 +3,9 @@ tensor-parallel-size: 2
 decode-context-parallel-size: 2
 gpu-memory-utilization: 0.92
 max-model-len: 1048576
-max-num-seqs: 2
-max-num-batched-tokens: 3072
-long-prefill-token-threshold: 2816
+max-num-seqs: 6
+max-num-batched-tokens: 2048
+long-prefill-token-threshold: 2048
 enable-chunked-prefill: true
 disable-chunked-mm-input: true
 enforce-eager: false
@@ -13,5 +13,5 @@ load-format: safetensors
 safetensors-load-strategy: lazy
 kv-cache-dtype: fp8_ds_mla
 compilation-config: {"mode": 0, "cudagraph_mode": "FULL_DECODE_ONLY", "cudagraph_capture_sizes": [1, 2, 3, 4, 6, 8, 9, 12, 15, 16, 18, 20, 24], "max_cudagraph_capture_size": 24}
-speculative-config: {"method": "dspark", "model": "/model/draft", "num_speculative_tokens": 3, "quantization": "fp8", "enforce_eager": false, "enable_adaptive_verification": false}
+speculative-config: {"method": "dspark", "model": "/model/draft", "num_speculative_tokens": 3, "quantization": "fp8", "enforce_eager": false, "enable_adaptive_verification": false, "draft_sample_method": "probabilistic"}
 profiler-config: {"profiler": "torch", "torch_profiler_dir": "/cache/ds41-native-profile-v51", "torch_profiler_with_stack": false, "torch_profiler_record_shapes": false, "torch_profiler_with_memory": false, "torch_profiler_with_flops": false, "torch_profiler_use_gzip": true, "torch_profiler_dump_cuda_time_total": true, "capture_torch_profiler": false, "detailed_trace_annotation": false, "ignore_frontend": true, "delay_iterations": 2, "max_iterations": 1, "warmup_iterations": 0}

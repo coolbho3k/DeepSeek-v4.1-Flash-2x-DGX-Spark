@@ -33,6 +33,18 @@
     "tested_candidate_manifest_sha256": "2874a3d7c1c88a05cfc9a659856b5af75c787f974f52ae7c3e696153bbf4391e"
   },
   "dependency_artifact_lock": false,
+  "draft_sampling": {
+    "clean_rebuild_qualified": false,
+    "first_c6_tps_ratio": 0.8817930936736084,
+    "median_serial_tps_ratio": 1.0552503053145892,
+    "method": "probabilistic",
+    "num_speculative_tokens": 3,
+    "rejection_sample_method": "standard",
+    "report": "release/experimental/draft_sampling/RESULTS.md",
+    "temperature_tested": 1.0,
+    "top_p_tested": 0.95,
+    "warm_c6_tps_ratio": 1.0323272544336932
+  },
   "engram_io_candidate": {
     "broad_quality_qualified": false,
     "long_capacity_retested": false,
@@ -109,7 +121,7 @@
   "loaded_backend_verification": {
     "format": "ds41_loaded_combined_miaai_v9",
     "inspector": "serving/spark_backend_attestation.py",
-    "sha256": "0da020de33164232d3384571b7e6aa472cc9eaad6d2c4b4788610d572c3459b9"
+    "sha256": "3db175d3ea173c524f1e30a9ebf8efcaf5a4a51f75035d67725bb79200d3c659"
   },
   "model_fusion": {
     "additional_persistent_gpu_bytes": 0,

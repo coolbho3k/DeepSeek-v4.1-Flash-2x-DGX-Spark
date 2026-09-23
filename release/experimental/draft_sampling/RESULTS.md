@@ -1,8 +1,9 @@
 # Temperature-one draft sampling results
 
-Selected for the local server: native probabilistic DSpark drafting, fixed K3,
-standard rejection sampling. The public runtime default is unchanged; this is
-an explicitly prepared local candidate, reproducible with `prepare.py`.
+Selected as the serving default: native probabilistic DSpark drafting, fixed
+K3, standard rejection sampling. Both the public launch profile and the local
+server select this mode. `prepare.py` reproduces the candidate from a verified
+greedy-draft parent.
 
 The installed API default temperature is 1.0. Both sides use top-p 0.95, seed
 41, the same prompts, weights, KV formats and limits. Per user instruction,
