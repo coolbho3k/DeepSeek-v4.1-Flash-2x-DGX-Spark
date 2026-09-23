@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # Uses the MiaAI-derived grouped kernels; source and notices are retained in
 # vendor/miaai-dsv41-agpl and the additive grouped-prefill build artifact.
-"""Device-only thin/fat routing; no startup registration or serving activation."""
+"""Device-only thin/fat routing with fused, batch-bounded gate/up gathers."""
 import hashlib
 import importlib.util
 import os
@@ -83,6 +83,8 @@ class GroupedDispatcher(AsyncSmallDispatcher):
     def __init__(self,thin_module,fat_module):
         super().__init__(thin_module)
         self.fat_module=fat_module
+        from ds41.dual_gather import load
+        load()
         self.fat_workspace=None
         self.last_plan=None
 
@@ -140,8 +142,9 @@ class GroupedDispatcher(AsyncSmallDispatcher):
                 self.module.forward(inputs,out,thin_counts,tokens,sorted_weights,
                     bank.ptrs,work.temps,work.locks)
                 p=bank.ptrs;m=self.fat_module
-                m.gather(inputs,fat.tokens,fat.experts,p[1],fat.h13g,fat_rows)
-                m.gather(inputs,fat.tokens,fat.experts,p[4],fat.h13u,fat_rows)
+                from ds41.dual_gather import forward as dual_gather
+                dual_gather(inputs,fat.tokens,fat.experts,p[1],p[4],
+                    fat.h13g,fat.h13u,fat_rows,ids.numel(),stream)
                 m.gateup(fat.h13g,fat.h13u,p[0],p[3],p[2],p[5],p[7],fat.h2,fat.weights,
                     fat.seg_experts,fat.seg_rows,fat.seg_lengths,num_segs,10.,3,2)
                 m.down(fat.h2,p[6],p[8],out,fat.tokens,fat.weights,

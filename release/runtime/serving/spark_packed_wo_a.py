@@ -3,7 +3,7 @@
 Keep wo_a's original compact weights. Decode a tile to BF16 inside the
 kernel and accumulate in FP32, rounding once at the output. Inverse RoPE
 remains the native *unquantized* operation, as in the BF16 emulation path.
-No serving entrypoint enables this experimental module yet.
+The combined serving stack selects shared weight tiles for two through four verification rows; other shapes keep their existing dispatch.
 """
 import functools
 
@@ -105,6 +105,9 @@ def grouped_projection(x, weight, scale, *, algorithm='auto'):
         raise RuntimeError('Packed wo_a graph capture is not qualified')
     if algorithm not in ('auto', 'gemv', 'gemm', 'reconstruct'):
         raise ValueError('Unknown packed wo_a algorithm')
+    if algorithm == 'auto' and 2 <= len(x) <= 4:
+        from ds41.packed_wo_a_rows import forward
+        return forward(x, weight, scale, tile_n=16, warps=4)
     m, g, k = x.shape
     n = weight.shape[0] // g
     out = torch.empty((m, g, n), dtype=x.dtype, device=x.device)

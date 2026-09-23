@@ -1,0 +1,77 @@
+{
+  "commit": "979e68a62c90b24d928f5638596e0ceed90e9f34",
+  "compiled": true,
+  "executed": true,
+  "execution_scope": "row_store.cpp only, bounded CPU adapter and real-checkpoint byte/latency tests; no grouped GPU kernel, CUDA callback, or serving registration yet",
+  "files": {
+    "LICENSE": {
+      "git_blob_sha1": "fe6b9036ba1818c79c15f802a586a9711ece2b97",
+      "local_sha256": "8d56b405468aad11f87ab5763f901e276e08d9646ff5c8481b1762b6b789e9ed",
+      "prefix_bytes": 0,
+      "upstream_bytes": 34524,
+      "upstream_sha256": "8d56b405468aad11f87ab5763f901e276e08d9646ff5c8481b1762b6b789e9ed",
+      "url": "https://raw.githubusercontent.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks/979e68a62c90b24d928f5638596e0ceed90e9f34/LICENSE"
+    },
+    "LICENSE.MIT": {
+      "git_blob_sha1": "a2618f57856de4aff4562cc0cdf502d0803b527b",
+      "local_sha256": "d48b01844af2aa68bc3fbea765069b94d70adb0c67dc4a62ca605c067aec9ab3",
+      "prefix_bytes": 0,
+      "upstream_bytes": 1363,
+      "upstream_sha256": "d48b01844af2aa68bc3fbea765069b94d70adb0c67dc4a62ca605c067aec9ab3",
+      "url": "https://raw.githubusercontent.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks/979e68a62c90b24d928f5638596e0ceed90e9f34/LICENSE.MIT"
+    },
+    "overlay/e3v2/exl3_fat_moe.cu": {
+      "git_blob_sha1": "5dc063e13926b3490b5c17a67a680635af773d77",
+      "local_sha256": "5108f1fbf3ba0af259273798dc0eeba99a98d188e0a3cb09440474fb9b43f504",
+      "prefix_bytes": 315,
+      "upstream_bytes": 32035,
+      "upstream_sha256": "749cc161708d34400c665fcece6b595449ac568c49880d653e33417ff7c11529",
+      "url": "https://raw.githubusercontent.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks/979e68a62c90b24d928f5638596e0ceed90e9f34/overlay/e3v2/exl3_fat_moe.cu"
+    },
+    "overlay/e3v2/exl3_fat_moe.cuh": {
+      "git_blob_sha1": "e93c7d1692ddd7cc05b48d7a5cc1e886cc85564e",
+      "local_sha256": "bcb86658a06c010522c1a5e7dcecfddeb7a8a510c0c29e643b77dbafe46f7ac2",
+      "prefix_bytes": 315,
+      "upstream_bytes": 3133,
+      "upstream_sha256": "82e51d0f6a11d2537b5639d33e3a2bcbc2269ec7e7179c84445c323d9c4a9fb6",
+      "url": "https://raw.githubusercontent.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks/979e68a62c90b24d928f5638596e0ceed90e9f34/overlay/e3v2/exl3_fat_moe.cuh"
+    },
+    "overlay/engram_file_backend.py": {
+      "git_blob_sha1": "dd6598ecc8e61e85f1279d1473c40b8b4fa5e80f",
+      "local_sha256": "564c93d5ade957f52d7c87b01eda5031f8fcbe410d55407dc195a355bdbf405d",
+      "prefix_bytes": 347,
+      "upstream_bytes": 17341,
+      "upstream_sha256": "bc1969b6ca9875b3f00ab683fb8b70d4e014ebfbd032a8a505455ec1d99f70b2",
+      "url": "https://raw.githubusercontent.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks/979e68a62c90b24d928f5638596e0ceed90e9f34/overlay/engram_file_backend.py"
+    },
+    "overlay/row_store.cpp": {
+      "git_blob_sha1": "406284ab87176805a8ffdfa08f719e9af51639b2",
+      "local_sha256": "48f3d1a0847275d35ba3d9821121c1ec7f371a8f72b572faf0f68d078487f9d6",
+      "prefix_bytes": 353,
+      "upstream_bytes": 17070,
+      "upstream_sha256": "79c3747f7c4bdf6f5a552dea146620f4d5b9f92f128ee74b820c89d2dab60505",
+      "url": "https://raw.githubusercontent.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks/979e68a62c90b24d928f5638596e0ceed90e9f34/overlay/row_store.cpp"
+    },
+    "tests/test_engram_dequant.py": {
+      "git_blob_sha1": "673ad624e1a67a894106e61fd17ad7ffd614ddec",
+      "local_sha256": "682af5c4e9c7f255c3cdf16a7456840fe6c51493ac553d9fe6a3d0341574c584",
+      "prefix_bytes": 347,
+      "upstream_bytes": 1427,
+      "upstream_sha256": "93dcc09f371870b7a97c2dd018eeb27cd84f9e3396b03a8c5cb9501315e7025e",
+      "url": "https://raw.githubusercontent.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks/979e68a62c90b24d928f5638596e0ceed90e9f34/tests/test_engram_dequant.py"
+    },
+    "tests/test_row_store.py": {
+      "git_blob_sha1": "5a48e6b66b186912a859adfcb5e79ed8c2453b3e",
+      "local_sha256": "eb51d6cd57e40868b7f6c6f4129a9b5ee7e751058249c3c5c79f43e16f1455f0",
+      "prefix_bytes": 347,
+      "upstream_bytes": 2184,
+      "upstream_sha256": "8292f462e4e2c223d50f0c2d27ad7576a4e38fb97cc6f3f4e672e149b39d6d49",
+      "url": "https://raw.githubusercontent.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks/979e68a62c90b24d928f5638596e0ceed90e9f34/tests/test_row_store.py"
+    }
+  },
+  "license": "AGPL-3.0-only",
+  "local_changes": "Explicit AGPLv3/provenance prefixes only; original source bodies unchanged.",
+  "repository": "https://github.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks",
+  "retained_historical_notices": "LICENSE.MIT",
+  "serving_enabled": false
+}
