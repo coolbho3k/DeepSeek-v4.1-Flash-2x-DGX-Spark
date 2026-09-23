@@ -1,0 +1,44 @@
+{
+ "serving/ds41/dcp_overlap/packed.py": [
+  [
+   "@tr.jit\ndef merge(partial, local_lse, output, normalizers, SPLITS: tl.constexpr):",
+   "@tr.jit\ndef to_wire(source, values, words):\n    # Experimental BF16 exchange: round the 512 partial values to BF16 (RNE)\n    # and carry the FP32 LSE bit-exactly in the record's last two BF16 slots.\n    record = tl.program_id(0)\n    channel = tl.arange(0, 512)\n    value = tl.load(source + record * 513 + channel)\n    tl.store(values + record * 514 + channel, value.to(tl.bfloat16))\n    lse = tl.load(source + record * 513 + 512)\n    tl.store(words + record * 257 + 256, lse.to(tl.int32, bitcast=True))\n\n\n@tr.jit\ndef merge(partial, local_lse, output, normalizers, SPLITS: tl.constexpr):"
+  ]
+ ],
+ "serving/ds41/dcp_overlap/transport.py": [
+  [
+   "                or payload.shape != (*query.source.shape[:2], CHANNELS + 1)\n                or payload.dtype != torch.float32 or payload.device != self.device",
+   "                or (payload.shape, payload.dtype) not in (\n                    ((*query.source.shape[:2], CHANNELS + 1), torch.float32),\n                    ((*query.source.shape[:2], CHANNELS + 2), torch.bfloat16))\n                or payload.device != self.device"
+  ]
+ ],
+ "serving/ds41/dcp_overlap/attention.py": [
+  [
+   "from .packed import attention as packed_attention, merge as packed_merge",
+   "from .packed import attention as packed_attention, merge as packed_merge, to_wire"
+  ],
+  [
+   "           ROWS: tl.constexpr, RANK: tl.constexpr, SPLIT_OWN: tl.constexpr,\n           HEAD_MAJOR: tl.constexpr, LOG_BASE: tl.constexpr):",
+   "           ROWS: tl.constexpr, RANK: tl.constexpr, SPLIT_OWN: tl.constexpr,\n           HEAD_MAJOR: tl.constexpr, LOG_BASE: tl.constexpr,\n           WIRE_BF16: tl.constexpr, PeerWords):"
+  ],
+  [
+   "    remote = ((1 - RANK) * ROWS * 32 + row) * 513\n    if HEAD_MAJOR:\n        remote = ((1 - RANK) * 32 * ROWS + head * ROWS + token) * 513",
+   "    record = (1 - RANK) * ROWS * 32 + row\n    if HEAD_MAJOR:\n        record = (1 - RANK) * 32 * ROWS + head * ROWS + token\n    remote = record * (514 if WIRE_BF16 else 513)"
+  ],
+  [
+   "    peer_lse = tl.load(Peers + remote + 512).to(tl.float32) * LOG_BASE",
+   "    if WIRE_BF16:\n        peer_lse = tl.load(PeerWords + record * 257 + 256).to(tl.float32, bitcast=True) * LOG_BASE\n    else:\n        peer_lse = tl.load(Peers + remote + 512).to(tl.float32) * LOG_BASE"
+  ],
+  [
+   "                or peers.shape != (2, rows, 32, 513)\n                or peers.dtype != torch.float32 or not peers.is_contiguous()",
+   "                or (peers.shape, peers.dtype) not in (((2, rows, 32, 513), torch.float32),\n                                                      ((2, rows, 32, 514), torch.bfloat16))\n                or not peers.is_contiguous()"
+  ],
+  [
+   "            *self.destination.stride(), rows, self.rank, len(self.locals) == 2,\n            self.head_major, math.log(2.), num_warps=4, enable_fp_fusion=False)",
+   "            *self.destination.stride(), rows, self.rank, len(self.locals) == 2,\n            self.head_major, math.log(2.), peers.dtype == torch.bfloat16,\n            peers.view(torch.int32) if peers.dtype == torch.bfloat16 else peers,\n            num_warps=4, enable_fp_fusion=False)"
+  ],
+  [
+   "        remote = allocate_outputs(query, split_k)\n        payload, head_major = pack_result(*remote)\n        def produce():\n            attention(transfer.destination[1 - rank], swa, indices, lengths,\n                sinks=sinks[(1 - rank) * 32:(2 - rank) * 32], scale=scale,\n                _outputs=remote, **extra)\n        with joined_errors():\n            result = transport.remote_result(transfer, payload, produce)",
+   "        remote = allocate_outputs(query, split_k)\n        payload, head_major = pack_result(*remote)\n        # Experimental: exchange the peer's partials as BF16 plus exact FP32 LSE.\n        wire = torch.empty((*payload.shape[:2], 514), device=payload.device, dtype=torch.bfloat16)\n        def produce():\n            attention(transfer.destination[1 - rank], swa, indices, lengths,\n                sinks=sinks[(1 - rank) * 32:(2 - rank) * 32], scale=scale,\n                _outputs=remote, **extra)\n            to_wire[(payload.shape[0] * 32,)](payload, wire, wire.view(torch.int32), num_warps=4)\n        with joined_errors():\n            result = transport.remote_result(transfer, wire, produce)"
+  ]
+ ]
+}

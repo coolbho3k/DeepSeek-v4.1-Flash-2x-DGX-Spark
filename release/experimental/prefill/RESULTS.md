@@ -45,3 +45,35 @@ BF16 partials with an exactly preserved FP32 LSE would halve it (≈ −215 ms p
 chunk, roughly +12% prefill) at the cost of rounding the peer's partial to
 BF16 before the FP32 merge — a numerical change that needs explicit approval
 and quality checks.
+
+## BF16 result exchange (measured, not promoted)
+
+`edits-bf16-exchange.json` changes only the concurrent DCP result exchange:
+the peer's 32-head partials are rounded to BF16 (round-to-nearest-even) and
+the FP32 LSE travels bit-exactly in the record's last two BF16 slots (514 per
+record instead of 513 FP32). Local heads and all merge arithmetic stay FP32;
+the query exchange is unchanged. Result bytes per 512-row slab: 33.6 → 16.8 MB.
+
+Prefill (port 8889, retrieval correct, zero prefix hits):
+
+| | 8K tok/s | 32K tok/s |
+|---|---:|---:|
+| Control | 1,165 | 1,119 / 1,154 |
+| BF16 exchange | 1,203 / 1,206 | 1,181 / 1,219 |
+
+≈ +3.5% at 8K and +5.5% at 32K.
+
+Quality (`quality_eval.py`, `compare_quality.py`): six 6,144-token calibration
+documents scored teacher-forced with `prompt_logprobs`, plus 12 greedy replies.
+
+| Comparison | Mean abs Δ logprob | Top-1 agreement | Perplexity change |
+|---|---:|---:|---:|
+| Control fresh restart vs control | 0 | 100% | 0 |
+| Control, 6 documents batched vs serial | 0.038–0.120 | 93.6–98.7% | −0.5…+0.2% |
+| BF16 exchange vs control (serial) | 0.042–0.117 | 93.7–98.6% | −0.9…+0.4% |
+
+The control is bit-deterministic for identical batching; the BF16 exchange's
+perturbation is the same size as ordinary batch-composition variation already
+present in serving, and unbiased (mean Δ logprob +0.0016). Greedy replies: 1 of
+12 identical (divergence starts after the first differing token, as with any
+perturbation). Kit `35cb463a…94d5`; not deployed.
