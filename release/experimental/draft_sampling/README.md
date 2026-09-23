@@ -11,7 +11,10 @@ No new baseline requests are made.
 
 `prepare.py` clones an independently verified runtime, changes the sampling
 selection in both pinned launch-profile copies, and refreshes the affected
-manifests. It does not edit the parent or stop/start any server. Verify and copy
+manifests. Its optional `--rejection-sample-method block` prepares the separate
+[block-verification experiment](../block_verification/README.md) from a
+probabilistic-drafting parent. It does not edit the parent or stop/start any
+server. Verify and copy
 the resulting immutable kit to both nodes before using the model-fusion
 campaign launcher.
 

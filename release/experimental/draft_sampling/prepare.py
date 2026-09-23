@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: AGPL-3.0-only
-"""Clone a verified runtime and change only native draft sampling selection."""
+"""Clone a verified runtime and change only native draft/verification selection."""
 import argparse
 import ast
 import hashlib
@@ -28,6 +28,8 @@ def main():
     p.add_argument('--deployment-sha256', required=True)
     p.add_argument('--output', type=Path, required=True)
     p.add_argument('--receipt', type=Path, required=True)
+    p.add_argument('--rejection-sample-method', choices=('block',),
+        help='Keep probabilistic drafting and switch standard verification to block verification')
     a = p.parse_args()
     raw = a.deployment.read_bytes()
     assert sha(raw) == a.deployment_sha256
@@ -44,8 +46,13 @@ def main():
     profile = ast.literal_eval(node.value)
     old = profile['speculative-config']
     spec = json.loads(old)
-    assert spec.get('draft_sample_method', 'greedy') == 'greedy'
-    spec['draft_sample_method'] = 'probabilistic'
+    if a.rejection_sample_method:
+        assert spec.get('draft_sample_method') == 'probabilistic'
+        assert spec.get('rejection_sample_method', 'standard') == 'standard'
+        spec['rejection_sample_method'] = a.rejection_sample_method
+    else:
+        assert spec.get('draft_sample_method', 'greedy') == 'greedy'
+        spec['draft_sample_method'] = 'probabilistic'
     new = json.dumps(spec)
     assert source.count(repr(old)) == 1
     path.write_text(source.replace(repr(old), repr(new)))
