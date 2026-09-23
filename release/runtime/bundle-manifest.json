@@ -1161,6 +1161,10 @@
       "bytes": 9924,
       "sha256": "aef1f0f12597935938e2acf4bf5d05fe01895b961f88e4ee2c0045530835bfee"
     },
+    "native-source/fastcomm.cu": {
+      "bytes": 12933,
+      "sha256": "54758344ebc3e1c804cd9e525b535d7a176ffb6a888ab5b221cfcc1c855186f4"
+    },
     "native-source/include/activation.cuh": {
       "bytes": 2898,
       "sha256": "ebaa946736dcac0ab4b0f937a6f0af43828ea89c28a9abf2be1067846f6b7e85"
@@ -1706,8 +1710,8 @@
       "sha256": "7c467b82c1e1f9022a2683cffc27a387bb155115dbd08781bdc3ddd1806017fb"
     },
     "runtime-requirements.json": {
-      "bytes": 23408,
-      "sha256": "d09bc4a7aa36ffbb33bb56063b7ad0dd2163dae4cfa9391773c87143d06a5995"
+      "bytes": 23667,
+      "sha256": "670e63139e2ef95d5836dac532958b00d02e57aed7bb423c4ad24b6f8d87ce31"
     },
     "scripts/build_cooperative_moe.py": {
       "bytes": 2599,
@@ -1842,8 +1846,8 @@
       "sha256": "e00f7bbc66497fdea9f238a5280760491b4c103bc9640581320edc0b4be8fa94"
     },
     "serving/ds41/dcp_overlap/integration.py": {
-      "bytes": 7019,
-      "sha256": "2b40d6f1c2bcfc204b006c97d5b737c816f34ea1e80954253b5b22c3160e58cb"
+      "bytes": 7229,
+      "sha256": "f32a51c2965242cfe0febf6726750d8e511dc860beb5e2dab632f7ea5e3eb137"
     },
     "serving/ds41/dcp_overlap/packed.py": {
       "bytes": 4007,
@@ -1854,8 +1858,8 @@
       "sha256": "74d7e3f8527f9079110f8033dde63ed9b0c2d3b135cb1035e043b259e4f2d806"
     },
     "serving/ds41/dcp_overlap/transport.py": {
-      "bytes": 10086,
-      "sha256": "fe5d5141c7f4f4cac936cf9ae24c50ce6d738812131ca9830452288fed4fa97f"
+      "bytes": 10216,
+      "sha256": "ce01cdc9046b9825f5cebbe4a347da13ef0cf6ad4f072d8a960ea608d942b19b"
     },
     "serving/ds41/dcp_sparse_slots.py": {
       "bytes": 4500,
@@ -1908,6 +1912,10 @@
     "serving/ds41/engram_io/policy.py": {
       "bytes": 170,
       "sha256": "7d67cbc6e419e65d5541e0cc3ce1275a05a1865cbf12d556e99179c4bc3e0254"
+    },
+    "serving/ds41/fastcomm.py": {
+      "bytes": 5561,
+      "sha256": "fadefdccc1f5fb08e9145407658b9022648512a86380a3013f2cf793187b066c"
     },
     "serving/ds41/fp4_main_kv.py": {
       "bytes": 9911,
@@ -2073,6 +2081,10 @@
       "bytes": 72440,
       "sha256": "28db58a40c22e8f1506eddbbd3ed5bf74bba5e3f6dd5b112c48408e718e8e443"
     },
+    "serving/libfastcomm.so": {
+      "bytes": 983232,
+      "sha256": "2bf6d6b40445a3b5373e6dc3217cf3ac8ea5202e75ce785095f9005a97343cdf"
+    },
     "serving/miaai-row-store-v1.so": {
       "bytes": 75688,
       "sha256": "b66c3eac86ed189277cb456c5d3b866ed494eed346e99449504cb2c7aa8b1f71"
@@ -2086,8 +2098,8 @@
       "sha256": "f281c7b7d5bf044f991d53edc87fa83ce8b6875f8ba715749787878ef4ecda5a"
     },
     "serving/overlay-manifest.json": {
-      "bytes": 11084,
-      "sha256": "f43f043f1e4e52cd71276b033f96ecdf7043675045afe8fe0630632cf3f28eeb"
+      "bytes": 11262,
+      "sha256": "0ca08316c407fbde0d27f626801632d762a319c2fd4d6fc03d829a4b8a2f07f4"
     },
     "serving/row_store_core.cpp": {
       "bytes": 18571,
@@ -2114,12 +2126,12 @@
       "sha256": "78d8786397898cca0c987c6470fb055eba6030126ee8ea49592f9cf89598bbd5"
     },
     "serving/spark_backend_attestation.py": {
-      "bytes": 31187,
-      "sha256": "795fdde61df9378fff62f7c1fe3ce3b5c6bbacc0a5bd220a40605502085d3008"
+      "bytes": 31370,
+      "sha256": "f06c4d5af7bd9b61be851c45407dbb646bff590da825ede57a1e3dc050156e4f"
     },
     "serving/spark_combined_miaai.py": {
-      "bytes": 26406,
-      "sha256": "901c4c169742223781979e3aefc2a153916c9cc3ba02a61668d82da611cb0d3a"
+      "bytes": 26496,
+      "sha256": "ca3d20fbaf410052483ed3fa375faec6cd2f53ff87ccac5827caa30ce91988ea"
     },
     "serving/spark_combined_ready.py": {
       "bytes": 11732,

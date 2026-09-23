@@ -15,7 +15,11 @@ def wrap_init_device(original):
         if policy.validate_mode(policy.MODE) != 'off':
             from vllm.distributed import get_dcp_group
             from .transport import prepare
-            prepare(get_dcp_group())
+            transport = prepare(get_dcp_group())
+            # Low-latency two-rank collectives for small decode messages.
+            from ds41 import fastcomm
+            fastcomm.prepare()
+            fastcomm.set_side_stream(transport.stream)
         return result
     return initialize
 

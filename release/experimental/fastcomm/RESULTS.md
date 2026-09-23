@@ -40,3 +40,11 @@ remained bit-exact but was 1–4 µs slower below 256 KB and only tied NCCL at
 491 KB (63.6 vs 62.3 µs AR) and 778 KB (81.1 vs 82.2 µs). The second port did
 not add usable bandwidth at these sizes, so v1 (single rail, 256 KB) is the
 configuration to promote.
+
+## Promoted
+
+Kit `27e4ba7d…762a` serves on port 8888 (fastcomm loaded on both workers).
+The public `release/runtime` carries the same fastcomm module, library,
+native source and DCP hooks (byte-identical to the served kit); the recipe
+lock pins the refreshed manifest. The overlap release test pins the new
+`integration.py`/`transport.py` hashes. All 226 repository tests pass.

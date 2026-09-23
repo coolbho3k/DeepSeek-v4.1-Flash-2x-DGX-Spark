@@ -70,6 +70,16 @@
     "tested_candidate_manifest_sha256": "f3387571f67d436e9b68bba8e3d526a06289558c7e4e3c6162cb1e3eed3492be"
   },
   "exllama_python_commit": "6ff3a17ea7f3d0026b273d43239398d57f71b788",
+  "fastcomm": {
+    "bit_exact_vs_nccl": true,
+    "channels": [
+      "main",
+      "dcp_side"
+    ],
+    "full_model_qualified": false,
+    "library_sha256": "2bf6d6b40445a3b5373e6dc3217cf3ac8ea5202e75ce785095f9005a97343cdf",
+    "limit_bytes": 262144
+  },
   "format": "ds41_runtime_requirements_v5",
   "fused_kernel_sha256": "66de4aa31e49462fd00fb4b26ebd4e16dfd995b631157e3b0194c27fc1239342",
   "host_roundtrips": {
@@ -136,7 +146,7 @@
   "loaded_backend_verification": {
     "format": "ds41_loaded_combined_miaai_v9",
     "inspector": "serving/spark_backend_attestation.py",
-    "sha256": "795fdde61df9378fff62f7c1fe3ce3b5c6bbacc0a5bd220a40605502085d3008"
+    "sha256": "f06c4d5af7bd9b61be851c45407dbb646bff590da825ede57a1e3dc050156e4f"
   },
   "model_fusion": {
     "additional_persistent_gpu_bytes": 0,

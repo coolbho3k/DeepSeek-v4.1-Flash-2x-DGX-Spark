@@ -140,7 +140,8 @@ class Transport:
         self.stream.wait_event(ready)
         # Pass an explicit stream: vLLM's cached current_stream helper is NOT
         # assumed to observe a torch.cuda.stream context-manager switch.
-        self.comm.all_gather(destination, value, stream=self.stream)
+        from ds41.fastcomm import all_gather as fast_all_gather
+        fast_all_gather(self.comm, destination, value, self.stream)
         done.record(self.stream)
         return ticket
 
@@ -178,7 +179,8 @@ class Transport:
         self.stream.wait_event(ready)
         with torch.cuda.stream(self.stream):
             produce()  # Same stream as the preceding query all-gather.
-            self.comm.all_gather(destination, payload, stream=self.stream)
+            from ds41.fastcomm import all_gather as fast_all_gather
+            fast_all_gather(self.comm, destination, payload, self.stream)
             done.record(self.stream)
         return ticket
 
