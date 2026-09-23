@@ -1,0 +1,18 @@
+{
+ "serving/combined_worker.py": [
+  [
+   "        result = super().load_model(load_dummy_weights=load_dummy_weights)\n",
+   "        result = super().load_model(load_dummy_weights=load_dummy_weights)\n        from ds41.ngram_draft import attach as _attach_ngram_draft\n        _attach_ngram_draft(self.model_runner)\n"
+  ]
+ ],
+ "serving/ds41/combined_dspark.py": [
+  [
+   "        (dspark.DSparkSpeculator, 'propose', proposal),\n",
+   "        (dspark.DSparkSpeculator, 'propose', _ds41_ngram_wrap(proposal)),\n"
+  ],
+  [
+   "    from .draft_exl3_serving import make_quantizer_patches\n",
+   "    from .draft_exl3_serving import make_quantizer_patches\n    from .ngram_draft import wrap as _ds41_ngram_wrap\n"
+  ]
+ ]
+}

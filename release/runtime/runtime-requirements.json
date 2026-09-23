@@ -146,7 +146,7 @@
   "loaded_backend_verification": {
     "format": "ds41_loaded_combined_miaai_v9",
     "inspector": "serving/spark_backend_attestation.py",
-    "sha256": "f06c4d5af7bd9b61be851c45407dbb646bff590da825ede57a1e3dc050156e4f"
+    "sha256": "0bfe23a95d52d3c9996eb779acdf56ee2862afb228529a4f8e66d0d869ba1819"
   },
   "model_fusion": {
     "additional_persistent_gpu_bytes": 0,
@@ -171,6 +171,13 @@
   "mxfp8_native_empty_cache_component_build_qualified": true,
   "mxfp8_native_graph_sha256": "3aeab12adc90d94d85ca58e94c450a79eb82976d082e5cbbf60ac0c08da031dc",
   "mxfp8_seeded_graph_sha256": "de1e515a89b8942440260a70afeaab3a0205b12a9d0c93a77cd933bd50f2173c",
+  "ngram_draft": {
+    "full_model_qualified": false,
+    "ngram": 3,
+    "point_mass_draft_distribution": true,
+    "target_distribution_unchanged": true,
+    "window": 65536
+  },
   "nvfp4_kv_four_over_six": {
     "bits_per_value": 4.5,
     "codec_sha256": "fc5b8ae2e00e0c2ee854b5b08a7feb747b0ab4dc24ca78a7e5e6690d2f1062bf",

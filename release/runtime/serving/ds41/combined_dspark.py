@@ -261,6 +261,7 @@ def make_patches():
          '_ds41_validate_speculation(current)'),
     ], {'_ds41_validate_speculation': validate_speculation})
     from .draft_exl3_serving import make_quantizer_patches
+    from .ngram_draft import wrap as _ds41_ngram_wrap
     return [
         *make_quantizer_patches(_draft_scope),
         (dense_graph.DenseDecodeGraph, '__init__',
@@ -274,7 +275,7 @@ def make_patches():
          make_weight_loader(native.DSparkDeepseekV4ForCausalLM.load_weights, stream)),
         (utils, 'load_dspark_model', load_dspark_model),
         (dspark, 'load_dspark_model', load_dspark_model),
-        (dspark.DSparkSpeculator, 'propose', proposal),
+        (dspark.DSparkSpeculator, 'propose', _ds41_ngram_wrap(proposal)),
         (vision, 'validate_config', image_config),
         (vision, 'schedule_whole_images', make_image_scheduler(vision.schedule_whole_images)),
     ]

@@ -157,6 +157,8 @@ class CombinedWorker(baseline.InitialWorker):
 
     def load_model(self, *, load_dummy_weights=False):
         result = super().load_model(load_dummy_weights=load_dummy_weights)
+        from ds41.ngram_draft import attach as _attach_ngram_draft
+        _attach_ngram_draft(self.model_runner)
         if not load_dummy_weights:
             release_loaded_weight_pages(self)
         return result
