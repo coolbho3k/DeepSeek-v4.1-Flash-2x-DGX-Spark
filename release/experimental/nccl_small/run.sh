@@ -14,8 +14,8 @@ common=(--rm --runtime=runc --gpus=all --pull=never --network=host --ipc=host --
   --ulimit memlock=-1:-1 --user=1000:1000 --tmpfs /tmp:rw,exec,size=1g --env HOME=/tmp
   --entrypoint /opt/ds41-venv/bin/python)
 ssh emi@10.100.32.2 docker run "${common[@]}" "${envs[@]}" -v /tmp/ds41-nccl-bench.py:/b.py:ro \
-  sha256:314893911de4009c4e989408d17d48ec0f050bcd972e9683adf02e6cc38a8e58 /b.py --rank 1 --master 10.100.32.1 --label "$label" >/dev/null 2>&1 &
+  sha256:314893911de4009c4e989408d17d48ec0f050bcd972e9683adf02e6cc38a8e58 /b.py --rank 1 --master 10.100.32.1 --label "$label" ${BENCH_ARGS:-} >/dev/null 2>&1 &
 docker run "${common[@]}" "${envs[@]}" -v /tmp/ds41-nccl-bench.py:/b.py:ro \
   -v /home/emi/code/ds41/reports/nccl-small-v1:/out \
-  sha256:a5ef1cecb16259d16e49578c334b05f60dc58873eeac94cc4a29c5c246d0bcbf /b.py --rank 0 --master 10.100.32.1 --label "$label" --output /out/results.jsonl 2>&1 | grep '^{' || true
+  sha256:a5ef1cecb16259d16e49578c334b05f60dc58873eeac94cc4a29c5c246d0bcbf /b.py --rank 0 --master 10.100.32.1 --label "$label" --output /out/results.jsonl ${BENCH_ARGS:-} 2>&1 | grep '^{' || true
 wait

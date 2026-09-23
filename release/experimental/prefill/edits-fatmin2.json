@@ -1,0 +1,2 @@
+{"serving/spark_grouped_prefill.py": [["FAT_MIN=16\n", "FAT_MIN=2\n"], ["or type(_installed) is not GroupedDispatcher or FAT_MIN!=16):", "or type(_installed) is not GroupedDispatcher or FAT_MIN!=2):"]],
+ "serving/spark_backend_attestation.py": [["or hook.FAT_MIN!=16 or hook.MAX_ROWS!=12288", "or hook.FAT_MIN!=2 or hook.MAX_ROWS!=12288"]]}

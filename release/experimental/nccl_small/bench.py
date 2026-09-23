@@ -27,7 +27,12 @@ def main():
     p.add_argument('--port', type=int, default=29611)
     p.add_argument('--label', required=True)
     p.add_argument('--output', type=Path)
+    p.add_argument('--prefill', action='store_true', help='MB-scale prefill sizes instead')
     a = p.parse_args()
+    global ALLREDUCE, ALLGATHER
+    if a.prefill:
+        ALLREDUCE = {f'{r}x5120': r * 5120 for r in (512, 2048)}
+        ALLGATHER = {f'{m}MiB': m * 2**19 for m in (1, 4, 16)}
     torch.cuda.set_device(0)
     dist.init_process_group('nccl', init_method=f'tcp://{a.master}:{a.port}', rank=a.rank,
                             world_size=2, timeout=datetime.timedelta(seconds=120),
@@ -36,7 +41,7 @@ def main():
                    allreduce_us={}, allgather_us={})
     stream = torch.cuda.Stream()
 
-    def timed(fn, count=64):
+    def timed(fn, count=16 if a.prefill else 64):
         with torch.cuda.stream(stream):
             for _ in range(8):
                 fn()

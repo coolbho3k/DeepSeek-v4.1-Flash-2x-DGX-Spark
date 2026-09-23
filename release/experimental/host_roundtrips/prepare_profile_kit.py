@@ -33,6 +33,8 @@ def main():
     p.add_argument('--output', type=Path, required=True)
     p.add_argument('--receipt', type=Path, required=True)
     p.add_argument('--iterations', type=int, default=3, choices=(1, 2, 3))
+    p.add_argument('--delay', type=int, default=2, help='Engine steps skipped before capture')
+    p.add_argument('--no-stack', action='store_true', help='Record shapes only (prefill timing)')
     a = p.parse_args()
     parent = a.parent_kit.absolute()
     verify(parent, a.parent_sha256)
@@ -46,8 +48,8 @@ def main():
     old = ast.literal_eval(node.value)['profiler-config']
     settings = json.loads(old)
     assert settings['profiler'] == 'torch' and settings['max_iterations'] == 1
-    settings.update(torch_profiler_with_stack=True, torch_profiler_record_shapes=True,
-                    max_iterations=a.iterations)
+    settings.update(torch_profiler_with_stack=not a.no_stack, torch_profiler_record_shapes=True,
+                    max_iterations=a.iterations, delay_iterations=a.delay)
     new = json.dumps(settings)
     assert source.count(repr(old)) == 1
     path.write_text(source.replace(repr(old), repr(new)))
