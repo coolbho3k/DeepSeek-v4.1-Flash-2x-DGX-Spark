@@ -23,9 +23,13 @@ piecewise graphs and eager checks remain synchronous. Single-GPU check
 (`check_deferred_validation.py`): clean replays pass; own-rank and peer
 errors raise and poison; undrained replay is refused.
 
-The public `release/runtime` tree and `recipe-lock.json` are NOT updated yet;
-`prepare_kit.py --parent-kit release/runtime` followed by
-`prepare_deferred_kit.py` reproduces the change for the public recipe.
+The public `release/runtime` tree carries the same five changed serving/native
+files (byte-identical to the served kit), produced with
+`prepare_kit.py --parent-kit release/runtime` then `prepare_deferred_kit.py`,
+keeping the public manifest's own parent pin; `recipe-lock.json` pins the new
+kit manifest. No weight, image, GHCR or HF revision change. All 226 repository
+tests pass. As before, public fresh-clone GPU installation remains untested;
+the measurements above are from the local two-Spark deployment.
 
 ## 1. Host round-trips in the decode step — partial win, not promoted
 

@@ -32,6 +32,13 @@
     "status": "local_canary_pass",
     "tested_candidate_manifest_sha256": "2874a3d7c1c88a05cfc9a659856b5af75c787f974f52ae7c3e696153bbf4391e"
   },
+  "deferred_graph_validation": {
+    "async_utils_sha256": "77e17a4570ead2be30ae9b00888cf077a3b873018c12ca0549b853bfda02c1ba",
+    "cross_rank_summary": "in-graph all-reduce",
+    "drained_before": "AsyncOutput.get_output and next graph execution",
+    "full_graphs": true,
+    "piecewise_graphs": false
+  },
   "dependency_artifact_lock": false,
   "draft_sampling": {
     "clean_rebuild_qualified": false,
@@ -65,6 +72,14 @@
   "exllama_python_commit": "6ff3a17ea7f3d0026b273d43239398d57f71b788",
   "format": "ds41_runtime_requirements_v5",
   "fused_kernel_sha256": "66de4aa31e49462fd00fb4b26ebd4e16dfd995b631157e3b0194c27fc1239342",
+  "host_roundtrips": {
+    "abi_unchanged": true,
+    "cpu_parity": true,
+    "full_model_qualified": false,
+    "parallel_miss_reads": true,
+    "vocab_row_cache_bytes": 41943040,
+    "vocab_row_cache_slots": 4096
+  },
   "image_identity_verified_on_both_hosts": true,
   "image_prefix_override": {
     "actual_native_binding_required": true,
@@ -121,7 +136,7 @@
   "loaded_backend_verification": {
     "format": "ds41_loaded_combined_miaai_v9",
     "inspector": "serving/spark_backend_attestation.py",
-    "sha256": "3db175d3ea173c524f1e30a9ebf8efcaf5a4a51f75035d67725bb79200d3c659"
+    "sha256": "81de5885b473c76f2f8168e2801e9598ec1e5c01b059257a073ca23e6a99ff2f"
   },
   "model_fusion": {
     "additional_persistent_gpu_bytes": 0,

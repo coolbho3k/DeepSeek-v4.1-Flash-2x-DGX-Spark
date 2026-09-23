@@ -12,7 +12,7 @@ import importlib
 from pathlib import Path
 import weakref
 
-from .graph_validation import GraphOwner, _execution_lock
+from .graph_validation import GraphOwner, _execution_lock, capture_tail, drain_pending
 from .vllm_dcp import _compile
 
 UPSTREAM = {
@@ -20,6 +20,8 @@ UPSTREAM = {
         '211de2232fb71aeb761dedbd7fadb7e0832db9331eac6951a1eafb6d77f1be9c',
     'vllm.compilation.cuda_graph':
         'cbc474f9098386d2eef2e3ff61364c611fbc1338d9c259ad5a24439aa7f06412',
+    'vllm.v1.worker.gpu.async_utils':
+        '77e17a4570ead2be30ae9b00888cf077a3b873018c12ca0549b853bfda02c1ba',
 }
 _failed_resources = []
 
@@ -107,7 +109,16 @@ def make_graph_patches():
     capture = _compile(original_capture, [
         ('with torch.cuda.graph(',
          'with _ds41_capture_context(self, desc, graph), torch.cuda.graph('),
-    ], {'_ds41_capture_context': capture_context})
+        ('get_offloader().join_after_forward()',
+         'get_offloader().join_after_forward(); _ds41_capture_tail()'),
+    ], {'_ds41_capture_context': capture_context, '_ds41_capture_tail': capture_tail})
+    output_type = modules['vllm.v1.worker.gpu.async_utils'].AsyncOutput
+    original_output = output_type.get_output
+
+    def get_output(output):
+        # Deferred full-graph validation must pass before tokens leave.
+        drain_pending()
+        return original_output(output)
 
     def replay(manager, key):
         resources = vars(manager).get('_ds41_graph_resources')
@@ -163,4 +174,5 @@ def make_graph_patches():
         (v2.CudaGraphManager, 'run_fullgraph', replay),
         (pw.CUDAGraphWrapper, '__call__', call),
         (pw.CUDAGraphWrapper, 'clear_graphs', clear),
+        (output_type, 'get_output', get_output),
     ]

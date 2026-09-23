@@ -14,7 +14,7 @@ from .native_vocab_rows import NativeVocabRows, Work
 from .ssd_vocab_rows import ROW_BYTES, WIDTH, MAX_BATCH
 from . import graph_validation as validation
 
-BINARY_SHA = '8bf881eb6ccbfe676907a92a29a7b3a7474995ad6e9ac3f95bd2db3ce2b90903'
+BINARY_SHA = '28db58a40c22e8f1506eddbbd3ed5bf74bba5e3f6dd5b112c48408e718e8e443'
 from .combined_config import MAX_TOKENS
 _LIVE_STAGES = set()
 ERRORS = ((1, 'Invalid native vocabulary callback descriptor'),

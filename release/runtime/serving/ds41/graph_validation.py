@@ -4,8 +4,10 @@
 """Owned graph error reporting and native SSD callback lifetimes.
 
 No hooks or CUDA objects are created on import. Kernels must mask invalid
-addresses before reporting an error here. Graph replay is checked before its
-outputs leave the execution boundary; errors poison the owner, not the GPU.
+addresses before reporting an error here. Full-graph replay flags, plus a captured
+cross-rank summary, are checked before sampled output leaves the worker
+(AsyncOutput.get_output) and before the next graph executes; errors poison
+the owner, not the GPU.
 Eager calls retain their synchronous exception boundary.
 """
 from contextlib import contextmanager
@@ -19,6 +21,8 @@ MAX_OWNERS = 512
 _current = ContextVar('ds41_owned_model_graph', default=None)
 _execution_lock = threading.RLock()
 _live_owners = set()
+_pending = set()
+_pending_lock = threading.RLock()
 
 
 def current_owner():
@@ -75,6 +79,11 @@ class GraphOwner:
         self.device = device
         # Outside the shared graph pool; no captured temporary tensor is retained.
         self.flags = torch.zeros(MAX_ERROR_VALUES, device=device, dtype=torch.int32)
+        # [rank0 nonzero flags, rank1 nonzero flags], all-reduced in-graph.
+        self.summary = torch.zeros(2, device=device, dtype=torch.float32)
+        self.deferred = False
+        self.rank = None
+        self.host_flags = self.host_summary = self.host_event = None
         self.event = torch.cuda.Event()
         self.checks = []
         self.used = 0
@@ -188,6 +197,7 @@ class GraphOwner:
             if (self.failed or self.closed or current_owner() is not None
                     or type(capture_only) is not bool or self.captured == capture_only):
                 raise RuntimeError('Invalid, nested or poisoned graph execution')
+            drain_pending()
             self.capture_only = capture_only
             token = _current.set(self)
             try:
@@ -211,7 +221,9 @@ class GraphOwner:
                 yield self
                 if torch.cuda.is_current_stream_capturing():
                     raise RuntimeError('Native graph did not close its capture scope')
-                if not capture_only and self.used:
+                if not capture_only and self.deferred:
+                    self._defer(stream)
+                elif not capture_only and self.used:
                     flags = self.flags[:self.used].cpu().tolist()
                     for start, count, messages in self.checks:
                         _raise_flags(flags[start:start + count], messages)
@@ -240,6 +252,54 @@ class GraphOwner:
                     stage.lock.release()
                 self.locked_stages.clear()
 
+    def capture_tail(self):
+        """Append the cross-rank error summary to a full graph being captured.
+
+        Captured unconditionally at the end of every full graph on both TP
+        ranks, so collective order is identical even if flag counts differ.
+        """
+        import torch
+        from vllm.distributed import (get_tensor_model_parallel_rank,
+            get_tensor_model_parallel_world_size, tensor_model_parallel_all_reduce)
+        if (current_owner() is not self or not self.capture_only or self.captured
+                or not torch.cuda.is_current_stream_capturing()
+                or get_tensor_model_parallel_world_size() != 2):
+            raise RuntimeError('Cross-rank graph validation requires an owned TP2 full-graph capture')
+        rank = get_tensor_model_parallel_rank()
+        self.summary.zero_()
+        if self.used:
+            count = self.flags[:self.used].ne(0).sum().to(torch.float32)
+            self.summary[rank:rank + 1].copy_(count.reshape(1))
+        reduced = tensor_model_parallel_all_reduce(self.summary)
+        if reduced is not self.summary:
+            self.summary.copy_(reduced)
+        self.rank = rank
+        self.deferred = True
+
+    def _defer(self, stream):
+        import torch
+        if self.host_event is None:
+            self.host_flags = torch.zeros(max(self.used, 1), dtype=torch.int32, pin_memory=True)
+            self.host_summary = torch.zeros(2, dtype=torch.float32, pin_memory=True)
+            self.host_event = torch.cuda.Event()
+        with _pending_lock:
+            if self in _pending:
+                raise RuntimeError('Deferred graph validation was not drained before replay')
+            if self.used:
+                self.host_flags[:self.used].copy_(self.flags[:self.used], non_blocking=True)
+            self.host_summary.copy_(self.summary, non_blocking=True)
+            self.host_event.record(stream)
+            _pending.add(self)
+
+    def _check_deferred(self):
+        self.host_event.synchronize()
+        flags = self.host_flags[:self.used].tolist() if self.used else []
+        for start, count, messages in self.checks:
+            _raise_flags(flags[start:start + count], messages)
+        summary = self.host_summary.tolist()
+        if any(summary):
+            raise ValueError('Tensor-parallel peer reported graph validation errors')
+
     def wait_before_graph_destruction(self):
         if self.failed or self.closed or current_owner() is not None:
             raise RuntimeError('Cannot clear active, poisoned or closed model graphs')
@@ -262,3 +322,22 @@ class GraphOwner:
         self.flags = None
         self.closed = True
         _live_owners.remove(self)
+
+
+def drain_pending():
+    """Check every deferred full-graph replay; poison and raise on any error."""
+    with _pending_lock:
+        for owner in list(_pending):
+            _pending.discard(owner)
+            try:
+                owner._check_deferred()
+            except BaseException:
+                owner.failed = True
+                raise
+
+
+def capture_tail():
+    owner = current_owner()
+    if owner is None:
+        raise RuntimeError('Full graph capture requires an owned validation boundary')
+    owner.capture_tail()

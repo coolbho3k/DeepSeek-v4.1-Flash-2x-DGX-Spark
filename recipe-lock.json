@@ -11,7 +11,7 @@
     "revision": "93a185660c42c90e26c326239ce8c8fd95179d64"
   },
   "format": "ds41_public_recipe_lock_v2",
-  "kit_manifest_sha256": "9bfffef9311867701164ad6acc4b294c475cc76d0efeb1f0cdadb94144f0432c",
+  "kit_manifest_sha256": "c202d5a153d10f7e5fb2529d9da793f309fa3d7462b2b58fdb6c7f9f356f4476",
   "model": {
     "manifest_sha256": "6d79a9ae5cfd121df7c559b76cde87b50551adbe68ae0dc94c97973e85e8e1d1",
     "repo": "coolbho3k/DeepSeek-V4.1-Flash-EXL3-3bpw",

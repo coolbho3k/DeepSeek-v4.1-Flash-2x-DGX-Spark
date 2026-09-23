@@ -3,6 +3,9 @@
 // attributed MiaAI native Engram callback in miaai_row_store.cpp; no upstream
 // source is copied here. Original upstream notices remain in vendor/.
 // No CUDA calls, Python callbacks, table mappings, or callback-time allocation.
+// Experimental: exact-byte direct-mapped row cache and parallel miss reads.
+// Cached bytes come only from this store's own verified preads; the file
+// identity check still runs before and after every lookup.
 #include <algorithm>
 #include <array>
 #include <atomic>
@@ -20,6 +23,7 @@
 namespace {
 constexpr uint64_t rows = 129280, row_bytes = 10240, max_count = 256;
 constexpr size_t alignment = 4096, buffer_bytes = 16384, max_threads = 16;
+constexpr uint64_t cache_slots = 4096;  // 40 MiB per rank
 constexpr uint32_t invalid_work = 1, changed_file = 2, io_failure = 4, poisoned = 8;
 struct Store;
 }
@@ -48,6 +52,13 @@ struct Store {
   bool stop = false;
   uint64_t generation = 0;
   VocabWork* job = nullptr;
+  // Rows the current job must read; owned by the caller under `caller`.
+  std::array<uint32_t, max_count> order{};
+  uint64_t order_count = 0;
+  // Only the calling thread touches the cache, always under `caller`.
+  std::unique_ptr<uint8_t[]> cache;
+  std::array<int64_t, cache_slots> tags;
+  uint64_t hits = 0, misses = 0;
   std::atomic<uint64_t> next{0}, reads{0}, bytes_read{0};
   std::atomic<uint32_t> failure{0};
   std::array<Buffer, max_threads + 1> buffers;
@@ -94,8 +105,8 @@ struct Store {
   void drain(VocabWork* work, Buffer& scratch) noexcept {
     for (;;) {
       const uint64_t i = next.fetch_add(1, std::memory_order_relaxed);
-      if (i >= work->count) return;
-      row(work, i, scratch);
+      if (i >= order_count) return;
+      row(work, order[i], scratch);
     }
   }
 
@@ -105,10 +116,14 @@ struct Store {
     uint64_t seen = 0;
     for (;;) {
       std::unique_lock<std::mutex> lock(self.job_mutex);
-      self.ready.wait(lock, [&] { return self.stop || self.generation != seen; });
+      // Join only a job that is still open; the caller closes it (job=null)
+      // under this mutex before waiting, so no worker joins a finished job.
+      self.ready.wait(lock, [&] {
+        return self.stop || (self.job && self.generation != seen); });
       if (self.stop) return nullptr;
       seen = self.generation;
       auto* work = self.job;
+      ++self.remaining;
       lock.unlock();
       self.drain(work, self.buffers[worker.index]);
       lock.lock();
@@ -147,24 +162,47 @@ struct Store {
       *work->status = changed_file;
       return;
     }
-    if (work->count < 8 || thread_count == 0) {
-      for (uint64_t i = 0; i < work->count; ++i) row(work, i, buffers[max_threads]);
+    // Serve owned cached rows; queue every other owned row for a direct read.
+    order_count = 0;
+    for (uint64_t i = 0; i < work->count; ++i) {
+      const int64_t id = work->ids[i];
+      if (id < 0 || uint64_t(id) < lo || uint64_t(id) >= hi) continue;
+      const uint64_t slot = uint64_t(id) % cache_slots;
+      if (tags[slot] == id) {
+        std::memcpy(work->output + i*row_bytes, cache.get() + slot*row_bytes, row_bytes);
+        ++hits;
+      } else {
+        order[order_count++] = uint32_t(i);
+        ++misses;
+      }
+    }
+    if (order_count < 2 || thread_count == 0) {
+      for (uint64_t i = 0; i < order_count; ++i) row(work, order[i], buffers[max_threads]);
     } else {
       {
         std::lock_guard<std::mutex> lock(job_mutex);
         job = work;
         next.store(0, std::memory_order_relaxed);
-        remaining = thread_count;
         ++generation;
       }
-      ready.notify_all();
+      // Wake only as many helpers as there are additional rows to read.
+      const size_t helpers = std::min<size_t>(thread_count, order_count - 1);
+      for (size_t i = 0; i < helpers; ++i) ready.notify_one();
       drain(work, buffers[max_threads]);
       std::unique_lock<std::mutex> lock(job_mutex);
-      done.wait(lock, [&] { return remaining == 0; });
       job = nullptr;
+      done.wait(lock, [&] { return remaining == 0; });
     }
     if (!unchanged()) failure.fetch_or(changed_file, std::memory_order_relaxed);
     *work->status = failure.load(std::memory_order_relaxed);
+    // Retain only rows from a fully successful, identity-checked lookup.
+    if (*work->status) return;
+    for (uint64_t i = 0; i < order_count; ++i) {
+      const uint64_t index = order[i];
+      const uint64_t slot = uint64_t(work->ids[index]) % cache_slots;
+      std::memcpy(cache.get() + slot*row_bytes, work->output + index*row_bytes, row_bytes);
+      tags[slot] = work->ids[index];
+    }
   }
 };
 }
@@ -184,6 +222,8 @@ extern "C" Store* ds41_vocab_row_open(const char* path, uint64_t offset,
     result->ctime_ns = ctime_ns;
     result->lo = rank * (rows/2);
     result->hi = (rank + 1) * (rows/2);
+    result->cache.reset(new uint8_t[cache_slots * row_bytes]);
+    result->tags.fill(-1);
     result->fd = open(path, O_RDONLY | O_DIRECT | O_CLOEXEC | O_NOFOLLOW);
     if (result->fd < 0 || !result->unchanged() || !result->launch(threads)) return nullptr;
     return result.release();
@@ -211,6 +251,14 @@ extern "C" void ds41_vocab_row_stats(Store* store, uint64_t* output) noexcept {
   output[2] = sizeof(Store);
   output[3] = store->thread_count;
   output[4] = store->failure.load(std::memory_order_relaxed);
+}
+
+extern "C" void ds41_vocab_row_cache_stats(Store* store, uint64_t* output) noexcept {
+  if (!store || !output) return;
+  std::lock_guard<std::mutex> serialize(store->caller);
+  output[0] = store->hits;
+  output[1] = store->misses;
+  output[2] = cache_slots * row_bytes;
 }
 
 // The caller must first fence every callback and destroy every owning CUDA

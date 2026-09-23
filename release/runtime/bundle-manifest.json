@@ -1158,8 +1158,8 @@
       "sha256": "3ae5717e5633f4bbd53996442a8ec60756e155b14bf7ba7aabb3253cd2981134"
     },
     "native-source/ds41_vocab_row_store.cpp": {
-      "bytes": 7658,
-      "sha256": "b96aa7806179fec17c314edf4201b5b1505800e99c8f1282c67f2a134994e968"
+      "bytes": 9924,
+      "sha256": "aef1f0f12597935938e2acf4bf5d05fe01895b961f88e4ee2c0045530835bfee"
     },
     "native-source/include/activation.cuh": {
       "bytes": 2898,
@@ -1706,8 +1706,8 @@
       "sha256": "7c467b82c1e1f9022a2683cffc27a387bb155115dbd08781bdc3ddd1806017fb"
     },
     "runtime-requirements.json": {
-      "bytes": 22556,
-      "sha256": "ca6ddeb7a6d25fc519b2822b4635b034453f9cd4f989421a7b6312be66833c78"
+      "bytes": 23085,
+      "sha256": "57e65d2021e9ae9bcf12a77619788197a487895be13e8357f0d926a4bc89c64f"
     },
     "scripts/build_cooperative_moe.py": {
       "bytes": 2599,
@@ -1922,8 +1922,8 @@
       "sha256": "3fb9ec54743dda386c1171a454390d956c0c4dc170058e2b715eb27d63c55d4d"
     },
     "serving/ds41/graph_validation.py": {
-      "bytes": 12862,
-      "sha256": "7aa2124c6adf257695416a557c6d3ab2cf751e0c2e09ed7b914c145dc3598deb"
+      "bytes": 16293,
+      "sha256": "350e9ef1a9ce569af841ce1cd28541d27b04b196f64e590db7b11971618c98c2"
     },
     "serving/ds41/launch_profile.py": {
       "bytes": 2630,
@@ -1955,7 +1955,7 @@
     },
     "serving/ds41/native_vocab_stage.py": {
       "bytes": 6260,
-      "sha256": "abad81ff57308b6792baa635a45c427c58576d1bd2a9197f8853134cc3182f09"
+      "sha256": "3c77d44a43b7c4fb1f37dd58c8f287be8959c2540390073832f4a201bccb3dad"
     },
     "serving/ds41/online_decode_attention.py": {
       "bytes": 6323,
@@ -2022,8 +2022,8 @@
       "sha256": "4d2783a7182755b7577d9a2f8905ecae9dac8e652835ef6184fbc06039954547"
     },
     "serving/ds41/vllm_owned_graphs.py": {
-      "bytes": 6957,
-      "sha256": "100334aa422bc24f2df8aa5f60d50a717c0ed2ccb28a55ab9f08ca8240fceaa0"
+      "bytes": 7587,
+      "sha256": "158beebe5b0d6803186a41d8622287a89798433a7d7ad0131bc1246972dee4d8"
     },
     "serving/ds41/vllm_prefill_workspace.py": {
       "bytes": 5847,
@@ -2070,8 +2070,8 @@
       "sha256": "7f1780ae862047e01b45f50a7788f6c5da2e6bb01c5310fd5772790905eec982"
     },
     "serving/libds41_vocab_rows.so": {
-      "bytes": 72288,
-      "sha256": "8bf881eb6ccbfe676907a92a29a7b3a7474995ad6e9ac3f95bd2db3ce2b90903"
+      "bytes": 72440,
+      "sha256": "28db58a40c22e8f1506eddbbd3ed5bf74bba5e3f6dd5b112c48408e718e8e443"
     },
     "serving/miaai-row-store-v1.so": {
       "bytes": 75688,
@@ -2087,7 +2087,7 @@
     },
     "serving/overlay-manifest.json": {
       "bytes": 11084,
-      "sha256": "337a652ea47da4b953128342de0c0c61aebf8230445c412f35767f872bc5862e"
+      "sha256": "424099dab7228735a23f3f25ceb1a2ff76f60d679b349843ce0b06cc72e26959"
     },
     "serving/row_store_core.cpp": {
       "bytes": 18571,
@@ -2115,7 +2115,7 @@
     },
     "serving/spark_backend_attestation.py": {
       "bytes": 31187,
-      "sha256": "3db175d3ea173c524f1e30a9ebf8efcaf5a4a51f75035d67725bb79200d3c659"
+      "sha256": "81de5885b473c76f2f8168e2801e9598ec1e5c01b059257a073ca23e6a99ff2f"
     },
     "serving/spark_combined_miaai.py": {
       "bytes": 26406,
