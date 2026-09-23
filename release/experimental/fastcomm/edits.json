@@ -1,0 +1,18 @@
+{
+ "serving/ds41/dcp_overlap/transport.py": [
+  [
+   "        self.comm.all_gather(destination, value, stream=self.stream)\n",
+   "        from ds41.fastcomm import all_gather as fast_all_gather\n        fast_all_gather(self.comm, destination, value, self.stream)\n"
+  ],
+  [
+   "            self.comm.all_gather(destination, payload, stream=self.stream)\n",
+   "            from ds41.fastcomm import all_gather as fast_all_gather\n            fast_all_gather(self.comm, destination, payload, self.stream)\n"
+  ]
+ ],
+ "serving/ds41/dcp_overlap/integration.py": [
+  [
+   "            from .transport import prepare\n            prepare(get_dcp_group())\n",
+   "            from .transport import prepare\n            transport = prepare(get_dcp_group())\n            # Low-latency two-rank collectives for small decode messages.\n            from ds41 import fastcomm\n            fastcomm.prepare()\n            fastcomm.set_side_stream(transport.stream)\n"
+  ]
+ ]
+}
