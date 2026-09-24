@@ -31,3 +31,13 @@ is not separately measured.
 Promoted: kit `9fdb4cad…06d6` on port 8888; the public `release/runtime` carries
 the same module and hooks (byte-identical), recipe lock updated, all 226
 repository tests pass.
+
+## Rejected: skip DSpark generation when every request matches
+
+`ngram_draft_skip.py` / `edits_skip.json` run the n-gram search first and, when
+all requests in the batch match, skip DSpark's `_generate_draft` (context KV
+insertion still runs). Outputs and tokens per step were identical to v1 on all
+16 cases, but decode was uniformly 0.5–2.7% slower (e.g. code_edit T=0 46.7 vs
+47.6 tok/s): deciding the skip needs a host read-back each step, which removes
+CPU/GPU overlap and costs more than the skipped draft pass saves. A GPU-side
+decision would need CUDA-graph conditional nodes. v1 stays in production.
