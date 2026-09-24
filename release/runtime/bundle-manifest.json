@@ -1162,8 +1162,8 @@
       "sha256": "aef1f0f12597935938e2acf4bf5d05fe01895b961f88e4ee2c0045530835bfee"
     },
     "native-source/fastcomm.cu": {
-      "bytes": 12933,
-      "sha256": "54758344ebc3e1c804cd9e525b535d7a176ffb6a888ab5b221cfcc1c855186f4"
+      "bytes": 13909,
+      "sha256": "f23892ac78f9090041b06d88458deb763a5ed1c51f131620e4792ad81e9c1ad2"
     },
     "native-source/include/activation.cuh": {
       "bytes": 2898,
@@ -1710,8 +1710,8 @@
       "sha256": "7c467b82c1e1f9022a2683cffc27a387bb155115dbd08781bdc3ddd1806017fb"
     },
     "runtime-requirements.json": {
-      "bytes": 23848,
-      "sha256": "b54c9841644e9b311eb79328efbf4fc88f488c7669a90cf8b6ee3243f7cad526"
+      "bytes": 23880,
+      "sha256": "b59d61e0fce0d7d6bf7be3962502f75febd75581291495b36c4a4c145c809315"
     },
     "scripts/build_cooperative_moe.py": {
       "bytes": 2599,
@@ -1915,7 +1915,7 @@
     },
     "serving/ds41/fastcomm.py": {
       "bytes": 5561,
-      "sha256": "fadefdccc1f5fb08e9145407658b9022648512a86380a3013f2cf793187b066c"
+      "sha256": "316b39ed2e5b86555cad220aa9efd807317131e7d1ba537e71a7bda8cb038a98"
     },
     "serving/ds41/fp4_main_kv.py": {
       "bytes": 9911,
@@ -2086,8 +2086,8 @@
       "sha256": "28db58a40c22e8f1506eddbbd3ed5bf74bba5e3f6dd5b112c48408e718e8e443"
     },
     "serving/libfastcomm.so": {
-      "bytes": 983232,
-      "sha256": "2bf6d6b40445a3b5373e6dc3217cf3ac8ea5202e75ce785095f9005a97343cdf"
+      "bytes": 983488,
+      "sha256": "23585e6fc35f88c6d43432ad0bc6b7f6e98f3a68c61f604f52c54fc1e171113a"
     },
     "serving/miaai-row-store-v1.so": {
       "bytes": 75688,
@@ -2103,7 +2103,7 @@
     },
     "serving/overlay-manifest.json": {
       "bytes": 11355,
-      "sha256": "bf6eebf06f7269d22c658791ba1874ef2195b672c6d2b92615822acab75cc383"
+      "sha256": "65112e10278347950dd5a7488c2ddf9bf51e4a2f475084aeffbcd5f790a39037"
     },
     "serving/row_store_core.cpp": {
       "bytes": 18571,
@@ -2131,11 +2131,11 @@
     },
     "serving/spark_backend_attestation.py": {
       "bytes": 31466,
-      "sha256": "0bfe23a95d52d3c9996eb779acdf56ee2862afb228529a4f8e66d0d869ba1819"
+      "sha256": "a9599de7af4b1364fee3dd683bafa1e6712b56c56b5f8e05bc870efee5f28bbf"
     },
     "serving/spark_combined_miaai.py": {
       "bytes": 26589,
-      "sha256": "3c4cd3fe402ddd1c161c078e19c33c470cb0bc5b25c3ac90c5f998633b0dd707"
+      "sha256": "c589523c9bcfd8cbd1d08b3bb0bffa69b3a34b327de39afb033109bcc665a9a8"
     },
     "serving/spark_combined_ready.py": {
       "bytes": 11732,

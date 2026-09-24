@@ -77,8 +77,9 @@
       "dcp_side"
     ],
     "full_model_qualified": false,
-    "library_sha256": "2bf6d6b40445a3b5373e6dc3217cf3ac8ea5202e75ce785095f9005a97343cdf",
-    "limit_bytes": 262144
+    "library_sha256": "23585e6fc35f88c6d43432ad0bc6b7f6e98f3a68c61f604f52c54fc1e171113a",
+    "limit_bytes": 262144,
+    "per_slot_doorbells": true
   },
   "format": "ds41_runtime_requirements_v5",
   "fused_kernel_sha256": "66de4aa31e49462fd00fb4b26ebd4e16dfd995b631157e3b0194c27fc1239342",
@@ -146,7 +147,7 @@
   "loaded_backend_verification": {
     "format": "ds41_loaded_combined_miaai_v9",
     "inspector": "serving/spark_backend_attestation.py",
-    "sha256": "0bfe23a95d52d3c9996eb779acdf56ee2862afb228529a4f8e66d0d869ba1819"
+    "sha256": "a9599de7af4b1364fee3dd683bafa1e6712b56c56b5f8e05bc870efee5f28bbf"
   },
   "model_fusion": {
     "additional_persistent_gpu_bytes": 0,

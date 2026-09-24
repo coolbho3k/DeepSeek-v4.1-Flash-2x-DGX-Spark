@@ -35,7 +35,7 @@ struct DeviceView {
   uint8_t* send;             // host pinned [ch][slot][max_bytes]
   uint8_t* recv;             // host pinned [ch][slot][max_bytes]
   uint64_t* recv_flags;      // host pinned [ch][slot] (64 B apart)
-  Doorbell* doorbells;       // host pinned [ch]
+  Doorbell* doorbells;       // host pinned [ch][slot] (one per slot, never overwritten unread)
   uint64_t* seq;             // device [ch]
   unsigned int* arrivals;    // device [ch]
   uint64_t max_bytes;
@@ -76,10 +76,11 @@ __global__ void stage_kernel(DeviceView v, const uint8_t* src, uint64_t bytes, i
     const unsigned done = atomicAdd(&v.arrivals[ch], 1u) + 1;
     if (done == gridDim.x) {                   // last block publishes the doorbell
       v.arrivals[ch] = 0;
-      v.doorbells[ch].slot = slot;
-      v.doorbells[ch].bytes = uint32_t(bytes);
+      Doorbell* d = &v.doorbells[ch * kSlots + slot];
+      d->slot = slot;
+      d->bytes = uint32_t(bytes);
       __threadfence_system();
-      store_release_sys((uint64_t*)&v.doorbells[ch].seq, seq);
+      store_release_sys((uint64_t*)&d->seq, seq);
       v.seq[ch] = seq;
     }
   }
@@ -123,35 +124,53 @@ int blocks_for(uint64_t bytes) {
   return int(b < 1 ? 1 : b > 48 ? 48 : b);
 }
 
+void fail(Comm* c, int code, const char* what) {
+  fprintf(stderr, "fastcomm proxy error %d: %s\n", code, what);
+  c->error = code;
+}
+
+// Drain each channel strictly in sequence order. The GPU can publish seq N+1
+// before this thread has consumed seq N (it only waits for the peer's data),
+// so every slot has its own doorbell and the proxy never skips one. The GPU
+// cannot run more than two sequences ahead of this thread (seq N+2 needs the
+// peer to have received our N), so kSlots=4 doorbells are never overwritten
+// before being consumed.
 void proxy_loop(Comm* c) {
   uint64_t last[kChannels] = {0, 0};
   ibv_wc wc[16];
   unsigned signaled_outstanding = 0;
   while (!c->stop.load(std::memory_order_relaxed)) {
     for (int ch = 0; ch < kChannels; ++ch) {
-      Doorbell* d = &c->view.doorbells[ch];
-      const uint64_t seq = __atomic_load_n(&d->seq, __ATOMIC_ACQUIRE);
-      if (seq == last[ch]) continue;
-      if (seq != last[ch] + 1) { c->error = 1; return; }
-      const uint32_t slot = d->slot, bytes = d->bytes;
-      const uint64_t off = (uint64_t(ch) * kSlots + slot) * c->view.max_bytes;
-      ibv_sge sge{reinterpret_cast<uint64_t>(c->view.send + off), bytes, c->mr->lkey};
-      ibv_send_wr data{}, flag{}, *bad = nullptr;
-      data.sg_list = &sge; data.num_sge = 1; data.opcode = IBV_WR_RDMA_WRITE;
-      data.wr.rdma.remote_addr = c->peer_recv + off; data.wr.rdma.rkey = c->peer_rkey;
-      data.next = &flag;
-      uint64_t value = seq;
-      ibv_sge fsge{reinterpret_cast<uint64_t>(&value), 8, 0};
-      flag.sg_list = &fsge; flag.num_sge = 1; flag.opcode = IBV_WR_RDMA_WRITE;
-      flag.send_flags = IBV_SEND_INLINE;
-      flag.wr.rdma.remote_addr = c->peer_flags + (uint64_t(ch) * kSlots + slot) * 64; flag.wr.rdma.rkey = c->peer_rkey;
-      if (++c->posted % kSignalEvery == 0) { flag.send_flags |= IBV_SEND_SIGNALED; ++signaled_outstanding; }
-      if (ibv_post_send(c->qp, &data, &bad)) { c->error = 2; return; }
-      last[ch] = seq;
+      for (;;) {
+        const uint64_t expected = last[ch] + 1;
+        Doorbell* d = &c->view.doorbells[ch * kSlots + expected % kSlots];
+        const uint64_t seq = __atomic_load_n(&d->seq, __ATOMIC_ACQUIRE);
+        if (seq != expected) {
+          if (seq > expected) { fail(c, 1, "doorbell overwritten before it was consumed"); return; }
+          break;
+        }
+        const uint32_t slot = d->slot, bytes = d->bytes;
+        if (slot != expected % kSlots) { fail(c, 4, "doorbell slot mismatch"); return; }
+        const uint64_t off = (uint64_t(ch) * kSlots + slot) * c->view.max_bytes;
+        ibv_sge sge{reinterpret_cast<uint64_t>(c->view.send + off), bytes, c->mr->lkey};
+        ibv_send_wr data{}, flag{}, *bad = nullptr;
+        data.sg_list = &sge; data.num_sge = 1; data.opcode = IBV_WR_RDMA_WRITE;
+        data.wr.rdma.remote_addr = c->peer_recv + off; data.wr.rdma.rkey = c->peer_rkey;
+        data.next = &flag;
+        uint64_t value = seq;
+        ibv_sge fsge{reinterpret_cast<uint64_t>(&value), 8, 0};
+        flag.sg_list = &fsge; flag.num_sge = 1; flag.opcode = IBV_WR_RDMA_WRITE;
+        flag.send_flags = IBV_SEND_INLINE;
+        flag.wr.rdma.remote_addr = c->peer_flags + (uint64_t(ch) * kSlots + slot) * 64; flag.wr.rdma.rkey = c->peer_rkey;
+        if (++c->posted % kSignalEvery == 0) { flag.send_flags |= IBV_SEND_SIGNALED; ++signaled_outstanding; }
+        if (ibv_post_send(c->qp, &data, &bad)) { fail(c, 2, "ibv_post_send failed"); return; }
+        last[ch] = expected;
+      }
     }
     if (signaled_outstanding) {
       const int n = ibv_poll_cq(c->cq, 16, wc);
-      for (int i = 0; i < n; ++i) if (wc[i].status != IBV_WC_SUCCESS) { c->error = 3; return; }
+      for (int i = 0; i < n; ++i)
+        if (wc[i].status != IBV_WC_SUCCESS) { fail(c, 3, ibv_wc_status_str(wc[i].status)); return; }
       if (n > 0) signaled_outstanding -= n;
     }
   }
@@ -178,7 +197,7 @@ void* fc_create(const char* device, int gid_index, uint64_t max_bytes, void* inf
   if (!c->pd || !c->cq || !c->qp) return nullptr;
   const uint64_t ring = uint64_t(kChannels) * kSlots * max_bytes;
   const uint64_t flags = uint64_t(kChannels) * kSlots * 64;
-  c->host_bytes = 2 * ring + flags + kChannels * sizeof(Doorbell);
+  c->host_bytes = 2 * ring + flags + kChannels * kSlots * sizeof(Doorbell);
   if (cudaHostAlloc(&c->host, c->host_bytes, cudaHostAllocMapped | cudaHostAllocPortable) != cudaSuccess) return nullptr;
   memset(c->host, 0, c->host_bytes);
   // No IBV_ACCESS_RELAXED_ORDERING: the flag WRITE must land after the data.

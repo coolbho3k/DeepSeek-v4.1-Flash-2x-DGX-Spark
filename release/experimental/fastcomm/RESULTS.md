@@ -48,3 +48,27 @@ The public `release/runtime` carries the same fastcomm module, library,
 native source and DCP hooks (byte-identical to the served kit); the recipe
 lock pins the refreshed manifest. The overlap release test pins the new
 `integration.py`/`transport.py` hashes. All 226 repository tests pass.
+
+## Production crash and fix (2026-09-24)
+
+Symptom: both workers died ~30 s after a decode stalled (02:26:44 → 02:27:00),
+each with `CUDA error: unspecified launch failure` — fastcomm's intentional
+`__trap()` after waiting ~2^36 cycles for peer data.
+
+Cause: one doorbell per channel. The GPU may publish sequence N+1 before the
+CPU proxy has consumed N (it only waits for the peer's data, not for its own
+send). Under CPU contention (6-CPU worker cgroup, ~100 I/O threads) the proxy
+was descheduled, saw N+1 after N, flagged a sequence error and exited
+silently; both GPUs then waited forever for data and trapped.
+
+Reproduction: a test-only build injecting random 0–2 ms proxy sleeps. Old
+logic: hangs (no result). Fixed logic: 0 mismatches across all sizes and 300
+graph replays, no proxy errors.
+
+Fix: one doorbell per slot; the proxy drains each channel strictly in order.
+Protocol bound: seq N+2 requires the peer to have received our N, so the GPU
+is at most two sequences ahead of the proxy and 4 slots are never overwritten
+unread. Proxy errors are now printed to stderr. Library
+`23585e6f…113a`; full-model revalidation on 8889: 16/16 benchmark replies
+identical to the earlier n-gram run, five C6 waves (50–56 tok/s) with no errors.
+Deployed on 8888 (kit `b8399c02…f13c`) and in the public runtime.

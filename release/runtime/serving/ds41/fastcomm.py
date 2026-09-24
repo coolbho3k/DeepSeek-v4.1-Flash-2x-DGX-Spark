@@ -17,7 +17,7 @@ import os
 from pathlib import Path
 import threading
 
-LIB_SHA256 = '2bf6d6b40445a3b5373e6dc3217cf3ac8ea5202e75ce785095f9005a97343cdf'
+LIB_SHA256 = '23585e6fc35f88c6d43432ad0bc6b7f6e98f3a68c61f604f52c54fc1e171113a'
 MAX_BYTES = 1 << 20
 LIMIT = 256 * 1024
 _state = None
