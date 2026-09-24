@@ -26,7 +26,10 @@ def main():
     p.add_argument('--rank',type=int,choices=(0,1),required=True)
     p.add_argument('--output',type=Path,required=True)
     p.add_argument('--maintenance',action='store_true',required=True)
-    p.add_argument('--experts',type=int,choices=(24,144),default=144)
+    p.add_argument('--experts',type=int,choices=(24,144,384),default=384)
+    p.add_argument('--prefill-profile',action='store_true')
+    p.add_argument('--prefill-sweep',action='store_true')
+    p.add_argument('--native-candidate',type=Path)
     a=p.parse_args()
     if a.output.exists():raise ValueError('Preserve existing experiment results')
     # Admission must precede torch import/context creation. The outer launcher
@@ -40,7 +43,7 @@ def main():
     runpy.run_path(str(a.serving/'serve.py'),run_name='moe_geometry_probe_entry')
     import spark_combined_miaai as combined
     combined.register()
-    torch.cuda.set_per_process_memory_fraction(.04)
+    torch.cuda.set_per_process_memory_fraction(.06)
     import spark_fused_moe as base
     from ds41.exl3_moe import PackedExpert, eager_moe
     torch.manual_seed(41918)
@@ -57,12 +60,23 @@ def main():
                     if index[key]==name:tensors[key]=source.get_tensor(key).contiguous().cuda()
         experts[expert]=PackedExpert(tensors,prefix,a.rank,2,limit=10.)
         del tensors
+        if expert%48==47:print(json.dumps(dict(stage='experts_loaded',count=expert+1)),flush=True)
     x=torch.randn((24,5120),device='cuda',dtype=torch.bfloat16)*.2
     ids=torch.arange(144,device='cuda').reshape(24,6)%a.experts
     weights=torch.rand((24,6),device='cuda')/6
     dispatcher=base._dispatcher
     with torch.inference_mode():dispatcher(experts,x[:4],ids[:4],weights[:4])
     work=dispatcher.workspace;bank=dispatcher.banks[id(experts)]
+    if a.native_candidate:
+        if a.experts!=384:raise ValueError('Native comparison requires all distinct experts')
+        from probe_native import run
+        run(work,bank,experts,a.serving,a.native_candidate,a.output,a.rank,eager_moe)
+        return
+    if a.prefill_sweep:
+        if a.experts!=384:raise ValueError('Sweep requires all distinct experts')
+        from prefill_sweep import run
+        run(dispatcher,experts,a.output,a.rank,eager_moe)
+        return
     binary=a.serving/'cooperative_moe.so'
     receipt=json.loads((a.serving/'cooperative-native.json').read_bytes())
     source=(a.serving/'ds41/cooperative_moe.py').read_bytes()
@@ -138,15 +152,58 @@ def main():
                     median_ms={g:statistics.median(v) for g,v in samples.items()},samples_ms=samples))
                 del graphs,outputs
                 torch.cuda.synchronize()
-                if torch.cuda.max_memory_allocated()>4*2**30:raise ValueError('Component memory budget exceeded')
+                if torch.cuda.max_memory_allocated()>6*2**30:raise ValueError('Component memory budget exceeded')
                 print(json.dumps({k:v for k,v in results[-1].items() if k!='samples_ms'}),flush=True)
     report=dict(status='geometry_component_measured_not_serving_qualified',rank=a.rank,
         actual_distinct_experts=a.experts,aliasing=False,layer=0,
         source_adapter_sha256=hashlib.sha256(source).hexdigest(),
         binary_sha256=receipt['binary_sha256'],resources={g:n.resources for g,n in native.items()},
         peak_cuda_allocated_bytes=torch.cuda.max_memory_allocated(),results=results,
-        acceptance_measured=False,full_model_speed_measured=False,canonical_reference_compared=True)
+        acceptance_measured=False,full_model_speed_measured=False,canonical_reference_compared=True,
+        synthetic_activations=True)
     with a.output.open('x') as out:json.dump(report,out,indent=2)
+    if a.prefill_profile:
+        if a.experts!=384:raise ValueError('Prefill profiling requires a complete distinct expert bank')
+        prefill=[]
+        with torch.inference_mode():
+            for rows in (128,512,2048):
+                px=torch.randn((rows,5120),device='cuda',dtype=torch.bfloat16)*.2
+                # Balanced complete-bank routes: actual bytes and per-expert
+                # occupancy, not an aliased small-bank throughput estimate.
+                pi=torch.arange(rows*6,device='cuda').reshape(rows,6)%384
+                pw=torch.rand((rows,6),device='cuda')/6
+                for _ in range(3):dispatcher(experts,px,pi,pw)
+                torch.cuda.synchronize()
+                samples=[]
+                for _ in range(10):
+                    flush.add_(1)
+                    begin,end=torch.cuda.Event(enable_timing=True),torch.cuda.Event(enable_timing=True)
+                    begin.record();value=dispatcher(experts,px,pi,pw);end.record();end.synchronize()
+                    samples.append(begin.elapsed_time(end))
+                if not torch.isfinite(value).all():raise ValueError('Nonfinite prefill output')
+                with torch.profiler.profile(activities=[torch.profiler.ProfilerActivity.CPU,
+                        torch.profiler.ProfilerActivity.CUDA],record_shapes=False,
+                        profile_memory=False,with_stack=False) as profile:
+                    dispatcher(experts,px,pi,pw)
+                    torch.cuda.synchronize()
+                trace=a.output.with_name(f'prefill-{rows}-trace.json')
+                if trace.exists():raise ValueError('Preserve existing component trace')
+                profile.export_chrome_trace(str(trace))
+                events=json.loads(trace.read_bytes())['traceEvents'];kernels={}
+                for event in events:
+                    if event.get('cat')=='kernel' and event.get('ph')=='X':
+                        name=event['name'];item=kernels.setdefault(name,dict(calls=0,total_us=0.))
+                        item['calls']+=1;item['total_us']+=event['dur']
+                if not kernels:raise ValueError('Missing native CUDA kernel timeline')
+                prefill.append(dict(rows=rows,median_ms=statistics.median(samples),samples_ms=samples,
+                    schedule=dispatcher.last_schedule,kernels=kernels,balanced_synthetic_routing=True))
+                print(json.dumps(dict(stage='prefill_profile',rows=rows,median_ms=statistics.median(samples),
+                    kernels=len(kernels))),flush=True)
+                del profile,events,px,pi,pw,value
+        report=dict(status='prefill_component_profile_only',rank=a.rank,experts=a.experts,
+            cases=prefill,peak_cuda_allocated_bytes=torch.cuda.max_memory_allocated())
+        if report['peak_cuda_allocated_bytes']>6*2**30:raise ValueError('Component memory budget exceeded')
+        with a.output.with_name('prefill.json').open('x') as out:json.dump(report,out,indent=2)
 
 
 if __name__=='__main__':main()

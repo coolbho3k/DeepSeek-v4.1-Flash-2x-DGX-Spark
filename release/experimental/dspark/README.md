@@ -1,6 +1,9 @@
 # DSpark K≤5 and drafter critical-path campaign
 
-Experimental, not a qualified release or an enabled default.
+Experimental variants, not enabled by default. The completed performance
+comparison retains the original fixed K3 runtime: the combined K3 repeat was
+0.4% slower overall, prefill was effectively tied, and C6 results were mixed.
+See [results, exact benchmark inputs and limitations](RESULTS.md).
 
 Full objective: test fixed K=3/4/5, adaptive verification (acceptance EMA and
 native confidence), dedicated top-3 draft MoE, KV-only context projection, and
@@ -36,7 +39,8 @@ Current component results are not a release recommendation:
 
 Fixed K5 completed a matched serving comparison but did not beat K3 overall.
 Fixed K4 also completed serial, uncached prefill and C6 comparisons, with mixed
-results. Combined/adaptive serving qualification is still in progress. Target
+results. Combined K3/K4/K5 and both adaptive policies have been exercised;
+none established a better general-purpose default at unchanged limits. Target
 temperature-zero text is not claimed bitwise invariant across batch shapes;
 component equivalence does not establish end-to-end task accuracy.
 

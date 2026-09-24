@@ -63,6 +63,26 @@ change, new weights or GHCR rebuild. Frozen deployments keep their original help
 code; the new source-manifest pin applies to newly prepared public deployments,
 not to an explicitly reused older `EXISTING_DEPLOYMENT` kit.
 
+## DSpark comparison: retain the existing runtime
+
+The K3/K4/K5, adaptive EMA and native-confidence campaign retains the original
+fixed K3 runtime. The combined K3 confirmation was 0.4% slower than the repeated
+unchanged control, uncached 32K prefill was effectively tied, and C6 throughput
+was mixed. Some adaptive candidates lacked headroom under the unchanged limits.
+See [the complete results and methodology](../release/experimental/dspark/RESULTS.md).
+
+The publication adds experimental source, its tests and full attribution; it
+does not enable those kernels or change `release/runtime`, `recipe-lock.json`,
+HF revisions or the GHCR image. It also fixes the launcher's controller-identity
+race: an empty command line during process exec is no longer recorded as a
+usable identity, and historical empty identities require an exact owned command
+plus matching PID/start time/UID. Ownership checks are not relaxed.
+
+This campaign does not establish broad model accuracy or a new million-token
+capacity qualification. Public clean-clone GPU installation remains untested;
+the local trials reuse existing verified assets. CPU/export checks and public
+asset metadata checks must not be described as a fresh two-node installation.
+
 ## Current overlay/data update: lossless packed Engrams
 
 The tested page15 native reader, GPU-readable host staging and deferred

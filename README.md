@@ -672,7 +672,49 @@ observations are workload-dependent, not promises of 50 tok/s for one chat.
 Comparisons there with GLM or MiaAI's published numbers are not matched
 cross-recipe benchmarks. The more tightly scoped measurements follow.
 
-Current **concurrent DCP overlay** measurements, September 18, 2026:
+Latest **serving updates**, September 23–24, 2026 UTC (all in the Git-shipped
+overlay; same weights, image, KV formats and memory limits):
+
+- **Embedding row cache and deferred graph validation:** about **+4% serial
+  decode** with unchanged outputs ([results](release/experimental/host_roundtrips/RESULTS.md)).
+- **BF16 DCP attention exchange:** about **+3.5–5.5% uncached prefill**; the
+  quality perturbation matches ordinary batch-composition variation
+  ([results](release/experimental/prefill/RESULTS.md)).
+- **fastcomm two-rank collectives** over GPU-visible pinned-host RDMA for small
+  decode messages: bit-exact against NCCL, about **+4% serial decode**
+  ([results](release/experimental/fastcomm/RESULTS.md)). A proxy race that
+  crashed a server under CPU contention is fixed and was reproduced before and
+  after the fix.
+- **Prompt-lookup drafting on top of DSpark:** copy-heavy work (code edits,
+  reformatting, quoting) reaches **2.4–3.5 accepted tokens per step**, for
+  example 44–48 tok/s on a code edit; free prose is unchanged and outputs stay
+  exact under rejection sampling ([results](release/experimental/ngram_draft/RESULTS.md)).
+- Measured and not adopted: skinny FP8 GEMMs, reduced draft vocabulary, NCCL
+  tuning, 3072-token chunks, grouped-MoE threshold changes, micro-batched
+  prefill overlap and dual-rail fastcomm (details in each experiment folder).
+
+These are local two-Spark measurements; a clean fresh-clone GPU install of this
+exact overlay has not been separately qualified.
+
+Preceding **DSpark K3/K4/K5 and adaptive comparison**, September 19, 2026 UTC:
+
+- **Keep the original fixed K3 default.** Longer drafts, adaptive verification,
+  and the new drafter-kernel bundle did not establish a better general-purpose
+  configuration with the same weights, vision, KV and memory limits.
+- The back-to-back original K3 control measured **23–37 decode tok/s** across
+  content/temperature groups, **1,054 input tok/s** on uncached 32K prefill,
+  and **62.05 / 54.10 aggregate tok/s** for six requests at temperatures 0/1.
+- The optimized K3 repeat was **0.4% slower overall** with effectively tied
+  prefill and mixed concurrency results. Small initial apparent gains did not
+  survive the repeated control; no new general speedup is claimed.
+- **3,313,955 aggregate KV tokens are allocated**, with the unchanged
+  1,048,576-token per-request limit. This is not a new full-capacity stress test.
+
+The experimental source is included but **not enabled by the launcher**. No
+new weight download or GHCR image is required. See the
+[complete comparison, acceptance and benchmark inputs](release/experimental/dspark/RESULTS.md).
+
+Preceding **concurrent DCP overlay** measurements, September 18, 2026:
 
 - **30.52 decode tok/s** pooled over 12 serial requests, and **1,026 input
   tok/s** on fully uncached 32K prefill. Easy-prose T=0 median was **30.10 tok/s**.
