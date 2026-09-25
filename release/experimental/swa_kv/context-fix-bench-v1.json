@@ -1,0 +1,150 @@
+{
+ "status": "complete",
+ "kit": "b9c163a01a120d2177552b01b8cec5668cf24889b6059e7f3efbc690baf58311",
+ "cases": [
+  {
+   "label": "code_edit",
+   "temperature": 0.0,
+   "tokens": 400,
+   "decode_tps": 47.7356689289538,
+   "acceptance": 0.8289855072463768,
+   "tokens_per_step": 3.4695652173913043,
+   "reply": "import math\nfrom dataclasses import dataclass\n\n\ndef compute_metric_0(values, scale=1):\n    \"\"\"Return the scaled metric number 0 for a list of values.\"\"\"\n    total = 0.0\n    for value in values:\n        total += math.sqrt(abs(value)) * scale + 4\n    return total / max(len(values), 1)\n\n\ndef compute_metric_1(values, scale=2):\n    \"\"\"Return the scaled metric number 1 for a list of values.\"\"\"\n    total = 0.0\n    for value in values:\n        total += math.sqrt(abs(value)) * scale + 9\n    return total / max(len(values), 1)\n\n\ndef compute_metric_2(values, scale=3):\n    \"\"\"Return the scaled metric number 2 for a list of values.\"\"\"\n    total = 0.0\n    for value in values:\n        total += math.sqrt(abs(value)) * scale + 3\n    return total / max(len(values), 1)\n\n\ndef scaled_root_mean(values, scale=4):\n    \"\"\"Return the scaled metric number 3 for a list of values.\"\"\"\n    total = 0.0\n    for value in values:\n        total += math.sqrt(abs(value)) * scale + 6\n    return total / max(len(values), 1)\n\n\ndef compute_metric_4(values, scale=5):\n    \"\"\"Return the scaled metric number 4 for a list of values.\"\"\"\n    total = 0.0\n    for value in values:\n        total += math.sqrt(abs(value)) * scale + 8\n    return total / max(len(values), 1)\n\n\ndef compute_metric_5(values, scale=6):\n    \"\"\"Return the scaled metric number 5 for a list of values.\"\"\"\n    total = 0.0\n    for value in values:\n        total += math.sqrt(abs(value)) * scale + 2\n    return total / max"
+  },
+  {
+   "label": "typo_fix",
+   "temperature": 0.0,
+   "tokens": 36,
+   "decode_tps": 43.849029635203856,
+   "acceptance": 0.7272727272727273,
+   "tokens_per_step": 3.1818181818181817,
+   "reply": "The committee reviewed the annual budget and discussed several proposals for improving the public library, including longer opening hours, a larger children's section, and better access for people with disabilities."
+  },
+  {
+   "label": "json_rename",
+   "temperature": 0.0,
+   "tokens": 400,
+   "decode_tps": 43.65109642741509,
+   "acceptance": 0.6741854636591479,
+   "tokens_per_step": 3.0,
+   "reply": "[\n {\n  \"id\": 0,\n  \"name\": \"item-0\",\n  \"cost\": 42.21,\n  \"stock\": 23\n },\n {\n  \"id\": 1,\n  \"name\": \"item-1\",\n  \"cost\": 24.77,\n  \"stock\": 11\n },\n {\n  \"id\": 2,\n  \"name\": \"item-2\",\n  \"cost\": 78.12,\n  \"stock\": 0\n },\n {\n  \"id\": 3,\n  \"name\": \"item-3\",\n  \"cost\": 31.11,\n  \"stock\": 29\n },\n {\n  \"id\": 4,\n  \"name\": \"item-4\",\n  \"cost\": 80.95,\n  \"stock\": 5\n },\n {\n  \"id\": 5,\n  \"name\": \"item-5\",\n  \"cost\": 30.73,\n  \"stock\": 39\n },\n {\n  \"id\": 6,\n  \"name\": \"item-6\",\n  \"cost\": 63.31,\n  \"stock\": 46\n },\n {\n  \"id\": 7,\n  \"name\": \"item-7\",\n  \"cost\": 34.73,\n  \"stock\": 45\n },\n {\n  \"id\": 8,\n  \"name\": \"item-8\",\n  \"cost\": 85.21,\n  \"stock\": 46\n },\n {\n  \"id\": 9,\n  \"name\": \"item-9\",\n  \"cost\": 38.61,\n  \"stock\": 10\n },\n {\n  \"id\": 10,\n  \"name\": \"item-10\",\n  \"cost\": 22.18,\n  \"stock\": 7\n },\n {\n  \"id\": 11,\n  \"name\": \"item-11\",\n  \"cost\": 12.79"
+  },
+  {
+   "label": "quote_explain",
+   "temperature": 0.0,
+   "tokens": 127,
+   "decode_tps": 39.21349394362013,
+   "acceptance": 0.6074074074074074,
+   "tokens_per_step": 2.8,
+   "reply": "Paragraph 6 verbatim:\n\n\"The river town of Alder Bend grew around a mill built in 1832. Its residents traded timber, wool and grain, and every spring the flood reshaped the lower streets. In year 1854 a new bridge connected the eastern farms to the market square.\"\n\nThis paragraph describes the fictional town of Alder Bend, noting that it developed around a mill established in 1832 and that its economy relied on timber, wool, and grain. It also mentions that seasonal flooding altered the lower streets and that a new bridge linking the eastern farms to the market square was built in 1854."
+  },
+  {
+   "label": "garden",
+   "temperature": 0.0,
+   "tokens": 400,
+   "decode_tps": 31.789624589998823,
+   "acceptance": 0.34517766497461927,
+   "tokens_per_step": 2.0253807106598987,
+   "reply": "The first light of dawn does not arrive in the garden all at once; it filters in, tentative and soft, through a canopy of ancient oaks and slender birches. It is a light that seems to have been strained of its harshness, leaving only a cool, pearlescent glow that pools in the dew-drenched lawns and catches in the intricate webs spun between the rose bushes overnight. The air itself is a palpable presence, cool and clean, carrying the faint, sweet scent of damp earth and the heady perfume of honeysuckle that climbs the old stone wall. It is a scent so pure and delicate it feels like a secret, a fragrance meant only for the first waking moments of the world. A profound quiet reigns here, a silence so complete it has its own texture, a velvety blanket that softens the edges of reality and invites the soul to breathe.\n\nAs the sun climbs higher, its rays begin to pierce the leafy ceiling more directly, transforming the garden into a cathedral of light and shadow. Long, dramatic shafts of gold cut through the lingering mist that rises from the ground like the breath of the earth itself. These sunbeams illuminate tiny, floating motes of dust and pollen, turning them into a swirling, silent constellation. The light catches the edges of the leaves, rimming them in a brilliant, translucent green, while the areas left in shadow remain a deep, cool emerald. The garden is a study in contrasts: the brilliant white of a hydrangea blossom against the dark, wet bark of a tree; the fiery orange of a marigold against the somber grey of a weathered stone bench. Every surface is slick with the night’s moisture. The broad, flat leaves of the hostas hold perfect, quivering globes of water, each one a miniature world reflecting the sky and the surrounding foliage. The petals of the roses, heavy with dew, droop slightly, their velvety surfaces bejewel"
+  },
+  {
+   "label": "python",
+   "temperature": 0.0,
+   "tokens": 400,
+   "decode_tps": 45.03562541116451,
+   "acceptance": 0.6691729323308271,
+   "tokens_per_step": 3.0,
+   "reply": "# LRU Cache Implementation in Python\n\nBelow is a complete, production-quality implementation of an LRU (Least Recently Used) cache using a hash map + doubly linked list, which is the canonical O(1) design.\n\n## Implementation\n\n```python\n\"\"\"\nlru_cache.py\n\nAn LRU (Least Recently Used) cache with O(1) get and put operations.\n\nDesign:\n    - A dict maps keys -> Node objects for O(1) lookup.\n    - A doubly linked list orders nodes by recency.\n        * head.next is the most recently used (MRU) node.\n        * tail.prev is the least recently used (LRU) node.\n    - Sentinel head/tail nodes eliminate edge-case branching.\n\"\"\"\n\nfrom __future__ import annotations\n\nfrom typing import Dict, Generic, Optional, TypeVar\n\nK = TypeVar(\"K\")\nV = TypeVar(\"V\")\n\n\nclass _Node(Generic[K, V]):\n    \"\"\"A node in the doubly linked list.\"\"\"\n\n    __slots__ = (\"key\", \"value\", \"prev\", \"next\")\n\n    def __init__(self, key: Optional[K] = None, value: Optional[V] = None) -> None:\n        self.key: Optional[K] = key\n        self.value: Optional[V] = value\n        self.prev: Optional[\"_Node[K, V]\"] = None\n        self.next: Optional[\"_Node[K, V]\"] = None\n\n\nclass LRUCache(Generic[K, V]):\n    \"\"\"\n    A fixed-capacity Least Recently Used cache.\n\n    Invariants:\n        1. len(self._map) == self._size <= self._capacity.\n        2. Every key in self._map points to a node currently in the linked list.\n        3. The linked list contains exactly the nodes referenced by self._map,\n           plus the two sentinel nodes (head and tail).\n        4."
+  },
+  {
+   "label": "explanation",
+   "temperature": 0.0,
+   "tokens": 400,
+   "decode_tps": 43.77763018888383,
+   "acceptance": 0.6592592592592592,
+   "tokens_per_step": 2.9555555555555557,
+   "reply": "# How a Relational Database Executes a SQL Query\n\nLet's trace a single query end-to-end through a relational database engine. We'll use PostgreSQL as our reference implementation, but the pipeline is broadly similar in MySQL, SQL Server, Oracle, and SQLite.\n\n## The Example Query\n\n```sql\nSELECT c.name, SUM(o.total) AS lifetime_value\nFROM customers c\nJOIN orders o ON o.customer_id = c.id\nWHERE c.country = 'DE'\n  AND o.created_at >= '2024-01-01'\nGROUP BY c.name\nORDER BY lifetime_value DESC\nLIMIT 10;\n```\n\nAssume:\n- `customers` has 1,000,000 rows, with an index on `country`.\n- `orders` has 50,000,000 rows, with an index on `(customer_id, created_at)`.\n\n---\n\n## 1. Parsing\n\nThe SQL string is tokenized and parsed into an **abstract syntax tree (AST)**. The parser checks syntax only — it doesn't know whether `customers` exists or whether `SUM(o.total)` is valid.\n\n```\nSelectStmt\n├── target_list: [c.name, SUM(o.total) AS lifetime_value]\n├── from: JoinExpr(customers c, orders o, ON o.customer_id = c.id)\n├── where: AND(c.country = 'DE', o.created_at >= '2024-01-01')\n├── group_by: [c.name]\n├── order_by: [lifetime_value DESC]\n└── limit: 10\n```\n\nIf you write `SELCT` or forget a closing paren, you fail here with a syntax error.\n\n## 2. Semantic Analysis / Rewriting\n\nThe AST is transformed into a **logical query tree** with resolved names and types:\n\n- `customers` and `orders` are looked up in the catalog; `c` and `"
+  },
+  {
+   "label": "easy_prose",
+   "temperature": 0.0,
+   "tokens": 400,
+   "decode_tps": 34.837750934061155,
+   "acceptance": 0.44901960784313727,
+   "tokens_per_step": 2.347058823529412,
+   "reply": "Have you ever wondered how a tiny seed knows how to turn into a giant sunflower? Or how a blade of grass gets its green color? The answer to both of those questions is a magical-sounding process called photosynthesis. It’s one of the most important things that happens on our entire planet, and once you understand it, you’ll see the world in a whole new way.\n\nLet’s start with the word itself. “Photo” means light, like in a photograph, which is a picture made with light. “Synthesis” means to make something by putting different parts together. So, photosynthesis simply means “making something using light.” The something that plants make is sugar, which is their food. And they don’t need to go to the grocery store to get it. They make it themselves, right inside their leaves.\n\nTo do this, a plant needs three main ingredients. Think of it like a recipe for a cake. The first ingredient is sunlight. The second is water, which the plant sucks up from the soil through its roots. The third ingredient is a gas from the air called carbon dioxide. You and I breathe out carbon dioxide every time we exhale. Plants breathe it in through tiny holes in their leaves, called stomata. You can’t see stomata with your eyes, but they work like millions of tiny mouths.\n\nNow, where does the magic happen? Inside the leaf, there are tiny structures called chloroplasts. You can think of them as tiny solar-powered kitchens. Inside each chloroplast is a special green substance called chlorophyll. Chlorophyll is what makes leaves green. Its job is to capture the energy from sunlight. It’s like a tiny net that catches sunbeams. Without chlorophyll, a plant couldn’t use the sun’s energy at all.\n\nSo, here’s how the recipe works. The chlorophyll catches the sunlight. That light energy is used to split water molecules apart. Water is made of hydrogen and oxygen."
+  },
+  {
+   "label": "code_edit",
+   "temperature": 1.0,
+   "tokens": 400,
+   "decode_tps": 45.117300597029825,
+   "acceptance": 0.8466076696165191,
+   "tokens_per_step": 3.5309734513274336,
+   "reply": "```python\nimport math\nfrom dataclasses import dataclass\n\n\ndef compute_metric_0(values, scale=1):\n    \"\"\"Return the scaled metric number 0 for a list of values.\"\"\"\n    total = 0.0\n    for value in values:\n        total += math.sqrt(abs(value)) * scale + 4\n    return total / max(len(values), 1)\n\n\ndef compute_metric_1(values, scale=2):\n    \"\"\"Return the scaled metric number 1 for a list of values.\"\"\"\n    total = 0.0\n    for value in values:\n        total += math.sqrt(abs(value)) * scale + 9\n    return total / max(len(values), 1)\n\n\ndef compute_metric_2(values, scale=3):\n    \"\"\"Return the scaled metric number 2 for a list of values.\"\"\"\n    total = 0.0\n    for value in values:\n        total += math.sqrt(abs(value)) * scale + 3\n    return total / max(len(values), 1)\n\n\ndef scaled_root_mean(values, scale=4):\n    \"\"\"Return the scaled metric number 3 for a list of values.\"\"\"\n    total = 0.0\n    for value in values:\n        total += math.sqrt(abs(value)) * scale + 6\n    return total / max(len(values), 1)\n\n\ndef compute_metric_4(values, scale=5):\n    \"\"\"Return the scaled metric number 4 for a list of values.\"\"\"\n    total = 0.0\n    for value in values:\n        total += math.sqrt(abs(value)) * scale + 8\n    return total / max(len(values), 1)\n\n\ndef compute_metric_5(values, scale=6):\n    \"\"\"Return the scaled metric number 5 for a list of values.\"\"\"\n    total = 0.0\n    for value in values:\n        total += math.sqrt(abs(value)) * scale + 2\n    return"
+  },
+  {
+   "label": "typo_fix",
+   "temperature": 1.0,
+   "tokens": 36,
+   "decode_tps": 46.39718943961238,
+   "acceptance": 0.7272727272727273,
+   "tokens_per_step": 3.1818181818181817,
+   "reply": "The committee reviewed the annual budget and discussed several proposals for improving the public library, including longer opening hours, a larger children's section, and better access for people with disabilities."
+  },
+  {
+   "label": "json_rename",
+   "temperature": 1.0,
+   "tokens": 400,
+   "decode_tps": 44.34995734815493,
+   "acceptance": 0.6818181818181818,
+   "tokens_per_step": 3.022727272727273,
+   "reply": "[\n {\n  \"id\": 0,\n  \"name\": \"item-0\",\n  \"cost\": 42.21,\n  \"stock\": 23\n },\n {\n  \"id\": 1,\n  \"name\": \"item-1\",\n  \"cost\": 24.77,\n  \"stock\": 11\n },\n {\n  \"id\": 2,\n  \"name\": \"item-2\",\n  \"cost\": 78.12,\n  \"stock\": 0\n },\n {\n  \"id\": 3,\n  \"name\": \"item-3\",\n  \"cost\": 31.11,\n  \"stock\": 29\n },\n {\n  \"id\": 4,\n  \"name\": \"item-4\",\n  \"cost\": 80.95,\n  \"stock\": 5\n },\n {\n  \"id\": 5,\n  \"name\": \"item-5\",\n  \"cost\": 30.73,\n  \"stock\": 39\n },\n {\n  \"id\": 6,\n  \"name\": \"item-6\",\n  \"cost\": 63.31,\n  \"stock\": 46\n },\n {\n  \"id\": 7,\n  \"name\": \"item-7\",\n  \"cost\": 34.73,\n  \"stock\": 45\n },\n {\n  \"id\": 8,\n  \"name\": \"item-8\",\n  \"cost\": 85.21,\n  \"stock\": 46\n },\n {\n  \"id\": 9,\n  \"name\": \"item-9\",\n  \"cost\": 38.61,\n  \"stock\": 10\n },\n {\n  \"id\": 10,\n  \"name\": \"item-10\",\n  \"cost\": 22.18,\n  \"stock\": 7\n },\n {\n  \"id\": 11,\n  \"name\": \"item-11\",\n  \"cost\": 12.79"
+  },
+  {
+   "label": "quote_explain",
+   "temperature": 1.0,
+   "tokens": 127,
+   "decode_tps": 40.36164244327599,
+   "acceptance": 0.6074074074074074,
+   "tokens_per_step": 2.8,
+   "reply": "Paragraph 6 verbatim:\n\n\"The river town of Alder Bend grew around a mill built in 1832. Its residents traded timber, wool and grain, and every spring the flood reshaped the lower streets. In year 1854 a new bridge connected the eastern farms to the market square.\"\n\nThis paragraph describes the fictional town of Alder Bend, noting that it developed around a mill established in 1832 and that its economy relied on timber, wool, and grain. It also mentions that seasonal flooding altered the lower streets and that a new bridge linking the eastern farms to the market square was built in 1854."
+  },
+  {
+   "label": "garden",
+   "temperature": 1.0,
+   "tokens": 400,
+   "decode_tps": 30.65905663648202,
+   "acceptance": 0.3170731707317073,
+   "tokens_per_step": 1.946341463414634,
+   "reply": "The first light of dawn does not arrive in the garden all at once, but rather as a slow, deliberate unveiling. It begins as a pearlescent grey that seeps through the overarching canopy of the old oak tree, diluting the deep, ink-blue darkness of the night. The air itself is a tangible presence, cool and heavy with the scent of damp earth and the sweet, almost cloying perfume of night-blooming jasmine that has yet to surrender its fragrance to the coming day. It is a scent so thick you can almost feel it coating your tongue, a mixture of moist loam, decaying leaves, and the green, living breath of a thousand plants. A single, valiant robin, perched somewhere in the dense foliage of a camellia bush, breaks the profound silence with a song that is less a melody and more a tentative question, a series of clear, liquid notes that seem to hang in the air, waiting for an answer that does not come. The garden, at this hour, is a world unto itself, a sanctuary held in a state of suspended animation.\n\nAs the sun inches its way above the horizon, its rays, still weak and slanted, begin to paint the landscape with a painter’s delicate touch. They catch the dew first. Every single blade of grass, every leaf on the ferns, every petal on the roses is bejewelled with countless droplets of water. These are not merely drops; they are tiny, perfect lenses, each one refracting the nascent light into miniature rainbows. The entire garden seems to have been sprinkled with a fortune in diamonds, a transient, fragile treasury that will vanish with the morning’s warmth. A spider’s web, spun between the iron arms of a weathered bench and a nearby lavender bush, is transformed from an invisible trap into a stunning tapestry of silver and light, its intricate geometric patterns outlined in glittering moisture. The path of weathered flagstones,"
+  },
+  {
+   "label": "python",
+   "temperature": 1.0,
+   "tokens": 400,
+   "decode_tps": 46.00673739451722,
+   "acceptance": 0.6767676767676768,
+   "tokens_per_step": 3.022727272727273,
+   "reply": "# LRU Cache Implementation in Python\n\nBelow is a complete, production-quality implementation using an **OrderedDict** (which is backed by a doubly-linked list + hash map in CPython), followed by tests, invariants, and complexity analysis.\n\n---\n\n## Implementation\n\n```python\n\"\"\"\nlru_cache.py\nA fixed-capacity Least Recently Used (LRU) cache.\n\"\"\"\n\nfrom __future__ import annotations\n\nfrom collections import OrderedDict\nfrom typing import Generic, Iterator, Optional, TypeVar\n\nK = TypeVar(\"K\")\nV = TypeVar(\"V\")\n\n\nclass LRUCache(Generic[K, V]):\n    \"\"\"\n    A fixed-capacity LRU cache.\n\n    The cache holds at most `capacity` items. Accessing an item via `get`\n    or overwriting it via `put` marks it as the most-recently-used. When a\n    new item would exceed capacity, the least-recently-used item is evicted.\n\n    Note: `None` sentinel is used by `get` for \"missing\" — do not store\n    `None` values unless you check with `__contains__`.\n    \"\"\"\n\n    __slots__ = (\"_capacity\", \"_data\")\n\n    def __init__(self, capacity: int) -> None:\n        if capacity <= 0:\n            raise ValueError(\"capacity must be a positive integer\")\n        self._capacity: int = capacity\n        # OrderedDict: insertion order = LRU → MRU\n        # We always treat the *end* as MRU and the *start* as LRU.\n        self._data: \"OrderedDict[K, V]\" = OrderedDict()\n\n    # ---------- public API ----------\n\n    def get(self, key: K) -> Optional[V]:\n        \"\"\"Return the value for `key`, or None if absent.\n\n        Accessing a key promotes it to most-recently-used.\n        \"\"\"\n        if key not in"
+  },
+  {
+   "label": "explanation",
+   "temperature": 1.0,
+   "tokens": 400,
+   "decode_tps": 39.98596048231728,
+   "acceptance": 0.5533333333333333,
+   "tokens_per_step": 2.66,
+   "reply": "# How a Relational Database Executes a SQL Query\n\nLet's trace a single query end-to-end. Our example:\n\n```sql\nSELECT c.name, SUM(o.total) AS lifetime_value\nFROM customers c\nJOIN orders o ON o.customer_id = c.id\nWHERE c.country = 'Germany'\n  AND o.created_at >= '2024-01-01'\nGROUP BY c.name\nORDER BY lifetime_value DESC\nLIMIT 10;\n```\n\nAssume:\n- `customers(id PK, name, country)` — ~1M rows\n- `orders(id PK, customer_id FK, total, created_at)` — ~50M rows\n- Indexes: `customers(country)`, `orders(customer_id)`, `orders(created_at)`\n\n---\n\n## 1. Connection and parsing\n\nWhen the client sends the SQL string, the database first handles **authentication and session setup** (already done for a persistent connection). Then the query text goes through:\n\n- **Lexer/tokenizer** — splits into tokens: `SELECT`, `c.name`, `SUM`, `(`, `o.total`, `)`, `AS`, etc.\n- **Parser** — builds an abstract syntax tree (AST) according to the SQL grammar. It checks syntax, not semantics.\n- **Semantic analysis / binding** — resolves identifiers against the catalog. Does `customers` exist? Does it have a `country` column? Is `c.name` valid inside the `GROUP BY` context? Is `SUM(o.total)` well-typed (numeric)? It also expands `*` and resolves aliases.\n\nAt the end of this phase you have a **bound logical query tree**, something like:\n\n```\nLimit(10)\n└─ Sort(lifetime_value DESC)\n   └─ Aggregate(group_by=[c.name], aggs=[SUM(o.total) AS lifetime_value])\n      └─ Filter(o.created_at >= '"
+  },
+  {
+   "label": "easy_prose",
+   "temperature": 1.0,
+   "tokens": 400,
+   "decode_tps": 31.843498300800736,
+   "acceptance": 0.35578583765112265,
+   "tokens_per_step": 2.0673575129533677,
+   "reply": "Have you ever wondered how a tiny seed knows how to turn into a giant sunflower? Or how a towering oak tree, which can live for hundreds of years, gets its food? It can’t exactly run to the grocery store or order a pizza. The answer is one of the most amazing and important processes on our entire planet. It’s called photosynthesis.\n\n\"Photo\" means light, and \"synthesis\" means to make something. So, photosynthesis literally means \"making something with light.\" It’s the magic recipe that plants, and some other living things like algae, use to make their own food. And the best part? The main ingredient they need is something we can't see, but we can definitely feel: sunlight.\n\nThink of a plant as a tiny, green factory. This factory has special workers and machines inside it, and it takes in raw materials from the outside world, uses power to run the machines, and then produces a finished product. Let's look at each part of this factory.\n\nFirst, let's talk about the raw materials. A plant needs three main things to start making its food. The first is **water**. Just like you get thirsty, plants need water to survive. They drink it up from the soil through their roots. The roots are like tiny straws that pull water up, up, up through the stem and into the leaves. The second ingredient is **carbon dioxide**. This is a gas that’s in the air all around us. You and I breathe it out every time we exhale! Plants don't have lungs, but they have tiny little doors on their leaves called stomata. These are so small you can only see them with a microscope. The plant opens these little doors to let carbon dioxide in from the air. The third ingredient isn't something the plant takes in; it's the power source. The power source is **sunlight**.\n\nNow, where does all the work happen? The leaves are the main factories"
+  }
+ ]
+}

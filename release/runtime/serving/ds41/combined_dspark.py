@@ -241,11 +241,21 @@ def make_patches():
     # Context has no queries. Keep the native KV writer byte-for-byte, but
     # dispatch its smallest supported padding specialization with zero live
     # query heads. Other cache formats retain their original launch shape.
-    context_insert = _compile(native._insert_context_kv, [
+    # The context writer calls the native group-64 op directly; with group-32
+    # SWA pages it must use the same writer as target attention, or every draft
+    # layer reads its context with the wrong scales.
+    from . import swa_kv
+    context_edits = [
         ('(n_ctx, attn.n_local_heads, attn.head_dim),',
          '(n_ctx, 0 if cache_dtype == torch.uint8 else attn.n_local_heads, attn.head_dim),'),
         ('            attn.padded_heads,', '            8,'),
-    ], {})
+    ]
+    context_globals = {}
+    if swa_kv.GROUP_SIZE == 32:
+        context_edits.append(('torch.ops._C.fused_deepseek_v4_qnorm_rope_kv_rope_quant_insert(',
+                              '_ds41_swa32_insert('))
+        context_globals['_ds41_swa32_insert'] = swa_kv.load_native()
+    context_insert = _compile(native._insert_context_kv, context_edits, context_globals)
     context_insert._ds41_original_context_insert = native._insert_context_kv
     proposal = _compile(dflash.DFlashSpeculator.propose, [
         ('for i, gid in enumerate(self.draft_kv_cache_group_ids):',

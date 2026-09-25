@@ -1711,7 +1711,7 @@
     },
     "runtime-requirements.json": {
       "bytes": 23880,
-      "sha256": "b59d61e0fce0d7d6bf7be3962502f75febd75581291495b36c4a4c145c809315"
+      "sha256": "42ce1062273fcaa21e2cbe4a8396e18ce967bb36ae918990b2c1017395861aa2"
     },
     "scripts/build_cooperative_moe.py": {
       "bytes": 2599,
@@ -1786,8 +1786,8 @@
       "sha256": "b690849dc0df9733c6c5daee860dcc5a471cee5202fec08ddb2f6a5f93aa7a65"
     },
     "serving/ds41/combined_dspark.py": {
-      "bytes": 15680,
-      "sha256": "2ef08e6729f688e2a57645a880afee7548891a8738dd116eb2926aed696c331b"
+      "bytes": 16240,
+      "sha256": "f5d3db6fa71ce7b2d4614501631383f3db4010b5021dcc96319d519d3f3132bd"
     },
     "serving/ds41/combined_vocab.py": {
       "bytes": 6063,
@@ -2103,7 +2103,7 @@
     },
     "serving/overlay-manifest.json": {
       "bytes": 11355,
-      "sha256": "65112e10278347950dd5a7488c2ddf9bf51e4a2f475084aeffbcd5f790a39037"
+      "sha256": "28442027cf03e57918cf520fc1e5cc6d745f9f51b9c6fce91e080b836692508f"
     },
     "serving/row_store_core.cpp": {
       "bytes": 18571,
@@ -2131,7 +2131,7 @@
     },
     "serving/spark_backend_attestation.py": {
       "bytes": 31466,
-      "sha256": "a9599de7af4b1364fee3dd683bafa1e6712b56c56b5f8e05bc870efee5f28bbf"
+      "sha256": "b276d31a102fe862552768702d621cc3f0baea9bb5289b0f4bda10961b9fac58"
     },
     "serving/spark_combined_miaai.py": {
       "bytes": 26589,
