@@ -1,0 +1,58 @@
+diff --git a/eval/inspect_ai/scicode.py b/eval/inspect_ai/scicode.py
+index 8537b6a..8dc9492 100644
+--- a/eval/inspect_ai/scicode.py
++++ b/eval/inspect_ai/scicode.py
+@@ -1,3 +1,4 @@
++import os
+ import copy
+ import time
+ import shutil
+@@ -159,7 +160,12 @@ class ScicodePromptingAssistant:
+                             self._get_background_dir(),
+                             f"{prob_id}.{prev_step + 1}.py"
+                         )
+-                    if prev_file_path.is_file():
++                    if prev_file_path.is_file() and prev_file_path.suffix == '.txt':
++                        # ds41: SciCode issue #59 - extraction keeps only __init__
++                        # from the class-based supplied steps (13.6, 62.1), so pass
++                        # the full reference file forward.
++                        self.previous_llm_code[prev_step] = prev_file_path.read_text(encoding='utf-8')
++                    elif prev_file_path.is_file():
+                         prev_file_content = prev_file_path.read_text(encoding='utf-8')
+                         func_name = extract_function_name(
+                             prob_data["sub_steps"][prev_step]["function_header"]
+@@ -240,13 +246,20 @@ from scicode.parse.parse import process_hdf5_to_tuple
+                     for line in test_lst[i].split('\n'):
+                         f.write(line + '\n')
+                         
++        # ds41: step scripts run in a pinned mid-2024 scientific stack
++        # (numpy 1.26 / scipy 1.13 / sympy 1.12), the era of SciCode v1.0.1.
++        os.environ.setdefault('SCICODE_PYTHON', 'python')
++
+         def run_script(script_path):
+             try:
+-                subprocess.run(['python', script_path], check=True, capture_output=True,
+-                            text=True, timeout=1800)
++                # ds41: prefer killing the step script over the harness if the
++                # container's memory cap is hit; record such kills as 'oom'.
++                subprocess.run(['sh', '-c', 'echo 1000 > /proc/self/oom_score_adj && exec "$SCICODE_PYTHON" "$0"',
++                                str(script_path)], check=True, capture_output=True,
++                            text=True, timeout=300)  # Artificial Analysis: 300 s executor timeout
+                 return 0
+-            except subprocess.CalledProcessError:
+-                return 1
++            except subprocess.CalledProcessError as error:
++                return 3 if error.returncode in (-9, 137) else 1
+             except subprocess.TimeoutExpired:
+                 return 2
+             
+@@ -285,6 +298,9 @@ from scicode.parse.parse import process_hdf5_to_tuple
+             elif ret == 1:
+                 with open(logs_file, 'w') as f:
+                     f.write('fail')
++            elif ret == 3:
++                with open(logs_file, 'w') as f:
++                    f.write('oom')
+             else:
+                 with open(logs_file, 'w') as f:
+                     f.write('time out')
