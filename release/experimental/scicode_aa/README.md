@@ -28,7 +28,16 @@ AA nor Epoch AI has published GPQA Diamond or Mock AIME for V4.1 Flash.
 | Step executor timeout | 300 s (upstream default 1800 s) | AA |
 | Repeats | 3 passes, separate output directories | AA |
 | Concurrency | C4 (`--max-connections 4 --max-samples 4`) | chosen for this hardware |
-| Request timeout | 86,400 s | a 384K-token response takes ~7 h at ~16 tok/s |
+| HTTP client timeout | `-M client_timeout=86400` | a 384K-token response takes ~7 h at ~16 tok/s |
+
+**The HTTP timeout must be set with `-M client_timeout`.** `inspect eval
+--timeout` does not configure the OpenAI-compatible provider's HTTP client,
+which otherwise keeps the OpenAI SDK default of 600 s. Without it, any step
+still reasoning after 10 minutes is cut off and retried from scratch (up to
+`--max-retries`), silently capping reasoning at ~10 minutes (~10k tokens here)
+per step. Two earlier attempts were invalidated this way. Check with
+`show_sample.py <problem> <step>`: timed-out calls show `error=Request timed out`,
+and with the cap every successful call finishes in under 600 s.
 
 ## Harness changes (`scicode-harness.patch`)
 
@@ -96,11 +105,19 @@ Progress and scores, from the head: `artifacts/evals/scicode/status.sh`.
 `peak_step.py <step> <generated_code_dir> <split>` rebuilds one step's test
 script and reports its exit code and peak RSS.
 
-## Observed behavior
+`show_sample.py <problem> <step> [chars]` prints, for a scored problem, every
+model call's output tokens, stop reason, errors and retries, plus the start and
+end of one step's reasoning.
 
-At max effort the model reasons long on convention-heavy steps: several steps
-stopped normally after 20-50k tokens with clean code, and some ran past 150k
-tokens. With ~69 tok/s shared across 4-5 streams (~15 tok/s each), one pass
-takes on the order of a day. An earlier attempt used 262,144 max tokens
-(DeepSeek's recommended minimum, not its documented maximum) and was restarted
-at 384K to match AA.
+## Run history
+
+1. 262,144 max tokens (DeepSeek's recommended minimum, not its documented
+   384K maximum). Restarted.
+2. 384K max tokens, but the 600 s HTTP client default was still in effect.
+   Problem 11 scored 8/12 with every call under 600 s and two timeouts on step
+   11.4. Restarted. Apparent 100k+-token "long steps" in runs 1-2 were
+   repeated 10-minute timeouts and retries, not single long generations.
+3. 384K max tokens with `-M client_timeout=86400` (current).
+
+Throughput is ~69 tok/s shared across 4-5 streams (~15 tok/s each), so long
+max-effort steps take hours and a pass can take more than a day.

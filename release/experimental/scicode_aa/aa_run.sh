@@ -32,7 +32,7 @@ for pass in 1 2 3; do
   if [ -f "$STATE/pass$pass.done" ]; then continue; fi
   echo "pass $pass started $(date -u +%FT%TZ)" >> "$STATE/history"
   inspect eval scicode.py \
-    --model openai-api/ds41/deepseek-v41-flash-exl3 \
+    --model openai-api/ds41/deepseek-v41-flash-exl3 -M client_timeout=86400 \
     --reasoning-effort max --temperature 1.0 --top-p 1.0 --max-tokens 393216 \
     --max-connections 4 --max-samples 4 --log-buffer 1 \
     --timeout 86400 --max-retries 30 --retry-on-error 2 --no-fail-on-error \
