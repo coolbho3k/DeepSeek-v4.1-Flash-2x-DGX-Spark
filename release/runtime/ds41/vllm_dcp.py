@@ -8,6 +8,7 @@ import ast
 from contextlib import contextmanager
 import hashlib
 import inspect
+import json
 import os
 from pathlib import Path
 import textwrap
@@ -31,6 +32,13 @@ if _FP4_INDEXER_MODE not in ('0', '1'):
     raise ValueError('DS41_ENABLE_FP4_INDEXER must be exactly0 or1')
 if _FP4_INDEXER_MODE == '1':
     from .dcp_indexer_mxfp4 import paged_logits
+    from . import nvfp4_indexer as _nvfp4
+    # Opt-in NVFP4 index keys keep vLLM's FP4 route and swap
+    # the record width, writer, query format and scorers (nvfp4_indexer.py).
+    if _nvfp4.ENABLED:
+        paged_logits = _nvfp4.paged_logits
+else:
+    _nvfp4 = None
 
 
 UPSTREAM = {
@@ -42,6 +50,11 @@ UPSTREAM = {
 }
 
 
+def format_hook_count():
+    """Extra coordinated hooks the opt-in NVFP4 index-key format installs (record width, query path)."""
+    return 2 if _nvfp4 is not None and _nvfp4.ENABLED else 0
+
+
 def validate_config(config):
     if os.environ.get('DS41_ENABLE_FAST_INDEXER','0') != _FAST_INDEXER_MODE:
         raise ValueError('Fast indexer mode cannot change after DCP import')
@@ -49,6 +62,10 @@ def validate_config(config):
         raise ValueError('FP4 indexer mode cannot change after DCP import')
     if _FP4_INDEXER_MODE == '1' and os.environ.get('DS41_ENABLE_FP4_MAIN_KV') != '1':
         raise ValueError('FP4 indexer requires the coordinated FP4 main-cache variant')
+    if _nvfp4 is not None:
+        _nvfp4.require_stable_format()
+    elif os.environ.get('DS41_INDEXER_K_FORMAT', 'mxfp4') != 'mxfp4':
+        raise ValueError('NVFP4 index keys require the FP4 indexer route')
     parallel = config.parallel_config
     if (not config.model_config.enforce_eager
             or config.model_config.hf_config.model_type != 'deepseek_v41'
@@ -281,16 +298,58 @@ def make_probe_patches():
                     _select_candidate_blocks(logits, cu_seqlen_ks, cu_seqlen_ke,
                                              chunk_candidates.shape[1], candidate_block_size, chunk_candidates)
             else:'''
-    indexer = _compile(op.sparse_attn_indexer, [
+    indexer_changes = [
         (candidate_guard, '        assert dcp_world_size == 2 and cp_kv_cache_interleave_size == 1'),
         (empty, empty_with_collective),
-    ], {'_select_candidate_blocks': select, '_apply_candidate_mask': mask,
+    ]
+    indexer_globals = {'_select_candidate_blocks': select, '_apply_candidate_mask': mask,
         '_merge_dcp_topk_global': merge,
-        'fp8_fp4_paged_mqa_logits': paged_logits})
+        'fp8_fp4_paged_mqa_logits': paged_logits}
+    format_hooks = []
+    if _nvfp4 is not None and _nvfp4.ENABLED:
+        # FP4 route, keys 64+8 bytes. Decode scores FP8 queries (q_scale None); prefill
+        # takes the NVFP4 query package the indexer returns in q_scale's place.
+        indexer_changes += [
+            ('assert q_scale is not None, "use_fp4_cache=True requires q_scale"',
+             'assert q_scale is None or isinstance(q_scale, _ds41_QueryPackage), '
+             '"NVFP4 prefill query package expected"\n        _ds41_prefill_q, q_scale = q_scale, None'),
+            ('ops.cp_gather_indexer_k_quant_cache(', '_ds41_gather_index_k('),
+            ('logits = fp8_fp4_mqa_logits(',
+             'logits = _ds41_prefill_logits(_ds41_prefill_q, chunk.token_start, chunk.token_end,'),
+            ('logits = fp8_fp4_paged_mqa_logits(',
+             'logits = _ds41_decode_logits(_ds41_prefill_q, num_decode_tokens, '
+             'decode_metadata.requires_padding,'),
+        ]
+        indexer_globals.update({'_gather_workspace_shapes': _nvfp4.workspace_shapes,
+            'kv_cache_as_quant_view': _nvfp4.quant_view,
+            '_ds41_QueryPackage': _nvfp4.QueryPackage,
+            '_ds41_prefill_logits': _nvfp4.prefill_logits,
+            '_ds41_decode_logits': _nvfp4.make_decode_logits(paged_logits),
+            '_ds41_gather_index_k': _nvfp4.gather_requests})
+
+        def record_width(index_head_dim, use_fp4_kv):
+            if not use_fp4_kv or index_head_dim != _nvfp4.HEAD_DIM:
+                raise ValueError('NVFP4 index keys require the FP4 route and 128-dim keys')
+            return _nvfp4.ROW_BYTES
+
+        query = _compile(model_attention.DeepseekV4Indexer.forward, [
+            ('use_fp4=self.use_fp4_kv,', 'use_fp4=False,'),
+            ('q_quant, weights = fused_indexer_q_rope_quant(',
+             '_ds41_pre_rope = q\n    q_quant, weights = fused_indexer_q_rope_quant('),
+            ('return q, q_scale, weights',
+             'return q, _ds41_QueryPackage(_ds41_pre_rope, positions, rotary_emb.cos_sin_cache, '
+             'indexer_weights, self.softmax_scale, self.n_head**-0.5), weights'),
+        ], {'_ds41_QueryPackage': _nvfp4.QueryPackage})
+        format_hooks = [(model_attention, '_indexer_k_cache_head_dim', record_width),
+                        (model_attention.DeepseekV4Indexer, 'forward', query)]
+        print(json.dumps(dict(stage='ds41_indexer_key_format', format=_nvfp4.FORMAT,
+                              record_bytes=_nvfp4.ROW_BYTES, decode_query=_nvfp4.DECODE_QUERY,
+                              scales='nvfp4_search')), flush=True)
+    indexer = _compile(op.sparse_attn_indexer, indexer_changes, indexer_globals)
     forward = _compile(op.SparseAttnIndexer.forward_cuda, [
         ('return torch.ops.vllm.sparse_attn_indexer(', 'return _ds41_indexer('),
     ], {'_ds41_indexer': indexer})
-    return selector_hooks + [
+    return selector_hooks + format_hooks + [
         (cls, '__init__', init), (cls, 'build', build),
         (mla.DeepseekV4SparseMLAMetadataBuilder, 'build', main_build),
         (op.SparseAttnIndexer, 'forward_cuda', forward),

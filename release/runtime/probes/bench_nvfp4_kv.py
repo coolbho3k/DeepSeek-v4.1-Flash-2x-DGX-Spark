@@ -100,7 +100,8 @@ def main():
     torch.set_num_threads(2)
     torch.manual_seed(416)
     torch.cuda.set_per_process_memory_fraction(.002)
-    versions = [('candidate', *load_package(args.runtime, 'kv_candidate', 'nvfp4_4over6')),
+    versions = [('candidate', *load_package(args.runtime, 'kv_candidate', 'nvfp4_search')),
+                ('four_over_six', *load_package(args.runtime, 'kv_four_over_six', 'nvfp4_4over6')),
                 ('legacy', *load_package(args.runtime, 'kv_legacy', 'legacy'))]
     if args.baseline_runtime:
         versions.append(('before', *load_package(args.baseline_runtime, 'kv_before', 'nvfp4_4over6')))
@@ -129,25 +130,29 @@ def main():
             expected = {}
             pending = []
             for label, codec, rope in versions:
-                historical = label in ('before', 'legacy_before')
+                # The first four-over-six writer had one fixed launch geometry and no GROUPS parameter.
+                historical = 'GROUPS' not in codec._store.arg_names
+                # Writers before nvfp4_search chose between two modes with a FOUR_OVER_SIX flag.
+                mode_arg = (dict(SCALE_MODE=codec.SCALE_MODE) if hasattr(codec, 'SCALE_MODE')
+                            else dict(FOUR_OVER_SIX=codec.FOUR_OVER_SIX))
                 if args.selected:
                     geometries = [(32, 4)] if historical else [codec._writer_geometry(count, ratio)]
                 else:
                     geometries = [tuple(map(int, pair.split(':'))) for pair in args.tiles.split(',')] if args.tiles and not historical else [(32, w) for w in map(int, args.warps.split(','))]
                 for groups, warps in geometries:
-                    extra = dict(GROUPS=groups) if not historical else {}
+                    extra = dict(mode_arg, **(dict(GROUPS=groups) if not historical else {}))
                     if kind == 'plain':
                         def fn(codec=codec, rope=rope, groups=groups, warps=warps, extra=extra):
                             return codec._store[(count, 32 // groups)](values, live_slots, cache,
                                 CAPACITY=cache.shape[0]*states, VALUE_STRIDE=values.stride(0),
-                                PAGE_STRIDE=stride, STATES=states, FOUR_OVER_SIX=codec.FOUR_OVER_SIX,
+                                PAGE_STRIDE=stride, STATES=states,
                                 num_warps=warps, enable_fp_fusion=False, **extra)
                     else:
                         def fn(codec=codec, rope=rope, groups=groups, warps=warps, extra=extra):
                             return rope._rope_insert[(count, 32 // groups)](values, positions, cs, cache, live_slots,
                                 CAPACITY=cache.shape[0]*states, POSITION_LIMIT=count + 1, COS_STRIDE=64,
                                 PAGE_STRIDE=stride, STATES=states, RATIO=ratio,
-                                FOUR_OVER_SIX=codec.FOUR_OVER_SIX, num_warps=warps, enable_fp_fusion=True, **extra)
+                                num_warps=warps, enable_fp_fusion=True, **extra)
                     cache.fill_(165)
                     kernel = fn()
                     mode = codec.QUANTIZATION_MODE

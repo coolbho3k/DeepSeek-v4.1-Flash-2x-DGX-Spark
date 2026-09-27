@@ -62,15 +62,22 @@ and the [preceding DCP attention results](docs/dcp-overlap-performance.md).
   original formats for other weights, including native vision. “Full precision”
   here means **not further quantized by this recipe**, not that every original
   tensor is BF16 or FP32.
+- The pinned target is the **full-pool 64K refit** (2026-09-27): every routed
+  expert re-fitted with up to 65,536 calibration rows. On 81,880 held-out text
+  targets its KL divergence from the original model is **0.04137 versus 0.04475**
+  for the first upload (lower on 30 of 40 records), with top-choice agreement
+  **93.63% versus 93.24%**. Teacher-forced measurements, not a task benchmark;
+  see the [model card](https://huggingface.co/coolbho3k/DeepSeek-V4.1-Flash-EXL3-3bpw).
 - Our DSpark draft-expert quant saves **0.975 GiB per GPU** relative to the
   original FP4 experts. In the 160-request comparison, draft acceptance was
   **53.17% versus 54.22%**: a **1.05 percentage-point** reduction, not a broad
   quality guarantee. See the [drafter model card](https://huggingface.co/coolbho3k/DeepSeek-V4.1-Flash-DSpark-EXL3-3bpw).
-- **FP4 main KV, MXFP4 indexer and FP8 sliding-window KV**, with TP2/DCP2 and
+- **FP4 main KV, NVFP4 indexer keys and FP8 sliding-window KV**, with TP2/DCP2 and
   DSpark K=3. The six-session profile supports up to 1,048,576 tokens per request;
   historical testing reached about **3.15M input tokens in aggregate**, not 6M.
-  Main KV uses the same 4.5-bit E2M1/E4M3 layout with **NVFP4 four-over-six**
-  scale selection by default; `--fp4-kv-mode legacy` restores the previous writer.
+  Main KV uses the same 4.5-bit E2M1/E4M3 layout with **searched NVFP4 scales**
+  by default (the lowest-error E4M3 scale per 16 values; not yet boot-qualified);
+  `--fp4-kv-mode nvfp4_4over6` or `legacy` selects an earlier writer.
   See the [accuracy checks](release/experimental/nvfp4_kv/README.md). Sliding-window KV
   defaults to **FP8 per 32 non-RoPE values with BF16 RoPE preserved**;
   `--swa-kv-group-size 64` restores the old grouping. Both layouts allocate the
@@ -418,7 +425,7 @@ port **8888**. Keep both hosts otherwise idle; the memory margin is small.
 
 Fixed K3 now uses **probabilistic draft sampling** by default. The selected
 shared-row projection and fused prefill gather are also enabled, alongside
-four-over-six NVFP4 main KV and group-32 FP8 sliding KV with BF16 RoPE. See
+four-over-six NVFP4 main KV (the default when measured) and group-32 FP8 sliding KV with BF16 RoPE. See
 [fusion measurements](release/experimental/model_fusion/RESULTS.md) and
 [sampling measurements and limits](release/experimental/draft_sampling/RESULTS.md).
 
@@ -476,7 +483,10 @@ resume, and completed payloads are SHA-256 verified. Some interrupted staging
 states need manual inspection; see [troubleshooting](#troubleshooting).
 Repeat launches reuse verified files.
 Runtime/cache versions are stored separately, so recipe upgrades preserve old
-runtime assets and reuse the unchanged model and drafter downloads.
+runtime assets. A new weight revision downloads into its own `model-<sha>`
+directory: files it shares with the previous revision (the Engram tables, the
+drafter and unchanged shards) are hard-linked and re-verified rather than
+downloaded again, and the earlier weights stay intact for rollback.
 The distribution is designed to require **no manual quantization, Docker build
 or kernel preparation**: native binaries and a pinned prebuilt kernel cache
 are supplied with the runtime assets. Normal CUDA initialization and graph
@@ -596,8 +606,9 @@ CLI options override the configuration file for that invocation:
 | Prefix-cache retention interval | `4096` | `0` (semantic-only), or multiples of `256` through `1048576` |
 | Parallelism / speculation | TP2, DCP2, DSpark K=3 | Fixed in this pinned release |
 | KV backing | 1792 MiB display / GPU | Fixed; zero ordinary KV allocation |
-| KV formats | 4.5-bit NVFP4 main, MXFP4 indexer, FP8 sliding window | Original image visibility retained |
-| Main KV writer | `nvfp4_4over6` | `--fp4-kv-mode legacy` restores the previous writer |
+| KV formats | 4.5-bit NVFP4 main, NVFP4 indexer keys (72-byte rows), FP8 sliding window | Original image visibility retained |
+| Main KV writer | `nvfp4_search` | `--fp4-kv-mode nvfp4_4over6` or `legacy` selects an earlier writer |
+| Sparse-indexer keys | NVFP4 (searched scales), FP8 decode queries | `--indexer-k-format mxfp4` restores MXFP4 keys; `--indexer-decode-query nvfp4` for faster long-context decode |
 | Sliding-window KV | FP8 group 32 / BF16 RoPE | `--swa-kv-group-size 64` restores group 64 / BF16 |
 
 Defaults explicitly enable the tested 0.92 startup-admission exception. Actual

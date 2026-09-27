@@ -1,10 +1,13 @@
-# Selectable NVFP4 four-over-six main KV
+# Selectable NVFP4 main KV: scale search, four-over-six, legacy
 
-The main-cache writer defaults to `nvfp4_4over6`. Use
-`./start-server.sh --restart --fp4-kv-mode legacy` to select the previous
-quantization, or set `DS41_FP4_KV_MODE=legacy` in `.env.ds41` before restarting.
-Both ranks receive the same mode. A source update alone does not change an
-already-running worker or a separately frozen deployment kit.
+The main-cache writer defaults to `nvfp4_search` (since 2026-09-26; before that,
+`nvfp4_4over6`). Use `./start-server.sh --restart --fp4-kv-mode nvfp4_4over6`
+or `--fp4-kv-mode legacy` to select an earlier writer, or set `DS41_FP4_KV_MODE`
+in `.env.ds41` before restarting. Both ranks receive the same mode. A source
+update alone does not change an already-running worker or a separately frozen
+deployment kit: the current deployment records `nvfp4_4over6` and keeps it until
+it is relaunched with the search kit and `--fp4-kv-mode nvfp4_search`
+(see [the runbook](../indexer_fp4/RUNBOOK.md)).
 
 ## Comparison with DeepSeek and the previous cache
 
@@ -15,19 +18,19 @@ second-level global scale. It retains FP8 SWA KV. Its
 uses `amax / 6`. Our previous main-cache implementation already used this
 format and scale rule; it was already 4.5 bits per value.
 
-| Property | Paper/reference | Previous cache | New default |
-| --- | --- | --- | --- |
-| Main KV values/scales | E2M1 / E4M3, group 16 | Same | Same |
-| Scale selection | Reference: rounded `amax/6` | Rounded `amax/6` | Lower error of rounded `/6` and `/4` |
-| Main state, 512 values | 288 bytes | 288 bytes | 288 bytes |
-| Main KV quantization | After RoPE | After RoPE | After RoPE |
-| Main KV storage | Paper discusses HBM | Display memory | Display memory |
+| Property | Paper/reference | `legacy` | `nvfp4_4over6` | `nvfp4_search` (default) |
+| --- | --- | --- | --- | --- |
+| Main KV values/scales | E2M1 / E4M3, group 16 | Same | Same | Same |
+| Scale selection | Reference: rounded `amax/6` | Rounded `amax/6` | Lower error of rounded `/6` and `/4` | Lowest error of every E4M3 scale in `[amax/6.5, amax/2.5]` |
+| Main state, 512 values | 288 bytes | 288 bytes | 288 bytes | 288 bytes |
+| Main KV quantization | After RoPE | After RoPE | After RoPE | After RoPE |
+| Main KV storage | Paper discusses HBM | Display memory | Display memory | Display memory |
 
 The paper's 890 global KV bytes per input token includes shared main and
 indexer caches across the architecture. Our existing layout has that same
 raw global budget: `(288 + 68) * (3/2 + 1) = 890`, or 445 per DCP2 rank.
 This excludes bounded SWA, compressor rings, page padding, and other runtime
-allocations. Four-over-six changes reconstruction quality, not capacity.
+allocations. The scale rule changes reconstruction quality, not capacity.
 SWA separately defaults to FP8 group 32 with BF16 RoPE, with group 64 optional.
 See the [SWA comparison](../swa_kv/README.md): the coarser original group 64 was
 a precision disadvantage, while its BF16 RoPE tail was more precise than the
@@ -59,14 +62,38 @@ ambiguity and the first implementation's expensive conditional FP64 path:
 Where the reconstructions differ, all terms are exactly representable in
 these units and the group reduction fits int32. Equal errors keep `/6`.
 
+### Scale search (`nvfp4_search`, the default)
+
+`/6` and `/4` are two points on a continuum. The search tries every E4M3 scale
+in `[amax/6.5, amax/2.5]`, at most 12 codes (E4M3 has 8 per binade), in
+ascending order. It starts from the `/6` bytes, and a candidate replaces the
+current best only if its reconstruction SSE is strictly lower. `E4M3(amax/4)`
+lies inside the range, so every group is no worse than four-over-six, and a
+group whose final error equals `/6`'s keeps the `/6` bytes exactly.
+
+Each candidate is compared against the fixed `/6` reconstruction,
+`SSE_c - SSE_6 = sum((qc-q6) * (qc+q6-2*abs(x)))`, in the same power-of-two
+integer units. Wherever either reconstruction is nonzero, `|x| > scale/4`, so x
+and both reconstructions are exact multiples of the unit; each product fits
+int32 and the 16-term sum is exact in int64. Only per-group scalars carry from
+one candidate to the next, and the winning scale is encoded once more at the
+end. The NVFP4 index keys and queries use the same search
+(see [indexer_fp4](../indexer_fp4/README.md)).
+
+On real layer 2 and 20 main-KV latents (post-RoPE, from captured activations),
+NMSE is 0.911% for `/6`, 0.757% for four-over-six and 0.668% for the search.
+
 Fused RoPE preserves native BF16 rounding before quantization, skips invalid
 or unowned slots and incomplete CR2 groups, and writes directly into existing
-pages. Decode uses four groups per program and one warp; intermediate batches
-use 16 groups and one warp; large prefill uses 32 groups and one warp (two for
-CR2). These choices were measured on GB10; no runtime autotuning, extra launch,
-persistent GPU tensor, or temporary rotated tensor is added. Legacy mode
-compiles out the second candidate and receives the native conversion speedup.
-Four-over-six itself leaves the main-cache ABI and its readers unchanged.
+pages. For `/6` and four-over-six, decode uses four groups per program and one
+warp; intermediate batches use 16 groups and one warp; large prefill uses 32
+groups and one warp (two for CR2). The search does about 13 times the encode
+work per group, so it uses smaller tiles until the grid fills the GPU (4 groups
+up to 32 rows, 8 up to 512, 16 up to 1056, one warp) and then 32 groups with
+two warps. These choices were measured on GB10; no runtime autotuning, extra
+launch, persistent GPU tensor, or temporary rotated tensor is added. Legacy mode
+compiles out the extra candidates and receives the native conversion speedup.
+No mode changes the main-cache ABI or its readers.
 
 ## Display memory and speed
 
@@ -84,51 +111,57 @@ It unregisters and frees the allocation afterward. Every writer variant
 produced its expected bytes and preserved canaries in the strided pages.
 
 GB10 median microseconds per fused RoPE/write; 128 nodes per CUDA graph,
-3 warmups and 21 timed replays, shuffled variant order each round:
+3 warmups and 21 timed replays, shuffled variant order each round, with the
+64K refit running on the same GPU (2026-09-26):
 
-| Rows / path | Previous `/6` | Initial four-over-six | Optimized four-over-six | Optimized legacy option |
+| Rows / path | Shipped four-over-six (`before`) | `nvfp4_4over6` | `nvfp4_search` | `legacy` |
 | --- | ---: | ---: | ---: | ---: |
-| 1, CR1, all live | 1.334 | 1.733 | 1.305 | 1.184 |
-| 8, CR1, all live | 1.337 | 1.736 | 1.317 | 1.192 |
-| 24, CR1, all live | 1.324 | 2.649 | 1.337 | 1.221 |
-| 2048, CR1, all live | 6.457 | 13.639 | 5.947 | 3.440 |
-| 2048, CR1, DCP-owned | 4.299 | 8.443 | 4.296 | 2.905 |
-| 2048, CR2, DCP-owned | 3.335 | 5.768 | 3.336 | 2.425 |
-| 3072, CR1, DCP-owned | 5.814 | 11.294 | 5.974 | 3.584 |
+| 1, CR1, all live | 1.320 | 1.319 | 1.704 | 1.196 |
+| 8, CR1, all live | 1.309 | 1.308 | 1.684 | 1.185 |
+| 24, CR1, all live | 1.354 | 1.354 | 1.802 | 1.236 |
+| 2048, CR1, all live | 6.171 | 6.148 | 45.267 | 3.531 |
+| 2048, CR1, DCP-owned | 4.834 | 4.769 | 16.649 | 3.333 |
+| 2048, CR2, DCP-owned | 3.382 | 3.381 | 10.542 | 2.443 |
+| 3072, CR1, DCP-owned | 6.045 | 6.012 | 22.747 | 3.548 |
 
-`legacy_before` measures the initial implementation with four-over-six
-compiled out and its original launch geometry. Its bytes were separately
-verified against the original writer. The table shows approximate parity
-with the previous path at decode and DCP prefill sizes; it also includes the
-3072-row case that is 2.8% slower. The new writer substantially improves on
-the first four-over-six implementation, but still does more work than the
-newly optimized legacy option. All measured variants have zero register spills.
-These are cache-writer measurements with another server resident, not claims
-of end-to-end token throughput or universal optimality.
+`before` and `legacy_before` are the previously shipped codec (git HEAD at the
+time). The rewritten codec's `nvfp4_4over6` and `legacy` modes produce the same
+bytes and run at the same speed. The search costs about 0.4 us per decode
+write and 7–12 us per 2,048-row DCP prefill write per layer: about +15 us per
+decode step and +0.4 ms per 2,048-token prefill chunk across the model. Serving
+always runs DCP2, so the all-live 2048-row CR1 row (not a serving path) was not
+tuned. All measured variants have zero register spills. These are cache-writer
+measurements under a concurrent GPU job, not claims of end-to-end token
+throughput or universal optimality. The previous, four-over-six-era table is
+in git history.
 
 ## Accuracy validation
 
-The [GPU probe](../../runtime/probes/check_nvfp4_four_over_six.py) compares both
-modes against an independent nearest-code oracle with FP64 SSE and the exact
-previous GPU writer. It checks strided pages, canaries, slot masking, ties,
-signed zero, scale boundaries, native RoPE parity, CR1/CR2 and DCP ownership,
-CUDA graphs, packed attention, and the public 2048-row prefill bound.
+The [GPU probe](../../runtime/probes/check_nvfp4_four_over_six.py) checks all
+three modes byte for byte against an independent nearest-code oracle with exact
+float64 SSE comparisons, and the legacy bytes against the original GPU writer.
+It checks strided pages, canaries, slot masking, ties, signed zero, scale
+boundaries, native RoPE parity, CR1/CR2 and DCP ownership, CUDA graphs, packed
+attention, and the public 2048-row prefill bound.
 
-[Results](gpu-results.json): 63,936 groups, 25,432 strictly improved, **zero
-regressed**. Legacy and ordinary `/6` NVFP4 match the previous GPU writer
-byte for byte. Reconstruction SSE reductions are 16.64% for normal and
-trained-range synthetic data, 16.62% across wide scales, and 0.59% for outliers.
-The synthetic attention output SSE against original BF16 KV fell 14.11%.
-All 20 native RoPE cases and 2048-row public stores passed. Peak test tensor
-allocation was 42.60 MiB. The overall SSE total is dominated by a deliberately
-extreme scale-boundary fixture; use the per-distribution figures above.
+[Results](gpu-results.json): 63,936 groups, **zero regressed** against `/6` or
+four-over-six; 37,201 strictly better than `/6` and 24,183 strictly better than
+four-over-six. Reconstruction SSE against `/6` fell 26.4% for normal
+synthetic data (four-over-six: 16.6%), 26.2% for the trained range (16.6%),
+26.7% across wide scales (16.6%) and 2.0% for outliers (0.6%). The synthetic
+attention output SSE against original BF16 KV fell 28.4% (four-over-six:
+14.1%). All 20 native RoPE cases and 2048-row public stores passed in every
+mode. Peak test tensor allocation was 42.6 MiB. The overall SSE total is
+dominated by a deliberately extreme scale-boundary fixture; use the
+per-distribution figures above.
 
 The separate [rounding probe](../../runtime/probes/check_nvfp4_rounding.py)
 checked **4,461,660** signed BF16/E4M3 combinations, covering every finite
 positive E4M3 scale and every BF16 magnitude through the format's 2688 bound,
 including signed zero, subnormals, and exact midpoints. Its independent
 float64 nearest-code oracle matched native conversion for every combination.
-[Results](rounding-results.json) pin the same shipped codec.
+It covers every scale the search can pick. [Results](rounding-results.json) pin
+the same shipped codec.
 
 These checks establish reconstruction accuracy and synthetic attention
 accuracy. The paper used quantization-aware training; lower inference-time
@@ -164,7 +197,8 @@ python3 -B /work/probes/bench_nvfp4_kv.py --selected --output /results/speed.jso
 
 The accuracy probe accepts `--baseline-codec` for the original writer (recorded
 SHA256 `d06ce6d2431c44c562e0fe85e7094c6db9aacd2185153473b98050ec327deea4`).
-The speed probe accepts `--baseline-runtime` for the initial four-over-six
-runtime and `--display-library` for the bounded allocator built by
+The speed probe accepts `--baseline-runtime` for an earlier runtime (the
+recorded run used the previously shipped four-over-six codec) and
+`--display-library` for the bounded allocator built by
 [build_nvfp4_display_probe.py](../../runtime/probes/build_nvfp4_display_probe.py).
 The probes load no model weights.

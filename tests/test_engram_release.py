@@ -104,7 +104,13 @@ class ReleaseCompatibility(unittest.TestCase):
         raw=(ROOT/'release/engram-release-manifest.json').read_bytes()
         manifest=assets.parse_manifest(raw)
         self.assertEqual(digest(raw),lock['engram']['manifest_sha256'])
-        self.assertEqual(manifest['source_model'],lock['model'])
+        # Packed from the original weights; the pinned (refit) weights keep those tables byte for byte.
+        self.assertEqual(manifest['source_model']['repo'],lock['model']['repo'])
+        self.assertEqual(manifest['source_model']['revision'],'5571a3c9ee09f9495e9118b54e022ac591b85373')
+        model=json.loads((ROOT/'release/model-release-manifest.json').read_bytes())
+        self.assertEqual({n:model['files'][n] for n in ('engrams/engram-layer-01.safetensors','engrams/engram-layer-14.safetensors')},
+            {'engrams/engram-layer-01.safetensors':{'bytes':101377628616,'sha256':'9ecd9bc00c8c045104d639dfdd8d6de4fe0457ce05ad8885baab062d059b0c9e'},
+             'engrams/engram-layer-14.safetensors':{'bytes':101380404312,'sha256':'0c33910e5a59c2787d1bc1891ca5961248e1db94e7919c562afbf4cedba2f5b2'}})
         self.assertEqual(manifest['repo_id'],lock['engram']['repo'])
         self.assertNotEqual(lock['model']['revision'],lock['engram']['revision'])
         self.assertEqual(sum(len(row['parts']) for row in manifest['files'].values()),28)
@@ -114,9 +120,9 @@ class ReleaseCompatibility(unittest.TestCase):
             self.assertEqual(rows[0]['hi'],rows[1]['lo'])
             self.assertEqual(rows[1]['hi'],rows[0]['total_rows'])
             self.assertEqual(rows[0]['total_rows'],rows[1]['total_rows'])
-    def test_original_model_and_draft_pins_unchanged(self):
+    def test_model_and_draft_pins(self):
         lock=json.loads((ROOT/'recipe-lock.json').read_bytes())
-        self.assertEqual(lock['model']['revision'],'5571a3c9ee09f9495e9118b54e022ac591b85373')
+        self.assertEqual(lock['model']['revision'],'650cae2c13aaaec303871a35301503570889c0be')
         self.assertEqual(lock['draft']['revision'],'f74b8c9b7d4448e2deeaf23be7d03557f2878504')
         self.assertEqual(digest((ROOT/'release/model-release-manifest.json').read_bytes()),lock['model']['manifest_sha256'])
     def test_native_payload_matches_serving_trial(self):

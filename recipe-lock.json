@@ -11,11 +11,11 @@
     "revision": "93a185660c42c90e26c326239ce8c8fd95179d64"
   },
   "format": "ds41_public_recipe_lock_v2",
-  "kit_manifest_sha256": "5686e56493a8ed7ca0e59852ee75d2f34119bdbd018faa38f6397d3b6822858a",
+  "kit_manifest_sha256": "1f74a8762422896fbda9135db9e612bc492a231d71453eb112f5babfeed49c13",
   "model": {
-    "manifest_sha256": "6d79a9ae5cfd121df7c559b76cde87b50551adbe68ae0dc94c97973e85e8e1d1",
+    "manifest_sha256": "828b7b5d7a672c5f2e44caca3d72d9c114c39634e46eb51deabd067a0f44a2c9",
     "repo": "coolbho3k/DeepSeek-V4.1-Flash-EXL3-3bpw",
-    "revision": "5571a3c9ee09f9495e9118b54e022ac591b85373"
+    "revision": "650cae2c13aaaec303871a35301503570889c0be"
   },
   "runtime": {
     "cache_manifest_sha256": "9c130184f8a1cc27d763ff2fb5286c49178d72bcd0473be77efad6e4b6aa7efa",

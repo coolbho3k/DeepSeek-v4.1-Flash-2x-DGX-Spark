@@ -147,7 +147,7 @@
   "loaded_backend_verification": {
     "format": "ds41_loaded_combined_miaai_v9",
     "inspector": "serving/spark_backend_attestation.py",
-    "sha256": "b276d31a102fe862552768702d621cc3f0baea9bb5289b0f4bda10961b9fac58"
+    "sha256": "5bb0e825f6566397abb601f513e5f501fda770499ff675b19e4502cd6483dae8"
   },
   "model_fusion": {
     "additional_persistent_gpu_bytes": 0,
@@ -179,10 +179,45 @@
     "target_distribution_unchanged": true,
     "window": 65536
   },
+  "nvfp4_indexer_keys": {
+    "alternatives": {
+      "indexer_decode_query": [
+        "nvfp4"
+      ],
+      "indexer_k_format": [
+        "mxfp4"
+      ]
+    },
+    "boot_qualified": true,
+    "default_for_new_deployments": [
+      "nvfp4",
+      "fp8"
+    ],
+    "descriptor_without_fields": [
+      "mxfp4",
+      "fp8"
+    ],
+    "environment": [
+      "DS41_INDEXER_K_FORMAT",
+      "DS41_INDEXER_DECODE_QUERY"
+    ],
+    "full_model_quality_qualified": false,
+    "gpu_unit_qualified": true,
+    "long_context_retrieval_qualified": [
+      131072,
+      524288,
+      1040000
+    ],
+    "module_sha256": "46c203490c5d5620570e1f59a8a8d3159b29b375ed9e7728137534ab808b260d",
+    "native_sha256": "77600b72778b206a6681d4c359b292a26a51a0a94bf7e12d3cc66a52b1a9703b",
+    "record_bytes": 72,
+    "scale_group": 16,
+    "selection": "every E4M3 scale in [amax/6.5, amax/2.5] from E4M3(amax/6); strictly lower group SSE replaces"
+  },
   "nvfp4_kv_four_over_six": {
     "bits_per_value": 4.5,
-    "codec_sha256": "fc5b8ae2e00e0c2ee854b5b08a7feb747b0ab4dc24ca78a7e5e6690d2f1062bf",
-    "default": "nvfp4_4over6",
+    "codec_sha256": "d437b2d750a09ce976dc1ec101ddc3da03e9a26288fecadd9bf6700fe91b738d",
+    "default": "nvfp4_search",
     "display_bytes_per_rank": 1879048192,
     "display_only_kv": true,
     "environment": "DS41_FP4_KV_MODE",
@@ -192,8 +227,11 @@
     "new_triton_signatures_compile_on_first_use": true,
     "ordinary_kv_bytes": 0,
     "outer_scale": 1.0,
-    "rollback": "legacy",
-    "selection": "minimum reconstructed group SSE; ties retain legacy /6",
+    "rollback": [
+      "nvfp4_4over6",
+      "legacy"
+    ],
+    "selection": "every E4M3 scale in [amax/6.5, amax/2.5] from E4M3(amax/6), strictly lower reconstructed group SSE replaces; ties retain legacy /6; never worse than /6 or four-over-six",
     "state_bytes": 288
   },
   "optimization_candidate": {

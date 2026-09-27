@@ -19,8 +19,10 @@ DEFAULTS = {
     'MAX_NUM_SEQS': '6', 'MAX_NUM_BATCHED_TOKENS': '2048',
     'LONG_PREFILL_TOKEN_THRESHOLD': '2048',
     'PREFIX_CACHE_RETENTION_INTERVAL': '4096',
-    'DS41_FP4_KV_MODE': 'nvfp4_4over6',
+    'DS41_FP4_KV_MODE': 'nvfp4_search',
     'DS41_SWA_KV_GROUP_SIZE': '32',
+    'DS41_INDEXER_K_FORMAT': 'nvfp4',
+    'DS41_INDEXER_DECODE_QUERY': 'fp8',
     'ALLOW_STARTUP_MEMORY_SHORTFALL': '1',
     'HEAD_DRM_CARD': '/dev/dri/card0', 'WORKER_DRM_CARD': '/dev/dri/card0',
     'DS41_CACHE_DIR': '', 'REMOTE_CACHE_DIR': '', 'REMOTE_DIR': '',
@@ -76,8 +78,20 @@ def load(root, overrides=None, environ=None):
         raise ValueError('DS41_SWA_KV_GROUP_SIZE must be 32 or 64')
     profile['swa_kv_group_size'] = int(values['DS41_SWA_KV_GROUP_SIZE'])
     profile['fp4_kv_mode'] = values['DS41_FP4_KV_MODE']
-    if profile['fp4_kv_mode'] not in ('nvfp4_4over6', 'legacy'):
-        raise ValueError('DS41_FP4_KV_MODE must be nvfp4_4over6 or legacy')
+    if profile['fp4_kv_mode'] not in ('nvfp4_search', 'nvfp4_4over6', 'legacy'):
+        raise ValueError('DS41_FP4_KV_MODE must be nvfp4_search, nvfp4_4over6 or legacy')
+    key_format, decode_query = values['DS41_INDEXER_K_FORMAT'], values['DS41_INDEXER_DECODE_QUERY']
+    if key_format not in ('mxfp4', 'nvfp4'):
+        raise ValueError('DS41_INDEXER_K_FORMAT must be nvfp4 or mxfp4')
+    if decode_query not in ('fp8', 'nvfp4') or (decode_query == 'nvfp4' and key_format != 'nvfp4'):
+        raise ValueError('DS41_INDEXER_DECODE_QUERY must be fp8, or nvfp4 with NVFP4 index keys')
+    # New deployments default to NVFP4 index keys. MXFP4 and FP8 decode queries stay unrecorded:
+    # a descriptor without these fields means MXFP4/FP8 in every kit, so older deployments and
+    # kits are unchanged, and a kit that does not know the fields rejects an NVFP4 request.
+    if key_format != 'mxfp4':
+        profile['indexer_k_format'] = key_format
+    if decode_query != 'fp8':
+        profile['indexer_decode_query'] = decode_query
     profile['kv_cap_mib'] = 0  # This release uses the proven display-only KV allocator.
     retention = profile['prefix_cache_retention_interval']
     if not 0 <= retention <= 1048576 or retention % 256:

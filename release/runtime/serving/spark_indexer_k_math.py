@@ -5,6 +5,8 @@ The pinned fused native writer differs from staged native arithmetic at rare
 BF16 rounding boundaries. Keep native RMSNorm, then fuse RoPE, quantization
 and the original paged store with explicit CUDA-compatible sine-term FMA.
 FP8 calls retain the original kernel. This module never changes cache sizing.
+With DS41_INDEXER_K_FORMAT=nvfp4 the same normalized keys go to
+ds41.nvfp4_indexer.store (same RoPE arithmetic, NVFP4 pages with searched scales).
 """
 import ast
 import hashlib
@@ -23,6 +25,7 @@ KERNEL_SHA='64acf26b3a96dd1a44797bff597f62ebf15c5977d0f305d9ef646f142753dffc'
 MAX_ROWS=1056
 MAX_TEMPORARY_BYTES=MAX_ROWS*128*2
 _installed=None
+_nvfp4=None
 _lock=threading.Lock()
 
 
@@ -96,13 +99,17 @@ class KernelLaunch:
             from vllm import _custom_ops as ops
             normalized=torch.empty((count,128),device=kpre.device,dtype=torch.bfloat16)
             ops.rms_norm(normalized,kpre[:count],weight,args[4])
+            if _nvfp4 is not None:
+                _nvfp4.require_stable_format()
+                return _nvfp4.store(normalized,args[2],args[5],args[7],args[8],
+                                    compress_ratio=kwargs['COMPRESS_RATIO'])
             return candidate_launch(normalized,128,*args[2:],**kwargs,enable_fp_fusion=False)
 
         return launch
 
 
 def register():
-    global _installed
+    global _installed,_nvfp4
     setting=os.environ.get('DS41_ENABLE_INDEXER_K_PARITY','0')
     if setting not in ('0','1'):
         raise ValueError('DS41_ENABLE_INDEXER_K_PARITY must be exactly0 or1')
@@ -126,5 +133,7 @@ def register():
             return
         original=module._indexer_k_norm_rope_quant_store_kernel
         candidate=build_kernel(module)
+        from ds41 import nvfp4_indexer
+        _nvfp4=nvfp4_indexer if nvfp4_indexer.ENABLED else None
         _installed=KernelLaunch(original,candidate)
         module._indexer_k_norm_rope_quant_store_kernel=_installed

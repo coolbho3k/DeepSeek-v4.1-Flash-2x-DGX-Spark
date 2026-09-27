@@ -26,6 +26,11 @@ def main():
     p.add_argument('--kit',type=Path)
     p.add_argument('--kit-sha256')
     p.add_argument('--port',type=int,choices=(8888,8889),default=PORT)
+    p.add_argument('--fp4-kv-mode',choices=('nvfp4_search','nvfp4_4over6','legacy'),
+                   help='Record this main-KV scale mode (the kit must support it)')
+    p.add_argument('--indexer-k-format',choices=('mxfp4','nvfp4'),
+                   help='Record this indexer key format (the kit must support it)')
+    p.add_argument('--indexer-decode-query',choices=('fp8','nvfp4'))
     a=p.parse_args()
     raw=a.base_deployment.read_bytes()
     if hashlib.sha256(raw).hexdigest()!=a.base_sha256:raise ValueError('Changed baseline deployment')
@@ -41,13 +46,23 @@ def main():
     for node in config['nodes']:node['kit']=str(kit)
     config['kit_manifest_sha256']=digest
     config['api']['port']=a.port
+    if a.fp4_kv_mode:config['serving']['fp4_kv_mode']=a.fp4_kv_mode
+    for key,value in (('indexer_k_format',a.indexer_k_format),('indexer_decode_query',a.indexer_decode_query)):
+        if value is not None:
+            config['serving'][key]=value
+        if config['serving'].get(key) in ('mxfp4','fp8'):
+            del config['serving'][key]  # defaults are left unrecorded, as release/config.py does
     values=dict(WORKER_HOST=config['nodes'][1]['ssh'],FABRIC_NETWORK=config['fabric_network'],
         ROCE_GID_INDEX=str(config['nodes'][0]['gid_index']),API_HOST=config['api']['host'],
         API_PORT=str(a.port),MASTER_PORT=str(config['api']['master_port']),
         SERVED_MODEL_NAME=config['api']['model_name'],
         ALLOW_STARTUP_MEMORY_SHORTFALL=str(int(config['startup_memory_override'])))
-    values.update({(('DS41_' if k in ('fp4_kv_mode','swa_kv_group_size') else '') + k.upper()):str(v)
+    values.update({(('DS41_' if k in ('fp4_kv_mode','swa_kv_group_size','indexer_k_format','indexer_decode_query') else '') + k.upper()):str(v)
                    for k,v in config['serving'].items() if k!='kv_cap_mib'})
+    # A deployment without the indexer fields means MXFP4 keys and FP8 decode queries; pass that
+    # explicitly so release/config.py's newer defaults never change an existing deployment.
+    values.setdefault('DS41_INDEXER_K_FORMAT','mxfp4')
+    values.setdefault('DS41_INDEXER_DECODE_QUERY','fp8')
     for prefix,node in zip(('HEAD','WORKER'),config['nodes'],strict=True):
         for field in ('fabric_ip','ifname','hca','drm_card'):values[prefix+'_'+field.upper()]=str(node[field])
         if len(node['rails'])==2:

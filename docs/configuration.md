@@ -62,15 +62,19 @@ settings, requires no sudo, and removes the helper when the read finishes.
 CLI overrides: `--port`, `--host`, `--worker`, `--gpu-memory-utilization`,
 `--max-model-len`, `--max-num-seqs`, `--max-num-batched-tokens`, and
 `--long-prefill-token-threshold`, `--prefix-cache-retention-interval`,
-`--fp4-kv-mode`, and `--swa-kv-group-size`.
+`--fp4-kv-mode`, `--swa-kv-group-size`, and the experimental `--indexer-k-format`
+and `--indexer-decode-query`.
 These are launch-time settings: editing the
 file does not mutate a live server. Use an explicit `--restart` when appropriate.
 
-`DS41_FP4_KV_MODE=nvfp4_4over6` is the default main-cache writer. It chooses
-between rounded `/6` and `/4` group scales by reconstruction error. Use
-`./start-server.sh --restart --fp4-kv-mode legacy` (or set `DS41_FP4_KV_MODE=legacy` in
-`.env.ds41`) for the previous writer; select `nvfp4_4over6` to switch back.
-Both modes use exactly 288 bytes per 512-channel main-cache state (4.5 bits
+`DS41_FP4_KV_MODE=nvfp4_search` is the default main-cache writer. For each group of
+16 it tries every E4M3 scale from `amax/6` through the range `amax/6.5..amax/2.5` and
+keeps the one with the lowest reconstruction error, so it is never worse than the
+earlier writers on any group. It is GPU-unit-validated but not yet boot-qualified in
+the engine. `--fp4-kv-mode nvfp4_4over6` selects the previous default (the better of
+rounded `/6` and `/4`), and `--fp4-kv-mode legacy` the original `/6` writer; either
+can also be set as `DS41_FP4_KV_MODE` in `.env.ds41`, then `./start-server.sh --restart`.
+All modes use exactly 288 bytes per 512-channel main-cache state (4.5 bits
 per value) in the same 1792 MiB display-only pool. The MXFP4 indexer is unchanged.
 The main-cache selection reaches both workers and is fixed for
 their lifetime; changing it requires a restart. New Triton signatures compile
@@ -84,6 +88,27 @@ scale per 32 non-RoPE values, keeping all 64 RoPE values in BF16. Use
 writer, or `32` to switch back. This choice is independent of `--fp4-kv-mode`.
 Both layouts fit the same 19008-byte aligned 32-token page and retain display-only
 backing. See [SWA validation and padding](../release/experimental/swa_kv/README.md).
+
+`DS41_INDEXER_K_FORMAT=nvfp4` is the default sparse-indexer key format for new deployments.
+It stores index keys as E2M1 with an E4M3 scale per 16 values, chosen by the same scale
+search as the main cache, and scores them against FP8 queries during decode and NVFP4
+queries during prefill. The 72-byte rows fill the same 512-byte-aligned pages as the
+68-byte MXFP4 rows, so KV capacity is unchanged. It needs the full-FP4 DCP route (FP4
+main KV, DCP2, index-key parity), which this release uses, and is fixed for the workers'
+lifetime. `--indexer-k-format mxfp4` (or `DS41_INDEXER_K_FORMAT=mxfp4`) selects the previous
+MXFP4 keys. Decode scoring is faster than the MXFP4 kernel; prefill scoring runs on the
+block-scaled FP4 tensor cores at about the MXFP4 kernel's speed.
+`DS41_INDEXER_DECODE_QUERY=fp8` (default, most accurate) or `nvfp4`
+(`--indexer-decode-query nvfp4`) chooses the decode query format with NVFP4 keys; `nvfp4` is
+faster at long context and matches prefill.
+
+A deployment records `indexer_k_format` only when it is `nvfp4`, and `indexer_decode_query`
+only when it is `nvfp4`. A descriptor without the fields means MXFP4 keys and FP8 decode
+queries in every kit, so existing deployments keep their behaviour when relaunched, and a
+kit that predates NVFP4 keys rejects a deployment that asks for them. Restarting an existing
+deployment through `./start-server.sh` rereads `.env.ds41`; pin `DS41_INDEXER_K_FORMAT=mxfp4`
+there to keep MXFP4 on an older kit. See the
+[indexer FP4 study](../release/experimental/indexer_fp4/README.md).
 
 The tested defaults are 0.92 utilization, six sequence slots, a 1,048,576-token
 per-request limit, and 2048-token prefill chunks. Both 2048 and 3072 chunks are

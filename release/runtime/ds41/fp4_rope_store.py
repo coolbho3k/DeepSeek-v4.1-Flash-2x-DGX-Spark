@@ -9,14 +9,14 @@ import torch
 import triton
 import triton.language as tl
 
-from .fp4_main_kv import FOUR_OVER_SIX, MAX_WRITE_ROWS, _indices, _layout, _store_row, _writer_geometry
+from .fp4_main_kv import SCALE_MODE, MAX_WRITE_ROWS, _indices, _layout, _store_row, _writer_geometry
 
 
 @triton.jit
 def _rope_insert(latent, positions, cos_sin, cache, slots,
                  CAPACITY: tl.constexpr, POSITION_LIMIT: tl.constexpr,
                  COS_STRIDE: tl.constexpr, PAGE_STRIDE: tl.constexpr,
-                 STATES: tl.constexpr, RATIO: tl.constexpr, FOUR_OVER_SIX: tl.constexpr, GROUPS: tl.constexpr = 32):
+                 STATES: tl.constexpr, RATIO: tl.constexpr, SCALE_MODE: tl.constexpr, GROUPS: tl.constexpr = 32):
     token = tl.program_id(0)
     slot = tl.load(slots + token)
     if slot < 0 or slot >= CAPACITY:
@@ -36,7 +36,7 @@ def _rope_insert(latent, positions, cos_sin, cache, slots,
     s = tl.load(cs + 32 + tl.maximum(pair, 0), pair >= 0, other=0.0).to(tl.float32)
     # Preserve the native writer's BF16 rounding BEFORE FP4 scale selection.
     row = tl.interleave(even * c - odd * s, odd * c + even * s).to(tl.bfloat16)
-    _store_row(row.to(tl.float32), slot, cache, CAPACITY, PAGE_STRIDE, STATES, FOUR_OVER_SIX, GROUPS, group_start)
+    _store_row(row.to(tl.float32), slot, cache, CAPACITY, PAGE_STRIDE, STATES, SCALE_MODE, GROUPS, group_start)
 
 
 def rope_quant_insert(latent, positions, cos_sin_cache, kv_cache, slot_mapping,
@@ -71,5 +71,5 @@ allocator may use check_bounds=False; invalid accesses remain kernel-masked.
             CAPACITY=kv_cache.shape[0]*kv_cache.shape[1], POSITION_LIMIT=len(cos_sin_cache),
             COS_STRIDE=cos_sin_cache.stride(0), PAGE_STRIDE=kv_cache.stride(0),
             STATES=kv_cache.shape[1], RATIO=compress_ratio,
-            FOUR_OVER_SIX=FOUR_OVER_SIX, GROUPS=groups, num_warps=warps,
+            SCALE_MODE=SCALE_MODE, GROUPS=groups, num_warps=warps,
             enable_fp_fusion=True)

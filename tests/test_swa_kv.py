@@ -30,7 +30,7 @@ class SwaKv(unittest.TestCase):
         profile=runpy.run_path(str(path));old=dict(settings()['serving'])
         del old['swa_kv_group_size'];del old['fp4_kv_mode']
         current=profile['validate'](old)
-        self.assertEqual((current['swa_kv_group_size'],current['fp4_kv_mode']),(32,'nvfp4_4over6'))
+        self.assertEqual((current['swa_kv_group_size'],current['fp4_kv_mode']),(32,'nvfp4_search'))
         self.assertNotIn('swa_kv_group_size',old)
         for size in (32,64):
             with patch.dict('os.environ',DS41_SWA_KV_GROUP_SIZE=str(size),DS41_KV_CAP_MIB='0'):
@@ -41,7 +41,7 @@ class SwaKv(unittest.TestCase):
     def test_modes_reach_both_workers_without_unknown_vllm_flags(self):
         node=node_module()
         for size in (32,64):
-            for mode in ('legacy','nvfp4_4over6'):
+            for mode in ('legacy','nvfp4_4over6','nvfp4_search'):
                 config=deployment();config['serving'].update(swa_kv_group_size=size,fp4_kv_mode=mode)
                 for rank in (0,1):
                     command=node.docker_command(config,rank)
@@ -60,7 +60,7 @@ class SwaKv(unittest.TestCase):
             launch.main()
         report=json.loads(output.getvalue())
         self.assertEqual(report['settings']['serving']['swa_kv_group_size'],64)
-        self.assertEqual(report['settings']['serving']['fp4_kv_mode'],'nvfp4_4over6')
+        self.assertEqual(report['settings']['serving']['fp4_kv_mode'],'nvfp4_search')
         self.assertFalse(report['changed'])
 
     def test_native_corresponding_source_and_binary(self):

@@ -130,12 +130,12 @@
       "sha256": "b5db0535294b4942b8175b9a9c72ee788699ee47c4c4e1ccea87f7a34b42fc3c"
     },
     "ds41/fp4_main_kv.py": {
-      "bytes": 9911,
-      "sha256": "fc5b8ae2e00e0c2ee854b5b08a7feb747b0ab4dc24ca78a7e5e6690d2f1062bf"
+      "bytes": 13175,
+      "sha256": "d437b2d750a09ce976dc1ec101ddc3da03e9a26288fecadd9bf6700fe91b738d"
     },
     "ds41/fp4_rope_store.py": {
-      "bytes": 4083,
-      "sha256": "2c2f9303d1adfbdcbc098c3a6bb9bb2d21a9d329fc8957078b34d66cba9697c4"
+      "bytes": 4068,
+      "sha256": "2855c4dd82706ea46ffa075deaa0315873aca41c08fa9b55efa7d29d9909c1a2"
     },
     "ds41/heldout_metrics.py": {
       "bytes": 4996,
@@ -152,6 +152,10 @@
     "ds41/hf_verify.py": {
       "bytes": 17803,
       "sha256": "e7b9bf77f9cb7fce2c57047fa05933b65ebbd2361654ef42737b6b71b37f3206"
+    },
+    "ds41/nvfp4_indexer.py": {
+      "bytes": 46467,
+      "sha256": "46c203490c5d5620570e1f59a8a8d3159b29b375ed9e7728137534ab808b260d"
     },
     "ds41/quantized_capture.py": {
       "bytes": 15992,
@@ -190,24 +194,24 @@
       "sha256": "b3fcc3a4c004c63498f66d73ead55ff21e9e8d1d05944941c4029134e03ee9a0"
     },
     "ds41/vllm_dcp.py": {
-      "bytes": 16931,
-      "sha256": "943f807efa71018dd1a23dc159a4c5ac91da98b1a881f843db3dcdb91877fcdd"
+      "bytes": 20278,
+      "sha256": "0fe8cbb102db8d75563e77e2037baa644aba907e09fcaf3306a9b6bbd1d3cb3a"
     },
     "ds41/vllm_dcp_cache.py": {
       "bytes": 8861,
       "sha256": "37b914ef4d81fae4b61a891736240f49bebb9e95dbc0c013b6e3d4eb98fd16ce"
     },
     "ds41/vllm_dcp_runtime.py": {
-      "bytes": 2262,
-      "sha256": "73608f392b3b12c9ea7a461d804b13a994178add038852a5d8df9ffac4df91f5"
+      "bytes": 2297,
+      "sha256": "6ceafe05580bd769240e6698687f32f3a4e3e7ad71a429e77d1bf320774b42e1"
     },
     "ds41/vllm_exl3.py": {
       "bytes": 7794,
       "sha256": "d23c1e0df03cc097cad69314e53cef161cf599bba0b7b726d082cf144ffdfaa3"
     },
     "ds41/vllm_fp4_main.py": {
-      "bytes": 9495,
-      "sha256": "4d2783a7182755b7577d9a2f8905ecae9dac8e652835ef6184fbc06039954547"
+      "bytes": 9530,
+      "sha256": "77b4dc389f2d0afc35d687ffba264871c9137cb88b809ae19ada6a1016aff302"
     },
     "ds41/vllm_plugin.py": {
       "bytes": 6346,
@@ -1133,6 +1137,10 @@
       "bytes": 4408,
       "sha256": "afa778cfbdb5650ccc0cc063ff41eeabe4682c6190e19b37763a376f9a56fb3e"
     },
+    "kernels/nvfp4_indexer.cu": {
+      "bytes": 10760,
+      "sha256": "c0295da647de1da2b7066c0b04089f99ac00de9fca456476b4a824cfeb361b7b"
+    },
     "native-source/LICENSE": {
       "bytes": 1065,
       "sha256": "27a32b6263fcd96c79d3beeecf221c4366780bdf15ad51986f48650bd7369bff"
@@ -1654,8 +1662,8 @@
       "sha256": "896676c7f8f8238958f3c918c611963a0630729a664f82511ed509e57bb6c962"
     },
     "probes/bench_nvfp4_kv.py": {
-      "bytes": 9456,
-      "sha256": "0d250ac2f1059d5bba174098a7f7163425cb0a1810e4591321ecea872e17fd77"
+      "bytes": 9877,
+      "sha256": "ad3893cb7008f8b952bc515b22d835340ff933b1d88ccf0b53ef0847eb28811a"
     },
     "probes/build_nvfp4_display_probe.py": {
       "bytes": 1784,
@@ -1685,9 +1693,25 @@
       "bytes": 15960,
       "sha256": "52e42922af5293b2076eb31941a69084956c2ef51dbc549bacd5439ac7744958"
     },
+    "probes/check_nvfp4_decode_gpu.py": {
+      "bytes": 9430,
+      "sha256": "e46e016d085bd77858eaba77540f8e37249ad80d1b980929d8923455343f391f"
+    },
     "probes/check_nvfp4_four_over_six.py": {
-      "bytes": 16704,
-      "sha256": "f47ddd50f1928cb7fdbc80f7976a5ee63fa9fc7505cfddac7960810defcf2b53"
+      "bytes": 19157,
+      "sha256": "4b136d8e4f06ef179dc0f22c01bd2b11831cf7234769b4846892fcc173a1e88c"
+    },
+    "probes/check_nvfp4_indexer_gpu.py": {
+      "bytes": 8477,
+      "sha256": "6644d420740efaaf714ad5af9baa102e2629928db7055d1ebc244a8b61a32b1b"
+    },
+    "probes/check_nvfp4_indexer_integration_gpu.py": {
+      "bytes": 6020,
+      "sha256": "ee4e9a49f1ed51da8ddaf0ca852296899a1de8cffba5b471bf0aea0d4eb7eb1b"
+    },
+    "probes/check_nvfp4_prefill_gpu.py": {
+      "bytes": 8255,
+      "sha256": "ec1a74779d7a913c7df0242d4de3d475650740644d121dd3660f5c26305370f7"
     },
     "probes/check_nvfp4_rounding.py": {
       "bytes": 3020,
@@ -1710,8 +1734,8 @@
       "sha256": "7c467b82c1e1f9022a2683cffc27a387bb155115dbd08781bdc3ddd1806017fb"
     },
     "runtime-requirements.json": {
-      "bytes": 23880,
-      "sha256": "42ce1062273fcaa21e2cbe4a8396e18ce967bb36ae918990b2c1017395861aa2"
+      "bytes": 24964,
+      "sha256": "74902ed278c056f54688b82157bed0c6fa7ef9fce4a24cf3f81e9c7dcdbe4ffd"
     },
     "scripts/build_cooperative_moe.py": {
       "bytes": 2599,
@@ -1918,12 +1942,12 @@
       "sha256": "316b39ed2e5b86555cad220aa9efd807317131e7d1ba537e71a7bda8cb038a98"
     },
     "serving/ds41/fp4_main_kv.py": {
-      "bytes": 9911,
-      "sha256": "fc5b8ae2e00e0c2ee854b5b08a7feb747b0ab4dc24ca78a7e5e6690d2f1062bf"
+      "bytes": 13175,
+      "sha256": "d437b2d750a09ce976dc1ec101ddc3da03e9a26288fecadd9bf6700fe91b738d"
     },
     "serving/ds41/fp4_rope_store.py": {
-      "bytes": 4083,
-      "sha256": "2c2f9303d1adfbdcbc098c3a6bb9bb2d21a9d329fc8957078b34d66cba9697c4"
+      "bytes": 4068,
+      "sha256": "2855c4dd82706ea46ffa075deaa0315873aca41c08fa9b55efa7d29d9909c1a2"
     },
     "serving/ds41/fused_sparse_attention.py": {
       "bytes": 17088,
@@ -1934,8 +1958,8 @@
       "sha256": "350e9ef1a9ce569af841ce1cd28541d27b04b196f64e590db7b11971618c98c2"
     },
     "serving/ds41/launch_profile.py": {
-      "bytes": 2630,
-      "sha256": "c9b4828012fdf91f744dec788d036cb630688b9f3e863767745a47fc460342f1"
+      "bytes": 3444,
+      "sha256": "9825c4d885dc5c78056065db29bf5297204e59d592781ebf4d8f747995075867"
     },
     "serving/ds41/length_aware_topk.py": {
       "bytes": 3497,
@@ -1968,6 +1992,10 @@
     "serving/ds41/ngram_draft.py": {
       "bytes": 4586,
       "sha256": "cd61a4dab5932b81cf79e3272c2d6baf71b065ab4b99d6052f5135e239d4e9fa"
+    },
+    "serving/ds41/nvfp4_indexer.py": {
+      "bytes": 46467,
+      "sha256": "46c203490c5d5620570e1f59a8a8d3159b29b375ed9e7728137534ab808b260d"
     },
     "serving/ds41/online_decode_attention.py": {
       "bytes": 6323,
@@ -2022,16 +2050,16 @@
       "sha256": "11d8655f445ac0914a2ee080d04d98d8ff8806e370d6a69ab02b97183c3231ea"
     },
     "serving/ds41/vllm_dcp.py": {
-      "bytes": 16931,
-      "sha256": "943f807efa71018dd1a23dc159a4c5ac91da98b1a881f843db3dcdb91877fcdd"
+      "bytes": 20278,
+      "sha256": "0fe8cbb102db8d75563e77e2037baa644aba907e09fcaf3306a9b6bbd1d3cb3a"
     },
     "serving/ds41/vllm_dcp_runtime.py": {
-      "bytes": 2262,
-      "sha256": "73608f392b3b12c9ea7a461d804b13a994178add038852a5d8df9ffac4df91f5"
+      "bytes": 2297,
+      "sha256": "6ceafe05580bd769240e6698687f32f3a4e3e7ad71a429e77d1bf320774b42e1"
     },
     "serving/ds41/vllm_fp4_main.py": {
-      "bytes": 9495,
-      "sha256": "4d2783a7182755b7577d9a2f8905ecae9dac8e652835ef6184fbc06039954547"
+      "bytes": 9530,
+      "sha256": "77b4dc389f2d0afc35d687ffba264871c9137cb88b809ae19ada6a1016aff302"
     },
     "serving/ds41/vllm_owned_graphs.py": {
       "bytes": 7587,
@@ -2101,9 +2129,17 @@
       "bytes": 3914,
       "sha256": "f281c7b7d5bf044f991d53edc87fa83ce8b6875f8ba715749787878ef4ecda5a"
     },
+    "serving/nvfp4-indexer-native/complete.json": {
+      "bytes": 808,
+      "sha256": "92a8b4af5ea440a42cd9b4778ad47b90868bf798ad81721e4564f9571b072cb1"
+    },
+    "serving/nvfp4-indexer-native/nvfp4_indexer.so": {
+      "bytes": 1043792,
+      "sha256": "77600b72778b206a6681d4c359b292a26a51a0a94bf7e12d3cc66a52b1a9703b"
+    },
     "serving/overlay-manifest.json": {
-      "bytes": 11355,
-      "sha256": "28442027cf03e57918cf520fc1e5cc6d745f9f51b9c6fce91e080b836692508f"
+      "bytes": 11669,
+      "sha256": "e0c272b6d348e960318b484cfd44c0f48caba8fb61fbcf556ae8d8fad2c46ecd"
     },
     "serving/row_store_core.cpp": {
       "bytes": 18571,
@@ -2130,12 +2166,12 @@
       "sha256": "78d8786397898cca0c987c6470fb055eba6030126ee8ea49592f9cf89598bbd5"
     },
     "serving/spark_backend_attestation.py": {
-      "bytes": 31466,
-      "sha256": "b276d31a102fe862552768702d621cc3f0baea9bb5289b0f4bda10961b9fac58"
+      "bytes": 31786,
+      "sha256": "5bb0e825f6566397abb601f513e5f501fda770499ff675b19e4502cd6483dae8"
     },
     "serving/spark_combined_miaai.py": {
-      "bytes": 26589,
-      "sha256": "c589523c9bcfd8cbd1d08b3bb0bffa69b3a34b327de39afb033109bcc665a9a8"
+      "bytes": 26864,
+      "sha256": "5f93b1bb0a4aac1199b7eca7588975b48ae21f718fdc156d9b0abecfe2d7eeff"
     },
     "serving/spark_combined_ready.py": {
       "bytes": 11732,
@@ -2174,8 +2210,8 @@
       "sha256": "4f3049b68b0fbdec933c281d0303f2702af729818a94b1af84dbaf0807642ab5"
     },
     "serving/spark_indexer_k_math.py": {
-      "bytes": 5998,
-      "sha256": "5ee4f01443af118a6bc50393a967860a30980f7314e38207800a3fbf9840ac57"
+      "bytes": 6506,
+      "sha256": "1a65be1547f96f244d5c64115fb3d1bba1141f223d6e95a852d5fe70615e4d2c"
     },
     "serving/spark_kv_cap.py": {
       "bytes": 5497,
@@ -2266,12 +2302,12 @@
       "sha256": "052bba3801bdd25aebd5e597e6636cc05e6d88c40875ea95e5ff31c0804fdb48"
     },
     "tools/launch_profile.py": {
-      "bytes": 2630,
-      "sha256": "c9b4828012fdf91f744dec788d036cb630688b9f3e863767745a47fc460342f1"
+      "bytes": 3444,
+      "sha256": "9825c4d885dc5c78056065db29bf5297204e59d592781ebf4d8f747995075867"
     },
     "tools/portable_node.py": {
-      "bytes": 48356,
-      "sha256": "ffbe77699e72e826058c97f506983f65a38f1a9c8b314628b746fae2e1a1c37e"
+      "bytes": 48538,
+      "sha256": "865ae19c00a800d3f93c03280b6d8bf9bcc368852349d17cd8093b975820e084"
     },
     "tools/portable_pair.py": {
       "bytes": 12514,
@@ -2303,7 +2339,7 @@
     },
     "tools/verify_public_download.py": {
       "bytes": 12498,
-      "sha256": "1803ce9333a9a3918ba55b233e2ee33abf8d3cf8d3fe69d960b9fe4708d2069e"
+      "sha256": "7e7c360109c930da57341d2d178bece7d37212342598c27b552d58fdfc420902"
     },
     "tools/verify_runtime_image.py": {
       "bytes": 5395,

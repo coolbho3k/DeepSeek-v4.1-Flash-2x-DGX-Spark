@@ -1,8 +1,9 @@
 {
   "actual_display_allocation_tested": false,
   "attention_vs_bf16": {
-    "four_over_six_sse": 42.37830201556085,
-    "legacy_sse": 49.33964342045404
+    "four_over_six_sse": 42.37831038421375,
+    "legacy_sse": 49.33964342045404,
+    "search_sse": 35.336540004664066
   },
   "baseline_gpu_checked": true,
   "baseline_sha256": "d06ce6d2431c44c562e0fe85e7094c6db9aacd2185153473b98050ec327deea4",
@@ -15,7 +16,9 @@
       "four_over_six_sse": 0.0,
       "groups": 32,
       "improved": 0,
-      "regressed": 0
+      "improved_vs_four_over_six": 0,
+      "regressed": 0,
+      "search_sse": 0.0
     },
     {
       "baseline_sse": 80.0,
@@ -23,15 +26,19 @@
       "four_over_six_sse": 40.0,
       "groups": 32,
       "improved": 32,
-      "regressed": 0
+      "improved_vs_four_over_six": 32,
+      "regressed": 0,
+      "search_sse": 27.0
     },
     {
       "baseline_sse": 3.9224821403622627,
       "case": "exact_sse_tie",
       "four_over_six_sse": 3.9224821403622627,
       "groups": 32,
-      "improved": 0,
-      "regressed": 0
+      "improved": 32,
+      "improved_vs_four_over_six": 32,
+      "regressed": 0,
+      "search_sse": 2.8170133903622627
     },
     {
       "baseline_sse": 1.661852547952641e-06,
@@ -39,83 +46,103 @@
       "four_over_six_sse": 1.661852547952641e-06,
       "groups": 1056,
       "improved": 0,
-      "regressed": 0
+      "improved_vs_four_over_six": 0,
+      "regressed": 0,
+      "search_sse": 1.661852547952641e-06
     },
     {
       "baseline_sse": 4905.1112791794385,
       "case": "normal",
       "four_over_six_sse": 4088.8834921616162,
       "groups": 33792,
-      "improved": 15421,
-      "regressed": 0
+      "improved": 22398,
+      "improved_vs_four_over_six": 14626,
+      "regressed": 0,
+      "search_sse": 3608.8205496567334
     },
     {
       "baseline_sse": 21426.192130305288,
       "case": "trained_range",
       "four_over_six_sse": 17861.26500628185,
       "groups": 16416,
-      "improved": 7341,
-      "regressed": 0
+      "improved": 10711,
+      "improved_vs_four_over_six": 6972,
+      "regressed": 0,
+      "search_sse": 15817.19567034435
     },
     {
       "baseline_sse": 536902.4708369775,
       "case": "wide_scales",
       "four_over_six_sse": 447659.5441088853,
       "groups": 8224,
-      "improved": 2061,
-      "regressed": 0
+      "improved": 2851,
+      "improved_vs_four_over_six": 1649,
+      "regressed": 0,
+      "search_sse": 393568.664125028
     },
     {
       "baseline_sse": 26159568.75,
       "case": "e4m3_upper_boundary",
       "four_over_six_sse": 14638422.75,
       "groups": 224,
-      "improved": 112,
-      "regressed": 0
+      "improved": 154,
+      "improved_vs_four_over_six": 98,
+      "regressed": 0,
+      "search_sse": 11139094.75
     },
     {
       "baseline_sse": 5032.744226838145,
       "case": "outliers",
       "four_over_six_sse": 5002.960337067637,
       "groups": 4128,
-      "improved": 465,
-      "regressed": 0
+      "improved": 1023,
+      "improved_vs_four_over_six": 774,
+      "regressed": 0,
+      "search_sse": 4931.303461457285
     }
   ],
-  "codec_sha256": "fc5b8ae2e00e0c2ee854b5b08a7feb747b0ab4dc24ca78a7e5e6690d2f1062bf",
+  "codec_sha256": "d437b2d750a09ce976dc1ec101ddc3da03e9a26288fecadd9bf6700fe91b738d",
   "cuda_graph_replay": true,
   "device": "NVIDIA GB10",
+  "four_over_six_exact": true,
   "four_over_six_sse": 15113079.325428197,
   "full_model_quality_tested": false,
   "fused_rope_cases": 20,
   "groups": 63936,
-  "improved_groups": 25432,
+  "improved_groups": 37201,
+  "improved_vs_four_over_six_groups": 24183,
   "legacy_exact": true,
-  "max_allocated_bytes": 44668416,
-  "packed_attention_nmse": 5.769482547962612e-12,
-  "probe_sha256": "f47ddd50f1928cb7fdbc80f7976a5ee63fa9fc7505cfddac7960810defcf2b53",
+  "max_allocated_bytes": 44715008,
+  "mode": "nvfp4_search",
+  "packed_attention_nmse": 5.770835632273874e-12,
+  "probe_sha256": "4b136d8e4f06ef179dc0f22c01bd2b11831cf7234769b4846892fcc173a1e88c",
   "public_prefill_2048_checked": true,
-  "reduction_percent": 43.45583276628048,
+  "reduction_percent": 56.76038052849377,
+  "reduction_vs_four_over_six_percent": 23.529478659081327,
   "regressed_groups": 0,
+  "search_sse": 11557050.550821537,
   "state_bytes": 288,
   "status": "pass",
-  "validation_date": "2026-09-22",
+  "validation_date": "2026-09-26",
   "writer_timing_note": "Launch-bound diagnostic only; use performance-results.json for CUDA-graph display-memory measurements.",
   "writer_timings": {
     "1": {
-      "baseline_ms": 0.0011882666498422624,
-      "four_over_six_ms": 0.0011839999506870905,
-      "legacy_ms": 0.08220160007476807
+      "baseline_ms": 0.0013183999806642532,
+      "four_over_six_ms": 0.0012896000097195306,
+      "legacy_ms": 0.001110400011142095,
+      "search_ms": 0.0029578665892283124
     },
     "1056": {
-      "baseline_ms": 0.0035040001074473064,
-      "four_over_six_ms": 0.0053951998551686605,
-      "legacy_ms": 0.001972266659140587
+      "baseline_ms": 0.012422399719556172,
+      "four_over_six_ms": 0.020679465929667153,
+      "legacy_ms": 0.027169066667556762,
+      "search_ms": 0.013230933745702108
     },
     "8": {
-      "baseline_ms": 0.0012501332908868789,
-      "four_over_six_ms": 0.011501866579055785,
-      "legacy_ms": 0.01333013375600179
+      "baseline_ms": 0.0013525333255529405,
+      "four_over_six_ms": 0.001251199965675672,
+      "legacy_ms": 0.0011829332758982976,
+      "search_ms": 0.001628799984852473
     }
   },
   "writer_timings_qualified": false

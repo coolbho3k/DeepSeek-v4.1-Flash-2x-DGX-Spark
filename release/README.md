@@ -12,7 +12,9 @@ page15 Engram reader, GPU-readable staging and deferred retrieval. The small
 native reader is prebuilt here, with its corresponding C++ source; the image
 itself is unchanged. `bootstrap.py --rank` downloads and verifies only the
 corresponding rank's packed tables from a separately pinned HF revision.
-Old canonical model/draft pins and original Engram files remain unchanged.
+The model pin now names the full-pool refit weights; their Engram tables are byte-identical to
+the original upload, so the packed page15 tables apply unchanged. Draft pins and original Engram
+files are unchanged.
 See `../docs/engram-io-performance.md` for measured results and atomic upgrades.
 The 3.15M-token capacity qualification used the preceding runtime; it has not
 been repeated with these kernels. Host-side launch tools have been generalized

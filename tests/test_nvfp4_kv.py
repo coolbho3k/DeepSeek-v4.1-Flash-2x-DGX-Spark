@@ -16,8 +16,9 @@ KIT = ROOT / 'release/runtime'
 
 class Nvfp4Configuration(unittest.TestCase):
     def test_new_default_and_explicit_rollback(self):
-        self.assertEqual(settings()['serving']['fp4_kv_mode'], 'nvfp4_4over6')
-        self.assertEqual(settings(DS41_FP4_KV_MODE='legacy')['serving']['fp4_kv_mode'], 'legacy')
+        self.assertEqual(settings()['serving']['fp4_kv_mode'], 'nvfp4_search')
+        for mode in ('nvfp4_4over6', 'legacy'):
+            self.assertEqual(settings(DS41_FP4_KV_MODE=mode)['serving']['fp4_kv_mode'], mode)
         for mode in ('', '0', '1', 'nvfp4', 'LEGACY'):
             with self.subTest(mode=mode), self.assertRaisesRegex(ValueError, 'DS41_FP4_KV_MODE'):
                 settings(DS41_FP4_KV_MODE=mode)
@@ -29,9 +30,9 @@ class Nvfp4Configuration(unittest.TestCase):
         profile = runpy.run_path(str(host))
         old = dict(settings()['serving'])
         del old['fp4_kv_mode']
-        self.assertEqual(profile['validate'](old)['fp4_kv_mode'], 'nvfp4_4over6')
+        self.assertEqual(profile['validate'](old)['fp4_kv_mode'], 'nvfp4_search')
         self.assertNotIn('fp4_kv_mode', old)
-        for mode in ('legacy', 'nvfp4_4over6'):
+        for mode in ('legacy', 'nvfp4_4over6', 'nvfp4_search'):
             with patch.dict('os.environ', DS41_FP4_KV_MODE=mode, DS41_KV_CAP_MIB='0'):
                 self.assertEqual(profile['from_environment']()['fp4_kv_mode'], mode)
         for mode in (False, None, 'wrong'):
@@ -40,7 +41,7 @@ class Nvfp4Configuration(unittest.TestCase):
 
     def test_both_workers_get_mode_and_keep_display_only_pool(self):
         node = node_module()
-        for mode in ('nvfp4_4over6', 'legacy'):
+        for mode in ('nvfp4_search', 'nvfp4_4over6', 'legacy'):
             config = deployment()
             config['serving']['fp4_kv_mode'] = mode
             for rank in (0, 1):
@@ -72,10 +73,14 @@ class Nvfp4Configuration(unittest.TestCase):
         self.assertEqual(report['codec_sha256'], hashlib.sha256((KIT / 'serving/ds41/fp4_main_kv.py').read_bytes()).hexdigest())
         self.assertEqual(report['probe_sha256'], hashlib.sha256((KIT / 'probes/check_nvfp4_four_over_six.py').read_bytes()).hexdigest())
         self.assertEqual(report['bits_per_value'], 4.5)
+        self.assertEqual(report['mode'], 'nvfp4_search')
         self.assertEqual(report['regressed_groups'], 0)
         self.assertGreater(report['improved_groups'], 0)
+        self.assertGreater(report['improved_vs_four_over_six_groups'], 0)
+        self.assertLess(report['search_sse'], report['four_over_six_sse'])
         self.assertLess(report['four_over_six_sse'], report['baseline_sse'])
         self.assertTrue(report['legacy_exact'])
+        self.assertTrue(report['four_over_six_exact'])
         self.assertTrue(report['baseline_gpu_checked'])
         self.assertTrue(report['public_prefill_2048_checked'])
         self.assertFalse(report['full_model_quality_tested'])
@@ -94,10 +99,11 @@ class Nvfp4Configuration(unittest.TestCase):
                 self.assertTrue(report['all_midpoints_checked'])
             else:
                 self.assertEqual(report['versions']['candidate']['fp4_main_kv.py'], codec_sha)
+                self.assertEqual(report['versions']['four_over_six']['fp4_main_kv.py'], codec_sha)
                 self.assertTrue(report['actual_display_allocation_tested'])
                 self.assertEqual(report['display_probe_bytes'], 4 * 2**20)
                 self.assertEqual({r['version'] for r in report['results']},
-                                 {'candidate', 'legacy', 'before', 'legacy_before'})
+                                 {'candidate', 'four_over_six', 'legacy', 'before', 'legacy_before'})
                 self.assertEqual({r['rows'] for r in report['results']},
                                  {1, 4, 8, 24, 128, 512, 1056, 2048, 3072})
                 self.assertTrue(all(r['spills'] == 0 for r in report['results']))

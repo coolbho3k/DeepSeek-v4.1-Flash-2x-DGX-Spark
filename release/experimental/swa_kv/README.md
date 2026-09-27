@@ -4,8 +4,8 @@ The default is now **32/BF16**: an independent UE8M0 power-of-two scale per
 32 of the 448 non-RoPE FP8 values; all 64 RoPE values remain BF16. Select the
 original layout with `./start-server.sh --restart --swa-kv-group-size 64`, or
 set `DS41_SWA_KV_GROUP_SIZE=64` in `.env.ds41`. Select `32` to switch back.
-The independent main-cache default is `nvfp4_4over6`; `--fp4-kv-mode legacy`
-restores its old quantizer. Both choices reach both workers before allocation
+The independent main-cache default is `nvfp4_search` (earlier `nvfp4_4over6`);
+`--fp4-kv-mode nvfp4_4over6` or `legacy` selects an earlier quantizer. Both choices reach both workers before allocation
 and graph capture, and require a restart.
 
 ## What differs from DeepSeek's reference

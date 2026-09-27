@@ -12,6 +12,14 @@ import registry
 ROOT=Path(__file__).resolve().parents[1]
 
 
+
+# Engram tables of the packed page15 source (original weights, manifest 6d79a9ae); every later
+# weight revision must carry these exact bytes.
+ENGRAM_SOURCE_TABLES = {
+    'engrams/engram-layer-01.safetensors': {'bytes': 101377628616, 'sha256': '9ecd9bc00c8c045104d639dfdd8d6de4fe0457ce05ad8885baab062d059b0c9e'},
+    'engrams/engram-layer-14.safetensors': {'bytes': 101380404312, 'sha256': '0c33910e5a59c2787d1bc1891ca5961248e1db94e7919c562afbf4cedba2f5b2'},
+}
+
 def validate(lock,online=False):
     runtime=lock.get('runtime')
     if runtime is None:
@@ -32,9 +40,16 @@ def validate(lock,online=False):
     module_spec=importlib.util.spec_from_file_location('validate_engram_pin',ROOT/'release/runtime/tools/engram_assets.py')
     helper=importlib.util.module_from_spec(module_spec);module_spec.loader.exec_module(helper)
     manifest=helper.parse_manifest(raw)
+    # The packed tables were built from the original weights (source_model). Later weight
+    # revisions keep those engram tables byte for byte, so the pinned model manifest must
+    # carry exactly the source's engram rows.
+    model_raw=(ROOT/'release/model-release-manifest.json').read_bytes()
+    model_rows={name:json.loads(model_raw)['files'].get(name) for name in ENGRAM_SOURCE_TABLES}
     if (hashlib.sha256(raw).hexdigest()!=packed['manifest_sha256']
             or helper.MANIFEST_SHA!=packed['manifest_sha256']
-            or manifest['source_model']!=lock['model'] or manifest['repo_id']!=packed['repo']):
+            or hashlib.sha256(model_raw).hexdigest()!=lock['model']['manifest_sha256']
+            or manifest['source_model']['repo']!=lock['model']['repo'] or manifest['repo_id']!=packed['repo']
+            or model_rows!=ENGRAM_SOURCE_TABLES):
         raise ValueError('Packed reader, data and canonical source pins do not agree')
     if runtime.get('transport') == 'ghcr':registry.validate(runtime)
     for name in (registry.ASSETS if runtime.get('transport') == 'ghcr' else ('runtime-image.tar.gz','kernel-cache.tar','runtime-source.tar.gz')):
@@ -57,6 +72,12 @@ def validate(lock,online=False):
                 remote=files.get(part['path'],{});lfs=remote.get('lfs',{})
                 if remote.get('size')!=part['bytes'] or lfs.get('sha256')!=part['sha256']:
                     raise ValueError('Missing or mismatched immutable public packed part')
+        source=manifest['source_model']
+        url=f"https://huggingface.co/{source['repo']}/resolve/{source['revision']}/release-manifest.json"
+        with urllib.request.urlopen(url,timeout=30) as response:source_raw=response.read(4*2**20+1)
+        if (hashlib.sha256(source_raw).hexdigest()!=source['manifest_sha256']
+                or {name:json.loads(source_raw)['files'].get(name) for name in ENGRAM_SOURCE_TABLES}!=ENGRAM_SOURCE_TABLES):
+            raise ValueError('Packed Engram source tables differ from the pinned model')
         for name in ('model','draft'):
             spec=lock[name]
             url=f"https://huggingface.co/{spec['repo']}/resolve/{spec['revision']}/release-manifest.json"

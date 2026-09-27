@@ -58,13 +58,33 @@ def download(url,path,digest,size=None):
     partial.replace(path)
     print(json.dumps(dict(stage='download_verified',file=path.name,bytes=path.stat().st_size)),flush=True)
 
-def snapshot(spec,destination):
+def model_dir(root,spec):
+    """Weights for the pinned revision: root/'model' when it is new or already holds this revision,
+    otherwise a directory keyed by the manifest SHA, so an upgrade never overwrites earlier weights."""
+    legacy=root/'model';manifest=legacy/'release-manifest.json'
+    if not legacy.exists() or (manifest.is_file() and not manifest.is_symlink() and sha(manifest)==spec['manifest_sha256']):
+        return legacy,root/'model-verified.json',None
+    key=spec['manifest_sha256'][:16]
+    return root/f'model-{key}',root/f'model-verified-{key}.json',legacy
+
+def snapshot(spec,destination,reuse=None):
     base=f"https://huggingface.co/{spec['repo']}/resolve/{spec['revision']}/"
     download(base+'release-manifest.json',destination/'release-manifest.json',spec['manifest_sha256'])
     manifest=json.loads((destination/'release-manifest.json').read_bytes())
     if manifest['repo_id']!=spec['repo']:raise ValueError('HF manifest repository mismatch')
+    previous={}
+    if reuse is not None and (reuse/'release-manifest.json').is_file():
+        previous=json.loads((reuse/'release-manifest.json').read_bytes()).get('files',{})
     for name,row in sorted(manifest['files'].items()):
-        relative(name);download(base+name,destination/name,row['sha256'],row['bytes'])
+        relative(name);target=destination/name;old=reuse/name if reuse is not None else None
+        # Link files an earlier revision already verified with the same size and SHA-256 (e.g. the
+        # Engram tables); download() below re-verifies them. Changed shards are downloaded fresh.
+        if (old is not None and not target.exists() and previous.get(name)==row
+                and old.is_file() and not old.is_symlink() and old.stat().st_size==row['bytes']):
+            target.parent.mkdir(parents=True,exist_ok=True)
+            try:os.link(old,target)
+            except OSError:pass
+        download(base+name,target,row['sha256'],row['bytes'])
 
 def extract(archive,destination):
     if destination.exists():
@@ -124,8 +144,9 @@ def bootstrap(lock,root,kit,rank=0):
         if previous.get('lock_sha256')==lock_sha:
             engrams.validate(previous['engram'],rank)
             verifier=module(kit/'tools/verify_public_download.py','reuse_weights')
-            manifest,summary=verifier.load_manifest(root/'model/release-manifest.json',lock['model']['manifest_sha256'])
-            verifier.check_receipt(root/'model',manifest,summary,json.loads((root/'model-verified.json').read_bytes()))
+            weights_dir,weights_receipt,_=model_dir(root,lock['model'])
+            manifest,summary=verifier.load_manifest(weights_dir/'release-manifest.json',lock['model']['manifest_sha256'])
+            verifier.check_receipt(weights_dir,manifest,summary,json.loads(weights_receipt.read_bytes()))
             draft_files=json.loads((root/'draft-verified.json').read_bytes())
             for name,row in draft_files.items():
                 p=root/'draft-exl3'/relative(name)
@@ -159,12 +180,12 @@ def bootstrap(lock,root,kit,rank=0):
             data=image_check.inspect(candidate)
             if image_check.identity(data)==expected:image=data['Id'];break
     if image is None:raise ValueError('Imported image differs from the pinned runtime identity')
-    snapshot(lock['model'],root/'model');snapshot(lock['draft'],root/'draft-exl3')
+    weights_dir,receipt_path,previous_weights=model_dir(root,lock['model'])
+    snapshot(lock['model'],weights_dir,previous_weights);snapshot(lock['draft'],root/'draft-exl3')
     weights=module(kit/'tools/verify_public_download.py','verify_public_weights')
-    manifest,summary=weights.load_manifest(root/'model/release-manifest.json',lock['model']['manifest_sha256'])
-    receipt_path=root/'model-verified.json'
-    if receipt_path.exists():weights.check_receipt(root/'model',manifest,summary,json.loads(receipt_path.read_bytes()))
-    else:receipt_path.write_text(json.dumps(weights.verify_full(root/'model',manifest,summary),indent=2)+'\n')
+    manifest,summary=weights.load_manifest(weights_dir/'release-manifest.json',lock['model']['manifest_sha256'])
+    if receipt_path.exists():weights.check_receipt(weights_dir,manifest,summary,json.loads(receipt_path.read_bytes()))
+    else:receipt_path.write_text(json.dumps(weights.verify_full(weights_dir,manifest,summary),indent=2)+'\n')
     draft_manifest=json.loads((root/'draft-exl3/release-manifest.json').read_bytes())
     draft_names=list(draft_manifest['files'])+['release-manifest.json']
     (root/'draft-verified.json').write_text(json.dumps({n:fingerprint(root/'draft-exl3'/n) for n in draft_names})+'\n')
@@ -173,7 +194,7 @@ def bootstrap(lock,root,kit,rank=0):
     for name,row in cache_manifest['files'].items():
         if 'mtime_ns' in row:os.utime(cache/name,ns=(row['mtime_ns'],row['mtime_ns']))
     packed=engrams.prepare(lock['engram'],root,rank,download)
-    result=dict(lock_sha256=lock_sha,kit=str(kit),model=str(root/'model'),draft=str(root/'draft-exl3'),engram=packed,
+    result=dict(lock_sha256=lock_sha,kit=str(kit),model=str(weights_dir),draft=str(root/'draft-exl3'),engram=packed,
         model_receipt=str(receipt_path),cache=str(cache),runs=str(root/'runs'),image=image,
         uid=os.getuid(),gid=os.getgid())
     (root/'runs').mkdir(exist_ok=True)

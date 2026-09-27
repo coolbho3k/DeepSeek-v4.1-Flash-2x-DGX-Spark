@@ -1,0 +1,106 @@
+{
+ "2": {
+  "mx_best_dropped_rank": {
+   "p1": 128,
+   "p10": 184,
+   "median": 246,
+   "p90": 303
+  },
+  "mx_worst_added_rank": {
+   "p1": 786,
+   "p10": 910,
+   "median": 1162,
+   "p90": 1546
+  },
+  "nv46_best_dropped_rank": {
+   "p1": 167,
+   "p10": 234,
+   "median": 297,
+   "p90": 351
+  },
+  "nv46_worst_added_rank": {
+   "p1": 699,
+   "p10": 772,
+   "median": 929,
+   "p90": 1157
+  }
+ },
+ "20": {
+  "mx_best_dropped_rank": {
+   "p1": 238,
+   "p10": 280,
+   "median": 338,
+   "p90": 394
+  },
+  "mx_worst_added_rank": {
+   "p1": 622,
+   "p10": 745,
+   "median": 928,
+   "p90": 1229
+  },
+  "nv46_best_dropped_rank": {
+   "p1": 278,
+   "p10": 316,
+   "median": 372,
+   "p90": 424
+  },
+  "nv46_worst_added_rank": {
+   "p1": 596,
+   "p10": 657,
+   "median": 779,
+   "p90": 960
+  }
+ },
+ "24": {
+  "mx_best_dropped_rank": {
+   "p1": 180,
+   "p10": 211,
+   "median": 274,
+   "p90": 340
+  },
+  "mx_worst_added_rank": {
+   "p1": 855,
+   "p10": 991,
+   "median": 1327,
+   "p90": 1842
+  },
+  "nv46_best_dropped_rank": {
+   "p1": 207,
+   "p10": 249,
+   "median": 310,
+   "p90": 379
+  },
+  "nv46_worst_added_rank": {
+   "p1": 742,
+   "p10": 833,
+   "median": 1013,
+   "p90": 1297
+  }
+ },
+ "36": {
+  "mx_best_dropped_rank": {
+   "p1": 248,
+   "p10": 297,
+   "median": 356,
+   "p90": 411
+  },
+  "mx_worst_added_rank": {
+   "p1": 586,
+   "p10": 679,
+   "median": 826,
+   "p90": 1033
+  },
+  "nv46_best_dropped_rank": {
+   "p1": 297,
+   "p10": 344,
+   "median": 391,
+   "p90": 438
+  },
+  "nv46_worst_added_rank": {
+   "p1": 566,
+   "p10": 617,
+   "median": 710,
+   "p90": 856
+  }
+ }
+}

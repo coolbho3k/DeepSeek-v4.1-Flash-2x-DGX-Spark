@@ -1,0 +1,28 @@
+{
+  "status": "built_not_gpu_qualified",
+  "abi": 2,
+  "binary_sha256": "77600b72778b206a6681d4c359b292a26a51a0a94bf7e12d3cc66a52b1a9703b",
+  "binary_bytes": 1043792,
+  "source_sha256": "c0295da647de1da2b7066c0b04089f99ac00de9fca456476b4a824cfeb361b7b",
+  "command": [
+    "/usr/local/cuda/bin/nvcc",
+    "-std=c++17",
+    "-O3",
+    "-lineinfo",
+    "-gencode",
+    "arch=compute_121a,code=sm_121a",
+    "-shared",
+    "-Xcompiler",
+    "-fPIC",
+    "--ptxas-options=-v",
+    "/input/nvfp4_indexer.cu",
+    "-o",
+    "/build/nvfp4_indexer.so"
+  ],
+  "ptxas": [
+    "0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads",
+    "ptxas info    : Used 128 registers, used 0 barriers"
+  ],
+  "seconds": 0.92,
+  "build_script_sha256": "77065d9dd345f7f8032dd59d7bf92bd6dd6a06422aef845cc465cf5290bdd650"
+}

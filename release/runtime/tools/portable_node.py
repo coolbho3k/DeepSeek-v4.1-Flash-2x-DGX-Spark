@@ -217,7 +217,7 @@ def docker_command(config, index, owner=None):
         '--enable-auto-tool-choice','--tool-call-parser','deepseek_v41',
         '--reasoning-parser','deepseek_v41','--enable-prompt-tokens-details']
     for key,value in config['serving'].items():
-        if key not in ('kv_cap_mib', 'fp4_kv_mode', 'swa_kv_group_size'): tail += ['--'+key.replace('_','-'),str(value)]
+        if key not in ('kv_cap_mib', 'fp4_kv_mode', 'swa_kv_group_size', 'indexer_k_format', 'indexer_decode_query'): tail += ['--'+key.replace('_','-'),str(value)]
     if rank == 1:
         tail += ['--headless']
     return dict(command=args+[node['image']]+tail, cmd=tail, env=env, mounts=mounts)
@@ -311,7 +311,8 @@ def cache_inputs(source, expected_sha):
 def check_model_receipt(config,index,manifest):
     node = config['nodes'][index]
     kit = absolute(node['kit'])
-    verifier = ('tools/verify_public_download.py' if config['model_manifest_sha256'] in {'043785e20066f6212d30b3451a956802596a18d0b542b104ce2dd24bba900bc3', '6d79a9ae5cfd121df7c559b76cde87b50551adbe68ae0dc94c97973e85e8e1d1'} else 'tools/verify_downloaded_release.py')
+    verifier = ('tools/verify_public_download.py' if config['model_manifest_sha256'] in {'043785e20066f6212d30b3451a956802596a18d0b542b104ce2dd24bba900bc3', '6d79a9ae5cfd121df7c559b76cde87b50551adbe68ae0dc94c97973e85e8e1d1',
+                                                                      '828b7b5d7a672c5f2e44caca3d72d9c114c39634e46eb51deabd067a0f44a2c9'} else 'tools/verify_downloaded_release.py')
     weights = module(kit,'portable_weights_check',verifier,manifest)
     model = absolute(node['model'])
     public,summary = weights.load_manifest(model/'release-manifest.json',config['model_manifest_sha256'])

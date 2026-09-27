@@ -19,6 +19,8 @@ def main():
     parser.add_argument('--reports', type=Path, required=True)
     parser.add_argument('--label', choices=('candidate', 'control', 'final'), required=True)
     parser.add_argument('--profiles', action='store_true')
+    parser.add_argument('--prefill-raw-output', type=Path,
+                        help='raw 32K prefill report (default reports/model-fusion-<label>-prefill-v1.json)')
     args = parser.parse_args()
     raw = args.deployment.read_bytes()
     if hashlib.sha256(raw).hexdigest() != args.deployment_sha256:
@@ -34,7 +36,8 @@ def main():
     label = args.label
     outputs = [reports / (label + suffix) for suffix in
                ('-serial.json', '-c6.json', '-prefill.json', '-prefill-raw.json')]
-    outputs[3] = ROOT / 'reports' / f'model-fusion-{label}-prefill-v1.json'
+    outputs[3] = (args.prefill_raw_output.absolute() if args.prefill_raw_output
+                  else ROOT / 'reports' / f'model-fusion-{label}-prefill-v1.json')
     if any(p.exists() for p in outputs):
         raise ValueError('Preserve existing benchmark evidence')
     run = Path(config['nodes'][0]['runs']) / config['run_id'] / 'pair'

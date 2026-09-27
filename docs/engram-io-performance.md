@@ -58,7 +58,8 @@ corresponding source. Ordinary Triton warmup/first-use compilation may occur.
 ## Atomic upgrade and rollback
 
 1. Original `engrams/*.safetensors` remain untouched on Hugging Face. The
-   canonical model/drafter revisions in the recipe lock do not change.
+   Engram publication did not change the model/drafter revisions; the later
+   full-pool refit moved the model pin but kept the Engram tables byte-identical.
 2. New data lives in a separate `engram-page15-v1/` namespace. Both ranks are
    staged first; all parts, manifest and model-card notice are promoted in one
    Hub commit. Only then does one Git commit pin that complete immutable HF

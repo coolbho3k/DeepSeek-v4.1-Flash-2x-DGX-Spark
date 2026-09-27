@@ -181,7 +181,7 @@ def register():
             hooks = (*dcp_hooks, *swa_hooks,
                 (attention.DeepseekV4Attention,'get_kv_cache_spec',main_spec),
                 (compressor,'rope_quant_insert',_insert))
-            expected = 17 if indexer_mode == '1' else 15
+            expected = (17 if indexer_mode == '1' else 15) + arithmetic.format_hook_count()
             if len(hooks) != expected or len({(id(o),n) for o,n,_ in hooks}) != expected:
                 raise RuntimeError('Incomplete coordinated FP4/DCP hook set')
             runtime.install_hooks(hooks)

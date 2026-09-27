@@ -61,9 +61,16 @@ class Configuration(unittest.TestCase):
         self.assertEqual(s['serving']['prefix_cache_retention_interval'],4096)
         self.assertEqual(s['api']['port'],8888)
         node=node_module()
-        from launch_profile import from_environment
-        with patch.dict(os.environ,{},clear=True):
+        from launch_profile import environment, from_environment
+        # Workers rebuild exactly the launcher's profile from the environment it passes them.
+        with patch.dict(os.environ,environment(s['serving']),clear=True):
             self.assertEqual(from_environment(),s['serving'])
+        # New deployments record NVFP4 index keys; a descriptor or worker environment without the
+        # field keeps the MXFP4 meaning, so older deployments and kits are unchanged.
+        self.assertEqual(s['serving']['indexer_k_format'],'nvfp4')
+        self.assertNotIn('indexer_decode_query',s['serving'])
+        with patch.dict(os.environ,{},clear=True):
+            self.assertEqual(from_environment(),{k:v for k,v in s['serving'].items() if k!='indexer_k_format'})
         worker=ROOT/'release/runtime/serving/ds41/launch_profile.py'
         self.assertEqual(worker.read_bytes(),(ROOT/'release/runtime/tools/launch_profile.py').read_bytes())
         lines=(ROOT/'release/runtime/serving/conservative.yaml').read_text().splitlines()
@@ -237,6 +244,33 @@ class Downloads(unittest.TestCase):
             p=Path(d)/'asset';p.write_bytes(b'ok')
             with patch.object(bootstrap.urllib.request,'urlopen',side_effect=AssertionError('Offline')):
                 bootstrap.download('https://example.invalid',p,hashlib.sha256(b'ok').hexdigest(),2)
+    def test_weight_upgrade_keeps_old_revision_and_links_unchanged_files(self):
+        digest=lambda b:hashlib.sha256(b).hexdigest()
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d);old=root/'model';old.mkdir()
+            files={'same.safetensors':b'engram','changed.safetensors':b'v1-weights'}
+            for name,data in files.items():(old/name).write_bytes(data)
+            old_manifest=json.dumps(dict(repo_id='o/r',files={n:dict(bytes=len(v),sha256=digest(v)) for n,v in files.items()})).encode()
+            (old/'release-manifest.json').write_bytes(old_manifest)
+            # Same revision: keep using root/model.
+            self.assertEqual(bootstrap.model_dir(root,dict(manifest_sha256=digest(old_manifest)))[:2],
+                             (old,root/'model-verified.json'))
+            new_files={'same.safetensors':b'engram','changed.safetensors':b'v3-weights'}
+            new_manifest=json.dumps(dict(repo_id='o/r',files={n:dict(bytes=len(v),sha256=digest(v)) for n,v in new_files.items()})).encode()
+            spec=dict(repo='o/r',revision='b'*40,manifest_sha256=digest(new_manifest))
+            target,receipt,reuse=bootstrap.model_dir(root,spec)
+            self.assertEqual((target.name,receipt.name,reuse),(f"model-{spec['manifest_sha256'][:16]}",
+                             f"model-verified-{spec['manifest_sha256'][:16]}.json",old))
+            fetched=[]
+            def fake(url,path,expected,size=None):
+                name=url.split('/'+spec['revision']+'/')[1];fetched.append(name)
+                if not path.exists():path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(new_manifest if name=='release-manifest.json' else new_files[name])
+                self.assertEqual(digest(path.read_bytes()),expected)
+            with patch.object(bootstrap,'download',side_effect=fake):bootstrap.snapshot(spec,target,reuse)
+            self.assertEqual(os.stat(target/'same.safetensors').st_ino,os.stat(old/'same.safetensors').st_ino)
+            self.assertEqual((target/'changed.safetensors').read_bytes(),b'v3-weights')
+            self.assertEqual((old/'changed.safetensors').read_bytes(),b'v1-weights')
+            self.assertEqual((old/'release-manifest.json').read_bytes(),old_manifest)
 
 
 class ReleasePayload(unittest.TestCase):

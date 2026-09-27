@@ -1,9 +1,12 @@
 # SPDX-License-Identifier: AGPL-3.0-only
-"""Bounded GPU proof of NVFP4 4/6 bytes, accuracy, RoPE, graphs and readers.
+"""Bounded GPU proof of NVFP4 main-KV bytes, accuracy, RoPE, graphs and readers.
 
-Run with the serving image; no weights, live KV or server hooks are touched.
---baseline-codec optionally verifies against the previous writer on the GPU.
-The independent oracle uses nearest-code distances and FP64 reconstruction SSE.
+Checks all three DS41_FP4_KV_MODE writers (nvfp4_search, the default; nvfp4_4over6;
+legacy) byte for byte against an independent oracle, and that search never
+reconstructs a group worse than either. Run with the serving image; no weights,
+live KV or server hooks are touched. --baseline-codec optionally verifies the
+legacy bytes against the previous writer on the GPU. The oracle uses nearest-code
+distances and exact float64 SSE comparisons.
 """
 import argparse
 import hashlib
@@ -26,33 +29,47 @@ def load(name, path):
     return module
 
 
-def oracle(values, four_over_six=True):
+E4M3 = torch.arange(1, 0x7F, dtype=torch.uint8).view(torch.float8_e4m3fn).float()  # positive, ascending
+
+
+def oracle(values, mode='search'):
+    """'legacy': E4M3(amax/6). 'four_over_six': E4M3(amax/4) if strictly better.
+    'search': from E4M3(amax/6), each E4M3 scale in [amax/6.5, amax/2.5] ascending
+    replaces the best only if strictly better."""
     x = values.cpu().float().reshape(-1, 32, 16)
     # Even codes precede odd codes, so argmin implements nearest-even ties.
     order = torch.tensor([0, 2, 4, 6, 1, 3, 5, 7])
     levels = torch.tensor([0., .5, 1., 1.5, 2., 3., 4., 6.])
     amax = x.abs().amax(-1).clamp_min(6 * 2**-9)
+    ax = x.abs().double()
 
-    def candidate(divisor):
-        scale = amax / divisor
-        if divisor == 4:
-            scale = scale.clamp_max(448)
+    def candidate(scale):
         scale = scale.to(torch.float8_e4m3fn)
         normalized = x / scale.float()[..., None]
         distance = (normalized.abs()[..., None] - levels[order]).abs()
         codes = order[distance.argmin(-1)] | (torch.signbit(x).long() << 3)
-        restored = levels[codes & 7] * scale.float()[..., None]
-        restored = torch.where((codes & 8) != 0, -restored, restored)
-        sse = (restored.double() - x.double()).square().sum(-1)
-        return codes, scale.view(torch.uint8), restored, sse
+        magnitude = levels[codes & 7].double() * scale.double()[..., None]
+        return codes, scale.view(torch.uint8), magnitude
 
-    codes, scales, restored, sse = candidate(6)
-    if four_over_six:
-        c4, s4, r4, e4 = candidate(4)
-        use4 = e4 < sse
-        codes = torch.where(use4[..., None], c4, codes)
-        scales = torch.where(use4, s4, scales)
-        restored = torch.where(use4[..., None], r4, restored)
+    codes, scales, magnitude = candidate(amax / 6)
+    if mode == 'four_over_six':
+        trials = [(torch.ones_like(amax, dtype=torch.bool), (amax / 4).clamp_max(448))]
+    elif mode == 'search':
+        low, high = amax / 6.5, amax / 2.5
+        trials = [((value >= low) & (value <= high), torch.full_like(amax, value)) for value in E4M3.tolist()]
+    else:
+        assert mode == 'legacy'
+        trials = []
+    for live, scale in trials:
+        if not live.any():
+            continue
+        c, s, m = candidate(scale)
+        # SSE_new - SSE_old = sum((m - best) * (m + best - 2|x|)): exact in float64 here.
+        better = live & (((m - magnitude) * (m + magnitude - 2 * ax)).sum(-1) < 0)
+        codes = torch.where(better[..., None], c, codes)
+        scales = torch.where(better, s, scales)
+        magnitude = torch.where(better[..., None], m, magnitude)
+    restored = torch.where((codes & 8) != 0, -magnitude, magnitude).float()
     codes = codes.reshape(-1, 512)
     packed = (codes[:, 0::2] | (codes[:, 1::2] << 4)).byte()
     return torch.cat((packed, scales), -1), restored.reshape(-1, 512).bfloat16()
@@ -72,17 +89,21 @@ def run(args):
     sys.modules[package.__name__] = package
     codec = load('nvfp4_probe.fp4_main_kv', root / 'serving/ds41/fp4_main_kv.py')
     rope = load('nvfp4_probe.fp4_rope_store', root / 'serving/ds41/fp4_rope_store.py')
-    assert codec.QUANTIZATION_MODE == 'nvfp4_4over6'
-    old_package = types.ModuleType('nvfp4_legacy_probe')
-    old_package.__path__ = package.__path__
-    sys.modules[old_package.__name__] = old_package
-    with patch.dict(os.environ, DS41_FP4_KV_MODE='legacy'):
-        legacy = load('nvfp4_legacy_probe.fp4_main_kv', root / 'serving/ds41/fp4_main_kv.py')
-        legacy_rope = load('nvfp4_legacy_probe.fp4_rope_store', root / 'serving/ds41/fp4_rope_store.py')
+    assert codec.QUANTIZATION_MODE == 'nvfp4_search'
+
+    def variant(name, mode):
+        variant_package = types.ModuleType(name)
+        variant_package.__path__ = package.__path__
+        sys.modules[name] = variant_package
+        with patch.dict(os.environ, DS41_FP4_KV_MODE=mode):
+            return (load(name + '.fp4_main_kv', root / 'serving/ds41/fp4_main_kv.py'),
+                    load(name + '.fp4_rope_store', root / 'serving/ds41/fp4_rope_store.py'))
+    legacy, legacy_rope = variant('nvfp4_legacy_probe', 'legacy')
+    four, four_rope = variant('nvfp4_four_over_six_probe', 'nvfp4_4over6')
     baseline = load('nvfp4_baseline', args.baseline_codec) if args.baseline_codec else None
     cases = []
-    total_old = total_new = 0.
-    changed = groups = 0
+    total_old = total_four = total_new = 0.
+    changed = changed_vs_four = groups = 0
     inputs = {
         'zero': torch.zeros(1, 512),
         'signed_zero_and_ties': torch.tensor([6., 0., -0., .25, -.25, .75, -.75,
@@ -112,7 +133,12 @@ def run(args):
         cache = backing[:, 256:-256].view(pages, states, 288)
         slots = torch.arange(rows, device='cuda', dtype=torch.int64) + 2
         want, restored = oracle(values)
-        old_bytes, old = oracle(values, False)
+        old_bytes, old = oracle(values, 'legacy')
+        four_bytes, four_restored = oracle(values, 'four_over_six')
+        four_cache = torch.empty_like(cache)
+        four.store(four_cache, values, slots)
+        assert torch.equal(four_cache[slots // states, slots % states].cpu(), four_bytes), (label, 'four-over-six mismatch')
+        assert torch.equal(four.gather(four_cache, slots).cpu(), four_restored)
         codec.store(cache, values, slots)
         actual = cache[slots // states, slots % states].cpu()
         assert torch.equal(actual, want), (label, 'packed oracle mismatch')
@@ -123,8 +149,8 @@ def run(args):
             old_codec.store(old_cache, values, slots)
             assert torch.equal(old_cache[slots // states, slots % states].cpu(), old_bytes)
             assert torch.equal(old_codec.gather(old_cache, slots).cpu(), old)
-        old_error, new_error = errors(values, old), errors(values, got)
-        assert torch.all(new_error <= old_error), (label, 'group regression')
+        old_error, four_error, new_error = errors(values, old), errors(values, four_restored), errors(values, got)
+        assert torch.all(new_error <= old_error) and torch.all(new_error <= four_error), (label, 'group regression')
         tied = new_error == old_error
         # All ties preserve BOTH the scale and signed E2M1 payload.
         old_groups = old_bytes[:, :256].reshape(rows, 32, 8)
@@ -141,16 +167,19 @@ def run(args):
         selected = torch.cat((slots.flip(0).int(), invalid[:2].int()))
         gathered = codec.gather(cache, selected).cpu()
         assert torch.equal(gathered[:-2], got.flip(0)) and not gathered[-2:].count_nonzero()
-        before, after = old_error.sum().item(), new_error.sum().item()
+        before, middle, after = old_error.sum().item(), four_error.sum().item(), new_error.sum().item()
         improved = (new_error < old_error).sum().item()
+        improved_vs_four = (new_error < four_error).sum().item()
         if label in ('normal', 'trained_range', 'wide_scales', 'outliers'):
-            assert after < before and improved > 0, (label, 'no strict improvement')
-        cases.append(dict(case=label, groups=rows * 32, improved=improved,
-            regressed=0, baseline_sse=before, four_over_six_sse=after))
+            assert after < middle < before and improved_vs_four > 0, (label, 'no strict improvement')
+        cases.append(dict(case=label, groups=rows * 32, improved=improved, improved_vs_four_over_six=improved_vs_four,
+            regressed=0, baseline_sse=before, four_over_six_sse=middle, search_sse=after))
         print(json.dumps(cases[-1]), flush=True)
         total_old += before
+        total_four += middle
         total_new += after
         changed += improved
+        changed_vs_four += improved_vs_four
         groups += rows * 32
 
     # Real native BF16 rotation is the input oracle for the fused writer.
@@ -192,16 +221,17 @@ def run(args):
                         256 + indices[:, None] % 64 * 288 + torch.arange(288, device='cuda')] = packed.cuda()
                     assert torch.equal(codec.gather(cache, indices).cpu(), restored)
                 assert torch.equal(backing, expected), ('fused RoPE mismatch', ratio, rank, count)
-                legacy_backing = torch.full_like(backing, 197)
-                legacy_cache = legacy_backing[:, 256:-256].view(16, 64, 288)
-                legacy_expected = torch.full_like(backing, 197)
-                legacy_rope.rope_quant_insert(latent, positions, cs, legacy_cache, slots, ratio)
-                if indices.numel():
-                    old_packed, old_restored = oracle(rotated, False)
-                    legacy_expected[indices[:, None] // 64,
-                        256 + indices[:, None] % 64 * 288 + torch.arange(288, device='cuda')] = old_packed.cuda()
-                    assert torch.equal(legacy.gather(legacy_cache, indices).cpu(), old_restored)
-                assert torch.equal(legacy_backing, legacy_expected)
+                for mode, other, other_rope in (('legacy', legacy, legacy_rope), ('four_over_six', four, four_rope)):
+                    other_backing = torch.full_like(backing, 197)
+                    other_cache = other_backing[:, 256:-256].view(16, 64, 288)
+                    other_expected = torch.full_like(backing, 197)
+                    other_rope.rope_quant_insert(latent, positions, cs, other_cache, slots, ratio)
+                    if indices.numel():
+                        other_packed, other_restored = oracle(rotated, mode)
+                        other_expected[indices[:, None] // 64,
+                            256 + indices[:, None] % 64 * 288 + torch.arange(288, device='cuda')] = other_packed.cuda()
+                        assert torch.equal(other.gather(other_cache, indices).cpu(), other_restored)
+                    assert torch.equal(other_backing, other_expected), ('fused RoPE mismatch', mode, ratio, rank, count)
                 rope_cases += 1
 
     # No host bounds synchronization is required inside the native CUDA graph.
@@ -235,12 +265,13 @@ def run(args):
     original = values.float()
     original_logits = query.float() @ original.T * 512**-.5
     original_output = original_logits.softmax(-1) @ original
-    legacy_values = oracle(values, False)[1].cuda().float()
-    legacy_logits = query.float() @ legacy_values.T * 512**-.5
-    legacy_output = legacy_logits.softmax(-1) @ legacy_values
-    attention_old_sse = (legacy_output - original_output).double().square().sum().item()
+    attention_sse = {}
+    for mode in ('legacy', 'four_over_six'):
+        mode_values = oracle(values, mode)[1].cuda().float()
+        mode_output = (query.float() @ mode_values.T * 512**-.5).softmax(-1) @ mode_values
+        attention_sse[mode] = (mode_output - original_output).double().square().sum().item()
     attention_new_sse = (output.float() - original_output).double().square().sum().item()
-    assert attention_new_sse < attention_old_sse, (attention_old_sse, attention_new_sse)
+    assert attention_new_sse < attention_sse['four_over_six'] < attention_sse['legacy'], (attention_sse, attention_new_sse)
 
     # Exercise the public 2048-token prefill bound, which the existing
     # combined runtime admits by raising both writer limits at startup.
@@ -264,7 +295,7 @@ def run(args):
         slots = torch.arange(count, device='cuda')
         cache = torch.empty(1, count, 288, device='cuda', dtype=torch.uint8)
         timings[str(count)] = {}
-        for label, impl in [('four_over_six', codec), ('legacy', legacy)] + ([('baseline', baseline)] if baseline else []):
+        for label, impl in [('search', codec), ('four_over_six', four), ('legacy', legacy)] + ([('baseline', baseline)] if baseline else []):
             for _ in range(3):
                 impl.store(cache, values, slots, check_bounds=False)
             start, end = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
@@ -274,18 +305,20 @@ def run(args):
             end.record()
             end.synchronize()
             timings[str(count)][label + '_ms'] = start.elapsed_time(end) / 30
-    assert total_new < total_old
+    assert total_new < total_four < total_old
     assert torch.cuda.max_memory_allocated() < 128 * 2**20
-    return dict(status='pass', device=torch.cuda.get_device_name(), cases=cases,
-        groups=groups, improved_groups=changed, regressed_groups=0,
-        baseline_sse=total_old, four_over_six_sse=total_new,
+    return dict(status='pass', device=torch.cuda.get_device_name(), mode=codec.QUANTIZATION_MODE, cases=cases,
+        groups=groups, improved_groups=changed, improved_vs_four_over_six_groups=changed_vs_four, regressed_groups=0,
+        baseline_sse=total_old, four_over_six_sse=total_four, search_sse=total_new,
         reduction_percent=100 * (1 - total_new / total_old),
+        reduction_vs_four_over_six_percent=100 * (1 - total_new / total_four),
         state_bytes=288, bits_per_value=288 * 8 / 512,
         fused_rope_cases=rope_cases, cuda_graph_replay=True,
         packed_attention_nmse=nmse, writer_timings=timings,
-        attention_vs_bf16=dict(legacy_sse=attention_old_sse, four_over_six_sse=attention_new_sse),
+        attention_vs_bf16=dict(legacy_sse=attention_sse['legacy'], four_over_six_sse=attention_sse['four_over_six'],
+                               search_sse=attention_new_sse),
         public_prefill_2048_checked=True,
-        baseline_gpu_checked=baseline is not None, legacy_exact=True,
+        baseline_gpu_checked=baseline is not None, legacy_exact=True, four_over_six_exact=True,
         baseline_sha256=hashlib.sha256(args.baseline_codec.read_bytes()).hexdigest() if baseline else None,
         codec_sha256=hashlib.sha256(Path(codec.__file__).read_bytes()).hexdigest(),
         max_allocated_bytes=torch.cuda.max_memory_allocated(),

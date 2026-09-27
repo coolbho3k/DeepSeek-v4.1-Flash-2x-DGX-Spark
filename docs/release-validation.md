@@ -186,10 +186,17 @@ was removed. No new framework compilation was performed.
   fixtures, parser markers, binary-data coincidences or the empty SSH directory.
   New release layers had no findings. This is not a security certification;
   see [security review](../release/security-review.json).
-- The HF target lock now uses its recorded **post-upload** manifest hash,
-  `6d79a9ae5cfd121df7c559b76cde87b50551adbe68ae0dc94c97973e85e8e1d1`.
-  Only `.gitattributes` changed relative to the pre-upload inventory; all
-  55 model/Engram/original-draft shard hashes are unchanged.
+- The HF target lock originally used the recorded **post-upload** manifest hash
+  `6d79a9ae5cfd121df7c559b76cde87b50551adbe68ae0dc94c97973e85e8e1d1`
+  (revision `5571a3c9`). Only `.gitattributes` changed relative to the
+  pre-upload inventory; all 55 model/Engram/original-draft shard hashes were
+  unchanged.
+- It now pins the **full-pool 64K refit** (manifest
+  `828b7b5d7a672c5f2e44caca3d72d9c114c39634e46eb51deabd067a0f44a2c9`): model shards 1–50 are
+  new; shard 51, both Engram tables and the original draft are byte-identical to
+  the earlier upload, which remains available at its revision.
+  `validate_public.py` checks that the pinned manifest carries exactly the
+  Engram table bytes the packed page15 assets were built from.
 
 Anonymous access to the exact rc2 manifest and both HF manifests passed
 `python3 -B release/validate_public.py --online`. Fresh preparation requires

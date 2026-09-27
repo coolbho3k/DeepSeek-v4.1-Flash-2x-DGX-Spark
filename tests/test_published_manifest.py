@@ -14,7 +14,7 @@ class PublishedManifest(unittest.TestCase):
         lock=json.loads((ROOT/'recipe-lock.json').read_bytes())
         digest=hashlib.sha256(path.read_bytes()).hexdigest()
         self.assertEqual(digest,lock['model']['manifest_sha256'])
-        self.assertEqual(digest,'6d79a9ae5cfd121df7c559b76cde87b50551adbe68ae0dc94c97973e85e8e1d1')
+        self.assertEqual(digest,'828b7b5d7a672c5f2e44caca3d72d9c114c39634e46eb51deabd067a0f44a2c9')
 
     def test_published_manifest_passes_native_verifier(self):
         spec=importlib.util.spec_from_file_location('manifest_regression_verifier',ROOT/'release/runtime/tools/verify_public_download.py')

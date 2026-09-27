@@ -77,7 +77,8 @@ has not been qualified; public reproduction uses the pinned prebuilt image.
 
 ## Atomic Engram publication
 
-Keep the canonical model/draft pins and original Engram paths unchanged.
+Keep the original Engram paths unchanged. A later model pin must carry the same Engram table
+bytes (`validate_public.py` enforces it); the draft pin is independent.
 `publish_engrams.py` uploads bounded 8-GiB ranges from each host's existing
 packed files to separate rank staging branches, without temporary weight
 copies. It consumes `HF_TOKEN_WRITE` for authentication and never logs it;

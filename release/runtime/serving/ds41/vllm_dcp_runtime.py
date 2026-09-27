@@ -28,7 +28,7 @@ def prepare_hooks():
         namespace = getattr(replacement, '__globals__', {})
         if '_ds41_validate' in namespace:
             namespace['_ds41_validate'] = validate_config
-    expected = 13 if arithmetic._FP4_INDEXER_MODE == '1' else 11
+    expected = (13 if arithmetic._FP4_INDEXER_MODE == '1' else 11) + arithmetic.format_hook_count()
     if len(hooks) != expected or len({(id(owner), name) for owner, name, _ in hooks}) != len(hooks):
         raise RuntimeError('Incomplete or overlapping coordinated DCP hooks')
     return tuple(hooks)

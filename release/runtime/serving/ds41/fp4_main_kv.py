@@ -1,11 +1,14 @@
-"""V4.1 post-RoPE NVFP4 main KV with four-over-six scale selection.
+"""V4.1 post-RoPE NVFP4 main KV with searched per-group scales.
 
 Each main-cache state is 256 value bytes followed by 32 scale bytes. This
-format is NOT used for SWA or the separately specified MXFP4 indexer cache.
-For each group of 16, choose E4M3(amax/4) only if its reconstructed E2M1
-values have lower SSE than the historical E4M3(amax/6) candidate. Ties keep
-the historical bytes. The format remains exactly 4.5 bits/value, with an
-implicit outer scale of one. DS41_FP4_KV_MODE=legacy selects the old writer.
+format is NOT used for SWA. DS41_FP4_KV_MODE selects the scale per group of 16:
+  nvfp4_search (default)  every E4M3 scale from amax/6.5 to amax/2.5 (at most 12),
+                          keeping one only if its reconstruction has strictly lower
+                          SSE; the search starts from E4M3(amax/6), so ties keep the
+                          historical bytes and it is never worse than /6 or /4.
+  nvfp4_4over6            E4M3(amax/4) only if strictly better than E4M3(amax/6).
+  legacy                  E4M3(amax/6).
+The format remains exactly 4.5 bits/value, with an implicit outer scale of one.
 Caller-owned (including display-backed) pages and all readers are unchanged. Triton hashes the updated writer at JIT time.
 Writes require unique live slots and finite post-RoPE BF16 values within the
 model's trained range. Negative slots are padding. Native allocator callers
@@ -22,22 +25,33 @@ MAX_WRITE_ROWS = 1056
 MAX_GATHER_ROWS = 32 * 512
 
 
+MODES = {'legacy': 0, 'nvfp4_4over6': 1, 'nvfp4_search': 2}
+
+
 def quantization_mode():
-    mode = os.environ.get('DS41_FP4_KV_MODE', 'nvfp4_4over6')
-    if mode not in ('nvfp4_4over6', 'legacy'):
-        raise ValueError('DS41_FP4_KV_MODE must be nvfp4_4over6 or legacy')
+    mode = os.environ.get('DS41_FP4_KV_MODE', 'nvfp4_search')
+    if mode not in MODES:
+        raise ValueError('DS41_FP4_KV_MODE must be nvfp4_search, nvfp4_4over6 or legacy')
     return mode
 
 
 # Select once before graph capture. Both workers receive the same profile.
 QUANTIZATION_MODE = quantization_mode()
-FOUR_OVER_SIX = QUANTIZATION_MODE == 'nvfp4_4over6'
+SCALE_MODE = MODES[QUANTIZATION_MODE]
 
 
 def _writer_geometry(rows, compress_ratio=1):
     # Measured SM121 launch choices; no runtime autotuning or GPU state.
     # Decode exposes independent groups across SMs. Prefill amortizes the
     # slot/address work over a full row; CR2 has fewer live DCP writers.
+    if SCALE_MODE == 2:
+        # The search encodes each group 13 times: smaller tiles until the grid
+        # fills the GPU, then two warps per whole row (no spills at any size).
+        if rows <= 32:
+            return 4, 1
+        if rows <= 512:
+            return 8, 1
+        return (16, 1) if rows <= 1056 else (32, 2)
     if rows <= 32:
         return 4, 1
     if rows <= 512:
@@ -90,16 +104,61 @@ def _prefer_four(groups, amax, codes6, scales6, codes4, scales4):
 
 
 @triton.jit
+def _search_scales(groups, amax, codes6, scales6):
+    """Best of every E4M3 scale in [amax/6.5, amax/2.5], starting from E4M3(amax/6).
+
+    At most 12 E4M3 codes lie in that 2.6x range (8 per binade); they are tried in
+    ascending order and one replaces the best only if its SSE is strictly lower, so
+    ties keep E4M3(amax/6). E4M3(amax/4) is in the range, so the result is never
+    worse than four-over-six either. Each candidate's SSE is compared against the /6
+    reconstruction, SSE_c - SSE_6 = sum((qc - q6) * (qc + q6 - 2|x|)), in _prefer_four's
+    integer units u = 2**(floor(log2(amax)) - 12). Wherever either reconstruction is
+    nonzero, |x| > scale/4 >= 2**(e-5) (E4M3(amax/6) is >= amax/8, or the 2**-9
+    subnormal where that still bounds |x|), so BF16 x and both reconstructions are
+    exact multiples of u, each below 2.4 * amax < 19661 u: every product fits int32
+    and the 16-term sum is exact in int64. Elsewhere both are zero and the term
+    vanishes however x/u rounds. Only per-group scalars carry between candidates; the
+    chosen scale is encoded once at the end.
+    Returns (codes [G, 16] int32, scale bytes [G] uint8).
+    """
+    exponent = ((amax.to(tl.uint32, bitcast=True) >> 23) & 255).to(tl.int32)
+    inverse_unit = ((266 - exponent) << 23).to(tl.uint32).to(tl.float32, bitcast=True)
+    qx2 = 2 * (tl.abs(groups) * inverse_unit[:, None]).to(tl.int32)
+    q6 = (_decoded_magnitude(codes6) * scales6.to(tl.float32)[:, None] * inverse_unit[:, None]).to(tl.int32)
+    low = tl.div_rn(amax, 6.5)
+    first = low.to(tl.float8e4nv)
+    first_bits = first.to(tl.uint8, bitcast=True).to(tl.int32) + (first.to(tl.float32) < low).to(tl.int32)
+    high = tl.div_rn(amax, 2.5)
+    best = tl.zeros(amax.shape, tl.int64)
+    best_bits = scales6.to(tl.uint8, bitcast=True).to(tl.int32)
+    for step in tl.static_range(12):
+        bits = first_bits + step
+        candidate = bits.to(tl.uint8).to(tl.float8e4nv, bitcast=True)
+        value = candidate.to(tl.float32)
+        qc = (_decoded_magnitude(_encode_e2m1(groups, candidate)) * value[:, None]
+              * inverse_unit[:, None]).to(tl.int32)
+        delta = tl.sum(((qc - q6) * (qc + q6 - qx2)).to(tl.int64), axis=1)
+        better = (bits < 0x7F) & (value > 0) & (value <= high) & (delta < best)
+        best = tl.where(better, delta, best)
+        best_bits = tl.where(better, bits, best_bits)
+    scales = best_bits.to(tl.uint8)
+    codes = tl.where((best < 0)[:, None], _encode_e2m1(groups, scales.to(tl.float8e4nv, bitcast=True)), codes6)
+    return codes, scales
+
+
+@triton.jit
 def _store_row(x, slot, cache, CAPACITY: tl.constexpr,
                PAGE_STRIDE: tl.constexpr, STATES: tl.constexpr,
-               FOUR_OVER_SIX: tl.constexpr, GROUPS: tl.constexpr, group_start):
+               SCALE_MODE: tl.constexpr, GROUPS: tl.constexpr, group_start):
     groups = tl.reshape(x, (GROUPS, 16))
     amax = tl.maximum(tl.max(tl.abs(groups), axis=1), 6.0 * (2.0 ** -9))
     scales6 = tl.div_rn(amax, 6.0).to(tl.float8e4nv)
     codes6 = _encode_e2m1(groups, scales6)
     scales = scales6.to(tl.uint8, bitcast=True)
     codes = codes6
-    if FOUR_OVER_SIX:
+    if SCALE_MODE == 2:
+        codes, scales = _search_scales(groups, amax, codes6, scales6)
+    elif SCALE_MODE == 1:
         # Saturate the additional candidate so /4 cannot overflow E4M3 for
         # groups still representable by /6. Preserve the historical /6 path.
         scales4 = tl.minimum(tl.div_rn(amax, 4.0), 448.0).to(tl.float8e4nv)
@@ -122,12 +181,12 @@ def _store_row(x, slot, cache, CAPACITY: tl.constexpr,
 @triton.jit
 def _store(values, slots, cache, CAPACITY: tl.constexpr,
            VALUE_STRIDE: tl.constexpr, PAGE_STRIDE: tl.constexpr,
-           STATES: tl.constexpr, FOUR_OVER_SIX: tl.constexpr, GROUPS: tl.constexpr = 32):
+           STATES: tl.constexpr, SCALE_MODE: tl.constexpr, GROUPS: tl.constexpr = 32):
     row = tl.program_id(0)
     group_start = tl.program_id(1) * GROUPS
     x = tl.load(values + row * VALUE_STRIDE + group_start * 16 + tl.arange(0, GROUPS * 16)).to(tl.float32)
     slot = tl.load(slots + row)
-    _store_row(x, slot, cache, CAPACITY, PAGE_STRIDE, STATES, FOUR_OVER_SIX, GROUPS, group_start)
+    _store_row(x, slot, cache, CAPACITY, PAGE_STRIDE, STATES, SCALE_MODE, GROUPS, group_start)
 
 
 @triton.jit
@@ -186,7 +245,7 @@ def store(cache, values, slots, *, check_bounds=True):
         _store[(len(values), 32 // groups)](values, flat, cache,
             CAPACITY=cache.shape[0]*cache.shape[1], VALUE_STRIDE=values.stride(0),
             PAGE_STRIDE=cache.stride(0), STATES=cache.shape[1],
-            FOUR_OVER_SIX=FOUR_OVER_SIX, GROUPS=groups, num_warps=warps,
+            SCALE_MODE=SCALE_MODE, GROUPS=groups, num_warps=warps,
             enable_fp_fusion=False)
 
 
