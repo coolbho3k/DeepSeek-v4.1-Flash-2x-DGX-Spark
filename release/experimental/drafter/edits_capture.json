@@ -1,0 +1,18 @@
+{
+ "serving/combined_worker.py": [
+  [
+   "        _attach_ngram_draft(self.model_runner)\n",
+   "        _attach_ngram_draft(self.model_runner)\n        from ds41.drafter_capture import attach as _attach_drafter_capture\n        _attach_drafter_capture(self.model_runner)\n"
+  ]
+ ],
+ "serving/ds41/combined_dspark.py": [
+  [
+   "        (dspark.DSparkSpeculator, 'propose', _ds41_ngram_wrap(proposal)),\n",
+   "        (dspark.DSparkSpeculator, 'propose', _ds41_capture.wrap(_ds41_ngram_wrap(proposal))),\n        (_ds41_runner_cls, 'sample', _ds41_capture.wrap_sample(_ds41_runner_cls.sample)),\n"
+  ],
+  [
+   "    from .ngram_draft import wrap as _ds41_ngram_wrap\n",
+   "    from .ngram_draft import wrap as _ds41_ngram_wrap\n    from . import drafter_capture as _ds41_capture\n    from vllm.v1.worker.gpu.model_runner import GPUModelRunner as _ds41_runner_cls\n"
+  ]
+ ]
+}

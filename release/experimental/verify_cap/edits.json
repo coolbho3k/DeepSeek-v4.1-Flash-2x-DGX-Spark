@@ -1,0 +1,28 @@
+{
+ "serving/combined_worker.py": [
+  [
+   "        _attach_ngram_draft(self.model_runner)\n",
+   "        _attach_ngram_draft(self.model_runner)\n        from ds41.verify_cap import attach as _attach_verify_cap\n        _attach_verify_cap(self.model_runner)\n"
+  ]
+ ],
+ "serving/ds41/combined_dspark.py": [
+  [
+   "        (dspark.DSparkSpeculator, 'propose', _ds41_ngram_wrap(proposal)),\n",
+   "        (dspark.DSparkSpeculator, 'propose', _ds41_cap.wrap_propose(_ds41_ngram_wrap(proposal))),\n        (dspark.DSparkSpeculator, '_sample_sequential', _ds41_cap.wrap_sample(dspark.DSparkSpeculator._sample_sequential)),\n        *_ds41_cap.make_patches(),\n"
+  ],
+  [
+   "    from .ngram_draft import wrap as _ds41_ngram_wrap\n",
+   "    from .ngram_draft import wrap as _ds41_ngram_wrap\n    from . import verify_cap as _ds41_cap\n"
+  ]
+ ],
+ "serving/ds41/ngram_draft.py": [
+  [
+   "    if states is None or logits is None or num_reqs == 0:\n        return drafts\n",
+   "    speculator._ds41_ngram_best = None\n    if states is None or logits is None or num_reqs == 0:\n        return drafts\n"
+  ],
+  [
+   "        N=NGRAM, BLOCKV=VOCAB_BLOCK, num_warps=4)\n    return drafts\n",
+   "        N=NGRAM, BLOCKV=VOCAB_BLOCK, num_warps=4)\n    speculator._ds41_ngram_best = best\n    return drafts\n"
+  ]
+ ]
+}
