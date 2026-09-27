@@ -3,7 +3,7 @@
 
 Usage: peak_step.py <step> <generated_code_dir> <split>
 """
-import json, resource, subprocess, sys
+import json, os, resource, subprocess, sys
 from pathlib import Path
 from datasets import load_dataset
 E_ = '/home/emi/code/ds41/artifacts/evals/scicode'
@@ -18,5 +18,5 @@ src += f"targets = process_hdf5_to_tuple('{step}', {len(tests)}, '{E_}/eval/data
 for i, t in enumerate(tests):
     src += f"target = targets[{i}]\n" + t + "\n"
 Path('/tmp/step_test.py').write_text(src)
-r = subprocess.run(['python', '/tmp/step_test.py'], capture_output=True, text=True)
+r = subprocess.run([os.environ.get('SCICODE_PYTHON', 'python'), '/tmp/step_test.py'], capture_output=True, text=True)
 print(json.dumps(dict(step=step, returncode=r.returncode, peak_rss_mib=resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss // 1024, stderr=r.stderr[-300:])))

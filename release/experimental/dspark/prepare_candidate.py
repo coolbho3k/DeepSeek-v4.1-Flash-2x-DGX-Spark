@@ -80,10 +80,9 @@ def transform(old, policy, binary, receipt, *, draft_binary=None, markov_add=Fal
         for name in ('adaptive.py','integration.py'):
             payload['serving/ds41/dspark_experiment/'+name]=bounded_read(HERE/name)
         edit('serving/ds41/combined_dspark.py',
-             '    from .draft_exl3_serving import make_quantizer_patches\n    return [',
-             '    from .draft_exl3_serving import make_quantizer_patches\n'
+             '    return [\n        *make_quantizer_patches(_draft_scope),',
              '    from .dspark_experiment.integration import make_patches as prefix_patches\n'
-             '    return [\n        *prefix_patches(),')
+             '    return [\n        *prefix_patches(),\n        *make_quantizer_patches(_draft_scope),')
     if draft_binary is not None:
         payload['serving/ds41/dspark_experiment/__init__.py']=b'# SPDX-License-Identifier: AGPL-3.0-only\n'
         payload['serving/ds41/dspark_experiment/features.py']=(
