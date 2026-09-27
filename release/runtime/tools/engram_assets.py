@@ -19,6 +19,20 @@ MANIFEST_SHA = '43b3b6305d3edd8ec24b9014fccd842c623f7cfce41014611cbd85244dc62854
 PREFIX = 'engram-page15-v1'
 MAGIC = 0x3247504531345344
 
+# Header-only stand-ins for the two original tables. Serving reads only their
+# safetensors headers and sizes; every row comes from the attached page15 table
+# and a failed attach aborts startup. The remainder of each file is a sparse
+# hole, so new installs skip ~189 GiB of downloads and SSD writes per host.
+MODEL_MANIFEST_SHA = '828b7b5d7a672c5f2e44caca3d72d9c114c39634e46eb51deabd067a0f44a2c9'
+SOURCE_METADATA = ('config.json', 'model.safetensors.index.json')
+SOURCE_TABLES = {
+    'engram-layer-01.safetensors': dict(bytes=101377628616, header_bytes=264,
+        header_sha256='7c46c5a7259bda7830b00ec856c766499e2356068949cb5c49e22e39aecdee04'),
+    'engram-layer-14.safetensors': dict(bytes=101380404312, header_bytes=264,
+        header_sha256='e4153cb696f38d98461b15cb005a7b8c58f1d626a7b7e04388bd7cecf9663f6e'),
+}
+SOURCE_NAMES = frozenset('engrams/'+name for name in SOURCE_TABLES)
+
 
 def encoded(value):
     return (json.dumps(value, indent=2, sort_keys=True)+'\n').encode()
@@ -97,22 +111,29 @@ def reference(root, rank):
 
 def check_reference(ref, rank):
     if (type(rank) is not int or rank not in (0, 1) or not isinstance(ref, dict)
-            or set(ref) != {'root', 'rank', 'manifest_sha256'} or ref['rank'] != rank
+            or set(ref) - {'source'} != {'root', 'rank', 'manifest_sha256'} or ref['rank'] != rank
             or type(ref['rank']) is not int
             or ref['manifest_sha256'] != MANIFEST_SHA):
         raise ValueError('Packed Engram rank or manifest does not match this reader')
-    root = Path(ref['root'])
-    if (not root.is_absolute() or str(root) != ref['root'] or '..' in root.parts
-            or len(root.parts) < 3 or any(c in str(root) for c in (',', '\0', '\n', '\r'))):
-        raise ValueError('Use an explicit normalized packed asset directory')
-    return root
+    for key in set(ref) & {'root', 'source'}:
+        path = Path(ref[key]) if isinstance(ref[key], str) else None
+        if (path is None or not path.is_absolute() or str(path) != ref[key] or '..' in path.parts
+                or len(path.parts) < 3 or any(c in str(path) for c in (',', '\0', '\n', '\r'))):
+            raise ValueError('Use an explicit normalized packed asset directory')
+    return Path(ref['root'])
+
+
+def source_root(ref):
+    """Header stand-in directory for /model/engrams, or None for full originals."""
+    return Path(ref['source']) if 'source' in ref else None
 
 
 def mounts(ref, rank):
     root = check_reference(ref, rank)
     return [(str(root/f'engram-layer-{layer:02}-rank{rank}-page15.bin'),
              f'/opt/ds41-engram-packed/engram-layer-{layer:02}-rank{rank}-page15.bin', True)
-            for layer in (1, 14)]
+            for layer in (1, 14)] + (
+           [] if source_root(ref) is None else [(ref['source'], '/model/engrams', True)])
 
 
 def check_files(root, manifest, rank):
@@ -134,6 +155,8 @@ def check_files(root, manifest, rank):
 
 def validate(ref, rank):
     root = check_reference(ref, rank)
+    if source_root(ref) is not None:
+        validate_source(source_root(ref))
     manifest = load_manifest(root)
     receipt = json.loads(regular(root/'verified.json', 65536).read_bytes())
     if (receipt.get('format') != 'ds41_verified_engram_page15_v1' or receipt.get('rank') != rank
@@ -141,6 +164,70 @@ def validate(ref, rank):
             or receipt.get('files') != check_files(root, manifest, rank)):
         raise ValueError('Packed Engrams changed after full SHA256 verification; inspect before retrying')
     return dict(layout='page15', rank=rank, files=2, manifest_sha256=MANIFEST_SHA)
+
+
+def source_files(root):
+    """Fingerprint the stand-ins; each table must still hold the pinned header."""
+    if {path.name for path in root.iterdir()} - {'verified.json'} != {*SOURCE_METADATA, *SOURCE_TABLES}:
+        raise ValueError('Unexpected Engram header stand-in inventory')
+    result = {name: fingerprint(root/name) for name in SOURCE_METADATA}
+    for name, row in SOURCE_TABLES.items():
+        info = fingerprint(root/name)
+        with (root/name).open('rb') as source:
+            header = source.read(row['header_bytes'])
+        if info[2] != row['bytes'] or hashlib.sha256(header).hexdigest() != row['header_sha256']:
+            raise ValueError('Engram header stand-in differs from the pinned original')
+        result[name] = info
+    return result
+
+
+def validate_source(root):
+    receipt = json.loads(regular(root/'verified.json', 65536).read_bytes())
+    if (receipt.get('format') != 'ds41_engram_header_source_v1'
+            or receipt.get('model_manifest_sha256') != MODEL_MANIFEST_SHA
+            or receipt.get('files') != source_files(root)):
+        raise ValueError('Engram header stand-ins changed after verification; inspect before retrying')
+
+
+def fetch_header(url, row, opener=urllib.request.urlopen):
+    last = row['header_bytes']-1
+    request = urllib.request.Request(url, headers={'Range': f'bytes=0-{last}'})
+    with opener(request, timeout=120) as response:
+        if (response.status != 206
+                or response.headers.get('Content-Range', '') != f'bytes 0-{last}/{row["bytes"]}'):
+            raise ValueError('Server did not honor the Engram header range')
+        raw = response.read(row['header_bytes']+1)
+    if hashlib.sha256(raw).hexdigest() != row['header_sha256']:
+        raise ValueError('Original Engram header differs from the pin')
+    return raw
+
+
+def prepare_source(spec, model, cache, opener=urllib.request.urlopen):
+    """Build sparse stand-ins from verified metadata and pinned header ranges.
+
+Writes a few KiB per table. Call only after the model snapshot has verified.
+    """
+    if spec['manifest_sha256'] != MODEL_MANIFEST_SHA:
+        raise ValueError('Engram header stand-ins are pinned to another model manifest')
+    root = cache/'engram-source'/MODEL_MANIFEST_SHA
+    root.mkdir(parents=True, exist_ok=True)
+    if root.resolve() != root:
+        raise ValueError('Redirected Engram header stand-in directory')
+    if (root/'verified.json').exists():
+        validate_source(root)
+        return str(root)
+    for name in SOURCE_METADATA:
+        (root/name).write_bytes(regular(model/'engrams'/name, 65536).read_bytes())
+    base = f'https://huggingface.co/{spec["repo"]}/resolve/{spec["revision"]}/engrams/'
+    for name, row in SOURCE_TABLES.items():
+        raw = fetch_header(base+name, row, opener)
+        with (root/name).open('wb') as out:
+            out.write(raw); out.truncate(row['bytes']); out.flush(); os.fsync(out.fileno())
+    atomic_json(root/'verified.json', dict(format='ds41_engram_header_source_v1',
+        model_manifest_sha256=MODEL_MANIFEST_SHA, files=source_files(root)))
+    print(json.dumps(dict(stage='engram_header_source_verified', skipped_bytes=sum(
+        row['bytes'] for row in SOURCE_TABLES.values()))), flush=True)
+    return str(root)
 
 
 def download_table(base, row, path, opener=urllib.request.urlopen):

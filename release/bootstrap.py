@@ -67,7 +67,7 @@ def model_dir(root,spec):
     key=spec['manifest_sha256'][:16]
     return root/f'model-{key}',root/f'model-verified-{key}.json',legacy
 
-def snapshot(spec,destination,reuse=None):
+def snapshot(spec,destination,skip=frozenset(),reuse=None):
     base=f"https://huggingface.co/{spec['repo']}/resolve/{spec['revision']}/"
     download(base+'release-manifest.json',destination/'release-manifest.json',spec['manifest_sha256'])
     manifest=json.loads((destination/'release-manifest.json').read_bytes())
@@ -76,6 +76,7 @@ def snapshot(spec,destination,reuse=None):
     if reuse is not None and (reuse/'release-manifest.json').is_file():
         previous=json.loads((reuse/'release-manifest.json').read_bytes()).get('files',{})
     for name,row in sorted(manifest['files'].items()):
+        if name in skip:continue
         relative(name);target=destination/name;old=reuse/name if reuse is not None else None
         # Link files an earlier revision already verified with the same size and SHA-256 (e.g. the
         # Engram tables); download() below re-verifies them. Changed shards are downloaded fresh.
@@ -85,6 +86,10 @@ def snapshot(spec,destination,reuse=None):
             try:os.link(old,target)
             except OSError:pass
         download(base+name,target,row['sha256'],row['bytes'])
+
+def without(manifest,skip):
+    # Verify and receipt exactly the files this install keeps locally.
+    return dict(manifest,files={k:v for k,v in manifest['files'].items() if k not in skip}) if skip else manifest
 
 def extract(archive,destination):
     if destination.exists():
@@ -146,7 +151,8 @@ def bootstrap(lock,root,kit,rank=0):
             verifier=module(kit/'tools/verify_public_download.py','reuse_weights')
             weights_dir,weights_receipt,_=model_dir(root,lock['model'])
             manifest,summary=verifier.load_manifest(weights_dir/'release-manifest.json',lock['model']['manifest_sha256'])
-            verifier.check_receipt(weights_dir,manifest,summary,json.loads(weights_receipt.read_bytes()))
+            skip=engrams.SOURCE_NAMES if engrams.source_root(previous['engram']) else frozenset()
+            verifier.check_receipt(weights_dir,without(manifest,skip),summary,json.loads(weights_receipt.read_bytes()))
             draft_files=json.loads((root/'draft-verified.json').read_bytes())
             for name,row in draft_files.items():
                 p=root/'draft-exl3'/relative(name)
@@ -181,9 +187,17 @@ def bootstrap(lock,root,kit,rank=0):
             if image_check.identity(data)==expected:image=data['Id'];break
     if image is None:raise ValueError('Imported image differs from the pinned runtime identity')
     weights_dir,receipt_path,previous_weights=model_dir(root,lock['model'])
-    snapshot(lock['model'],weights_dir,previous_weights);snapshot(lock['draft'],root/'draft-exl3')
+    # Installs that already hold (or are resuming) the original Engram tables keep them, including
+    # through an upgrade that hard-links them from the previous revision; new installs fetch header
+    # stand-ins instead of ~189 GiB of rows.
+    legacy=any((weights_dir/name).exists() or (weights_dir/(name+'.download-part')).exists()
+               or (previous_weights is not None and (previous_weights/name).is_file())
+               for name in engrams.SOURCE_NAMES)
+    skip=frozenset() if legacy else engrams.SOURCE_NAMES
+    snapshot(lock['model'],weights_dir,skip,previous_weights);snapshot(lock['draft'],root/'draft-exl3')
     weights=module(kit/'tools/verify_public_download.py','verify_public_weights')
     manifest,summary=weights.load_manifest(weights_dir/'release-manifest.json',lock['model']['manifest_sha256'])
+    manifest=without(manifest,skip)
     if receipt_path.exists():weights.check_receipt(weights_dir,manifest,summary,json.loads(receipt_path.read_bytes()))
     else:receipt_path.write_text(json.dumps(weights.verify_full(weights_dir,manifest,summary),indent=2)+'\n')
     draft_manifest=json.loads((root/'draft-exl3/release-manifest.json').read_bytes())
@@ -194,6 +208,7 @@ def bootstrap(lock,root,kit,rank=0):
     for name,row in cache_manifest['files'].items():
         if 'mtime_ns' in row:os.utime(cache/name,ns=(row['mtime_ns'],row['mtime_ns']))
     packed=engrams.prepare(lock['engram'],root,rank,download)
+    if skip:packed=dict(packed,source=engrams.prepare_source(lock['model'],weights_dir,root))
     result=dict(lock_sha256=lock_sha,kit=str(kit),model=str(weights_dir),draft=str(root/'draft-exl3'),engram=packed,
         model_receipt=str(receipt_path),cache=str(cache),runs=str(root/'runs'),image=image,
         uid=os.getuid(),gid=os.getgid())

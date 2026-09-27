@@ -108,12 +108,15 @@ author's original workspace to run the recipe.
   200-Gbit/s rails. This does not require two physical cables: a Spark QSFP
   connector exposes two network interfaces. One or two rails can be configured;
   single-rail performance has not been qualified by the reported run.
-- **At least 650 GiB free disk space on each host** for a fresh install. The
-  target download is about 397 GiB, the separate drafter 4.76 GiB, plus the
-  prebuilt runtime, extracted image, kernel caches and working-space reserve.
-  The lossless packed Engram layout adds **97.66 GiB per host**; only each
-  host's own rank is downloaded, with no local repacking or duplicate part files.
-  Original Engrams are retained so old runners keep working.
+- **At least 470 GiB free disk space on each host** for a fresh install. The
+  target download is about 208 GiB, the separate drafter 4.76 GiB, the packed
+  Engram tables **97.66 GiB per host**, plus the prebuilt runtime, extracted
+  image, kernel caches and working-space reserve. Only each host's own Engram
+  rank is downloaded, pre-packed, with no local repacking or part-file copies.
+  The two original 94 GiB Engram tables are not downloaded: serving reads only
+  their headers, so fresh installs keep sparse stand-ins with the pinned
+  headers (a few KiB on disk). Installs that already hold the originals keep
+  using them unchanged.
 - Internet access for the initial public Hugging Face and GHCR downloads on each host.
   **No HF token is needed.** Never give the launcher a write token.
 

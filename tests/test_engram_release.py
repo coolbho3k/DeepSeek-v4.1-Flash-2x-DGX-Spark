@@ -225,4 +225,76 @@ class RankPreparation(unittest.TestCase):
                 assets.parse_manifest(self.raw+b' '*65536)
 
 
+class HeaderStandIns(unittest.TestCase):
+    """Sparse stand-ins replace the original tables; the pins match the canonical manifest."""
+    def setUp(self):
+        self.tmp=tempfile.TemporaryDirectory(); self.cache=Path(self.tmp.name).resolve()
+        self.model=self.cache/'model'; (self.model/'engrams').mkdir(parents=True)
+        for name in assets.SOURCE_METADATA: (self.model/'engrams'/name).write_text('{"meta":"'+name+'"}')
+        self.headers={name:b'H'*16+name.encode() for name in assets.SOURCE_TABLES}
+        self.tables={name:dict(bytes=1<<30,header_bytes=len(raw),header_sha256=digest(raw))
+                     for name,raw in self.headers.items()}
+        self.spec=dict(repo='owner/repo',revision='a'*40,manifest_sha256=assets.MODEL_MANIFEST_SHA)
+        self.requests=[]
+    def tearDown(self): self.tmp.cleanup()
+    def opener(self, request, timeout):
+        self.requests.append(request)
+        name=request.full_url.rsplit('/',1)[1]; raw=self.headers[name]
+        self.assertEqual(request.headers['Range'],f'bytes=0-{len(raw)-1}')
+        return Response(raw,206,{'Content-Range':f'bytes 0-{len(raw)-1}/{1<<30}'})
+    def prepare(self, opener=None):
+        with patch.object(assets,'SOURCE_TABLES',self.tables):
+            return assets.prepare_source(self.spec,self.model,self.cache,opener or self.opener)
+    def test_stand_ins_are_sparse_with_exact_header_and_size(self):
+        root=Path(self.prepare())
+        self.assertEqual(len(self.requests),2)
+        for name,raw in self.headers.items():
+            info=(root/name).stat()
+            self.assertEqual(info.st_size,1<<30)
+            self.assertLess(info.st_blocks*512,1<<20)
+            self.assertEqual((root/name).open('rb').read(len(raw)),raw)
+        for name in assets.SOURCE_METADATA:
+            self.assertEqual((root/name).read_bytes(),(self.model/'engrams'/name).read_bytes())
+    def test_verified_reuse_needs_no_network(self):
+        first=self.prepare()
+        self.assertEqual(self.prepare(lambda *a,**k:self.fail('network')),first)
+    def test_wrong_header_or_range_refused_before_receipt(self):
+        def wrong(request,timeout):
+            return Response(b'X'*len(self.headers[request.full_url.rsplit('/',1)[1]]),206,
+                            {'Content-Range':f'bytes 0-{len(self.headers[request.full_url.rsplit("/",1)[1]])-1}/{1<<30}'})
+        with self.assertRaisesRegex(ValueError,'differs from the pin'):self.prepare(wrong)
+        with self.assertRaisesRegex(ValueError,'range'):self.prepare(lambda request,timeout:Response(b'',200))
+        self.assertFalse((self.cache/'engram-source'/assets.MODEL_MANIFEST_SHA/'verified.json').exists())
+    def test_changed_or_extra_stand_in_refused(self):
+        root=Path(self.prepare()); name=next(iter(self.tables))
+        with patch.object(assets,'SOURCE_TABLES',self.tables):
+            (root/'extra').write_bytes(b'')
+            with self.assertRaisesRegex(ValueError,'inventory'):assets.validate_source(root)
+            (root/'extra').unlink()
+            with (root/name).open('r+b') as out:out.write(b'Z')
+            with self.assertRaisesRegex(ValueError,'differs'):assets.validate_source(root)
+    def test_other_model_manifest_refused(self):
+        self.spec['manifest_sha256']='b'*64
+        with self.assertRaisesRegex(ValueError,'another model manifest'):self.prepare()
+    def test_reference_mounts_stand_ins_over_original_table_directory(self):
+        root=self.cache/'packed'
+        ref=dict(assets.reference(root,0),source=self.prepare())
+        self.assertEqual(assets.check_reference(ref,0),root)
+        mounts=assets.mounts(ref,0)
+        self.assertEqual(mounts[-1],(ref['source'],'/model/engrams',True))
+        self.assertEqual(len(assets.mounts(assets.reference(root,0),0)),2)
+        for bad in ('relative/path','/a/../b/c','/a,b/c'):
+            with self.assertRaises(ValueError):assets.check_reference(dict(ref,source=bad),0)
+    def test_pins_match_canonical_model_manifest(self):
+        lock=json.loads((ROOT/'recipe-lock.json').read_bytes())
+        manifest=json.loads((ROOT/'release/model-release-manifest.json').read_bytes())
+        self.assertEqual(lock['model']['manifest_sha256'],assets.MODEL_MANIFEST_SHA)
+        self.assertEqual({n for n in manifest['files'] if n.startswith('engrams/engram-layer-')},set(assets.SOURCE_NAMES))
+        for name,row in assets.SOURCE_TABLES.items():
+            self.assertEqual(manifest['files']['engrams/'+name]['bytes'],row['bytes'])
+            self.assertEqual(row['header_bytes'],264)
+        for name in assets.SOURCE_METADATA:
+            self.assertIn('engrams/'+name,manifest['files'])
+
+
 if __name__=='__main__': unittest.main()

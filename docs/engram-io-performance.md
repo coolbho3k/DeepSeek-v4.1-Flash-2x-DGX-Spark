@@ -66,8 +66,12 @@ corresponding source. Ordinary Triton warmup/first-use compilation may occur.
    revision, manifest and matching ABI-2 reader. There is no cross-service
    transaction; this publication order prevents dangling recipe references.
 3. The launcher downloads only its own rank's two tables, about **97.66 GiB
-   extra disk space per Spark**. It still retains the original checkpoint for
-   metadata/compatibility; this release does not remove the old files. Transport
+   extra disk space per Spark**. Fresh installs skip the two original tables
+   (~189 GiB): serving needs only their safetensors headers and sizes, so the
+   launcher range-fetches each pinned 264-byte header and keeps a sparse
+   stand-in, mounted read-only over `/model/engrams`. Every row is read from the
+   attached page15 table, and a failed attach aborts startup. Existing installs
+   that already hold the originals keep them and are not re-downloaded. Transport
    parts are at most 8 GiB and are streamed into one assembly file. Each part
    and the complete assembled table are checksum-verified. Interruptions leave
    a resumable partial, not a usable table or a new preparation pointer.

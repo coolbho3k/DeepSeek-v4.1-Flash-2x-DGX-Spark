@@ -266,11 +266,27 @@ class Downloads(unittest.TestCase):
                 name=url.split('/'+spec['revision']+'/')[1];fetched.append(name)
                 if not path.exists():path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(new_manifest if name=='release-manifest.json' else new_files[name])
                 self.assertEqual(digest(path.read_bytes()),expected)
-            with patch.object(bootstrap,'download',side_effect=fake):bootstrap.snapshot(spec,target,reuse)
+            with patch.object(bootstrap,'download',side_effect=fake):bootstrap.snapshot(spec,target,reuse=reuse)
             self.assertEqual(os.stat(target/'same.safetensors').st_ino,os.stat(old/'same.safetensors').st_ino)
             self.assertEqual((target/'changed.safetensors').read_bytes(),b'v3-weights')
             self.assertEqual((old/'changed.safetensors').read_bytes(),b'v1-weights')
             self.assertEqual((old/'release-manifest.json').read_bytes(),old_manifest)
+    def test_snapshot_never_requests_skipped_tables(self):
+        files={'config.json':b'{}','engrams/engram-layer-01.safetensors':b'rows'}
+        manifest=json.dumps(dict(repo_id='o/r',files={n:dict(bytes=len(v),sha256=hashlib.sha256(v).hexdigest())
+                                                      for n,v in files.items()})).encode()
+        spec=dict(repo='o/r',revision='a'*40,manifest_sha256=hashlib.sha256(manifest).hexdigest())
+        fetched=[]
+        def fake(url,path,digest,size=None):
+            name=url.split('/'+spec['revision']+'/')[1];fetched.append(name)
+            path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(manifest if name=='release-manifest.json' else files[name])
+        with tempfile.TemporaryDirectory() as d,patch.object(bootstrap,'download',side_effect=fake):
+            bootstrap.snapshot(spec,Path(d),frozenset({'engrams/engram-layer-01.safetensors'}))
+            self.assertFalse((Path(d)/'engrams').exists())
+        self.assertEqual(fetched,['release-manifest.json','config.json'])
+        kept=bootstrap.without(json.loads(manifest),frozenset({'engrams/engram-layer-01.safetensors'}))
+        self.assertEqual(set(kept['files']),{'config.json'})
+        self.assertIs(bootstrap.without(kept,frozenset()),kept)
 
 
 class ReleasePayload(unittest.TestCase):

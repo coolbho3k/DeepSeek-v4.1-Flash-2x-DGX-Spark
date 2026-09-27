@@ -115,11 +115,15 @@ def validate_config(config):
         if not isinstance(node['image'], str) or not re.fullmatch('sha256:[0-9a-f]{64}', node['image']):
             raise ValueError('Use an immutable installed image ID on each host')
         paths = {key:absolute(node[key]) for key in ('kit','model','model_receipt','cache','runs','draft')}
-        from engram_assets import check_reference
+        from engram_assets import check_reference, source_root
         packed_root = check_reference(node['engram'], index)
+        source = source_root(node['engram'])
         for value in paths.values():
-            if packed_root.is_relative_to(value) or value.is_relative_to(packed_root):
-                raise ValueError('Packed Engrams must remain separate from other input/output trees')
+            for root in (packed_root,) if source is None else (packed_root, source):
+                if root.is_relative_to(value) or value.is_relative_to(root):
+                    raise ValueError('Packed Engrams must remain separate from other input/output trees')
+        if source is not None and 'model_bindings' in node:
+            raise ValueError('Bound original shards and Engram header stand-ins are exclusive')
         for key in ('kit','model','cache'):
             if paths['runs'].is_relative_to(paths[key]) or paths[key].is_relative_to(paths['runs']):
                 raise ValueError('Run outputs must be separate from immutable input trees')
@@ -316,6 +320,10 @@ def check_model_receipt(config,index,manifest):
     weights = module(kit,'portable_weights_check',verifier,manifest)
     model = absolute(node['model'])
     public,summary = weights.load_manifest(model/'release-manifest.json',config['model_manifest_sha256'])
+    from engram_assets import SOURCE_NAMES, source_root
+    if source_root(node.get('engram',{})) is not None:
+        # Header stand-ins replace the two original tables; the receipt covers the rest.
+        public = dict(public,files={k:v for k,v in public['files'].items() if k not in SOURCE_NAMES})
     receipt,_ = weights.small_json(absolute(node['model_receipt']))
     if 'model_bindings' in node:
         bound = module(kit,'portable_bound_weights_check','tools/verify_mapped_release.py',manifest)
