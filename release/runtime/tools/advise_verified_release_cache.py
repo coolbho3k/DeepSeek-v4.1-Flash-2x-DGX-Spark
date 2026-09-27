@@ -15,7 +15,7 @@ import subprocess
 import sys
 
 sys.dont_write_bytecode = True
-MAPPED_SHA = '7788d874a68294ef2df0b0a3ba63d39a70953dad4596c6a7536b561934d568ca'
+MAPPED_SHA = '6fd65b58b309bc49680469246d42abf4542732d7c96ec960aef09fa6677857d3'
 source = Path(__file__).resolve().with_name('verify_mapped_release.py')
 if hashlib.sha256(source.read_bytes()).hexdigest() != MAPPED_SHA:
     raise ValueError('Unreviewed bound-release verifier')

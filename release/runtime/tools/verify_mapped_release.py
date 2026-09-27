@@ -18,7 +18,7 @@ import shutil
 import sys
 
 sys.dont_write_bytecode = True
-FLAT_SHA = 'c2da0b3e0d7f9c27f626c00aa5316686fa19c773942e4be3e99f2956cbb3a458'
+FLAT_SHA = 'b68012f737d253f6758df7b072ea4123f52c6ef714cbb2e5f9a12b360a853843'
 path = Path(__file__).resolve().with_name('verify_downloaded_release.py')
 if hashlib.sha256(path.read_bytes()).hexdigest() != FLAT_SHA:
     raise ValueError('Unreviewed materialized-release verifier')

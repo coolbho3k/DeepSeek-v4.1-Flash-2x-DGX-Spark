@@ -147,7 +147,7 @@
   "loaded_backend_verification": {
     "format": "ds41_loaded_combined_miaai_v9",
     "inspector": "serving/spark_backend_attestation.py",
-    "sha256": "5bb0e825f6566397abb601f513e5f501fda770499ff675b19e4502cd6483dae8"
+    "sha256": "ff779bace59697846525ffba5c80eda2a27f82d43df3b991385dd9e48fb7f777"
   },
   "model_fusion": {
     "additional_persistent_gpu_bytes": 0,
