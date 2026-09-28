@@ -168,12 +168,17 @@ The repo defaults for new deployments are `nvfp4_search` main KV and NVFP4 index
 decode queries (`launch_profile.py` keeps MXFP4 as the meaning of a descriptor without the
 field, so existing deployments are unchanged; `model_fusion/launch.py` passes that explicitly).
 
-## 5. Next: solve 1M decode (owner asked to be reminded)
+## 5. 1M decode
 
-1M-context decode runs at about 2.3 tok/s, against 25–31 tok/s at short context. A short prompt
-right after a 1M request still runs at only about 7 tok/s. Indexer scoring explains only about
-20–50 ms of the ~420 ms per token, so most of the slowdown is unexplained. Once serving is back,
-profile a 1M decode step on both ranks (per-stage CUDA events and host time, or nsys) before
-optimizing anything. Suspects: the per-request key gather, top-k over 1M logits, DCP
-communication, per-step host work that scales with block tables or allocated cache, and memory
-effects that persist after the long request.
+The 2.3 tok/s figure in older notes came from earlier kits. On kit ff8fb4b4 a clean
+single-request 1M decode step took 81.7 ms (25.7 tok/s) against 64–66 ms at short context. An
+apparent "post-1M slowdown" of short prompts in that profile was another client's request
+running concurrently (`vllm:num_requests_running` was 2). Record that metric during any timing
+run and discard phases where it exceeds one.
+
+The paged-direct and candidate decode scorers (see README) brought the 1M step to 67.5 ms
+(32.5 tok/s) against 63.2–64.9 ms short, on the same deployment. The remaining ~3–4 ms has not
+been attributed. The serving profile has torch's profiler on `/start_profile` (one step, trace
+under the run's scratch cache), so a 1M step and a short step can be diffed kernel by kernel
+without a restart. The synthetic prompt repeats one filler line, so its sparse selections are
+unusually scattered; confirm any attention-read finding on real long text before optimizing it.

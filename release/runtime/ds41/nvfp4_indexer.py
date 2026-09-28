@@ -423,13 +423,204 @@ def _graph_gather_kernel(cache, table, lengths, values, scales, errors,
                      valid[:, None], other=0), live[:, None])
 
 
+@triton.jit
+def _paged_keys(cache, table, request, t_req, t_col, errors, cols, needed,
+                STATES: tl.constexpr, PAGE_STRIDE: tl.constexpr, COLUMNS: tl.constexpr,
+                PAGES: tl.constexpr, BN: tl.constexpr):
+    """BF16 NVFP4 keys [BN, 128] read in place from pages; the gather's masking and error codes.
+
+    Keys the table does not cover, or on invalid pages, read as zero (score 0, never NaN).
+    """
+    column = cols // STATES
+    in_table = needed & (column < COLUMNS)
+    page = tl.load(table + request * t_req + tl.where(in_table, column, 0) * t_col,
+                   in_table, other=-1).to(tl.int64)
+    valid = in_table & (page >= 0) & (page < PAGES)
+    flags = tl.where(tl.sum((needed & ~in_table).to(tl.int32), 0) > 0, 2, 0)
+    flags |= tl.where(tl.sum((in_table & ~valid).to(tl.int32), 0) > 0, 4, 0)
+    if flags != 0:
+        tl.atomic_or(errors + request, flags)
+    base = tl.where(valid, page, 0) * PAGE_STRIDE
+    slot = (cols % STATES).to(tl.int64)
+    packed = tl.load(cache + base[:, None] + slot[:, None] * 64 + tl.arange(0, 64)[None, :],
+                     valid[:, None], other=0).to(tl.int32)
+    codes = tl.interleave(packed & 15, packed >> 4)
+    magnitude = _decoded_magnitude(codes)
+    element = tl.where((codes & 8) != 0, -magnitude, magnitude)
+    group = tl.load(cache + base[:, None] + STATES * 64 + slot[:, None] * 8 + tl.arange(0, 8)[None, :],
+                    valid[:, None], other=0)
+    group = group.to(tl.float8e4nv, bitcast=True).to(tl.float32)
+    key = tl.reshape(tl.reshape(element, (BN, 8, 16)) * group[:, :, None], (BN, 128))
+    return key.to(tl.bfloat16)
+
+
+@triton.jit
+def _paged_logits_kernel(q, q_req, q_row, q_head, weights, w_req, w_row, lengths, l_req, l_row,
+                         cache, table, t_req, t_col, errors, out, out_row,
+                         N: tl.constexpr, NL: tl.constexpr, PAIRS: tl.constexpr, CAP: tl.constexpr,
+                         STATES: tl.constexpr, PAGE_STRIDE: tl.constexpr, COLUMNS: tl.constexpr,
+                         PAGES: tl.constexpr, BM: tl.constexpr, BN: tl.constexpr):
+    # _graph_gather_kernel + _logits_kernel in one pass: the same row pairs, key tiles,
+    # BF16 MMA and head reduction, without staging every key through a workspace.
+    request = tl.program_id(0) // PAIRS
+    rows = (tl.program_id(0) % PAIRS) * BM + tl.arange(0, BM)
+    in_rows = rows < N
+    cols = tl.program_id(1) * BN + tl.arange(0, BN)
+    in_cols = cols < CAP
+    lane = tl.arange(0, NL)
+    sizes = tl.load(lengths + request * l_req + lane * l_row, lane < N, other=0)
+    if tl.program_id(1) == 0:
+        if tl.sum(((lane < N) & ((sizes < 0) | (sizes > CAP))).to(tl.int32), 0) > 0:
+            tl.atomic_or(errors + request, 1)
+    count = tl.minimum(tl.maximum(tl.max(sizes, 0), 0), CAP)
+    hi = tl.load(lengths + request * l_req + rows * l_row, in_rows, other=0)
+    hi = tl.minimum(tl.maximum(hi, 0), CAP)
+    live = in_rows[:, None] & in_cols[None, :] & (cols[None, :] < hi[:, None])
+    result = tl.full((BM, BN), float('-inf'), tl.float32)
+    if tl.max(tl.max(live.to(tl.int32), axis=1), axis=0) > 0:
+        key = _paged_keys(cache, table, request, t_req, t_col, errors, cols, in_cols & (cols < count),
+                          STATES, PAGE_STRIDE, COLUMNS, PAGES, BN)
+        head = tl.arange(0, 32)
+        dim = tl.arange(0, 128)
+        query = tl.load(q + request * q_req + rows[:, None, None].to(tl.int64) * q_row
+                        + head[None, :, None] * q_head + dim[None, None, :], in_rows[:, None, None], other=0.0)
+        query = tl.reshape(query.to(tl.bfloat16), (BM * 32, 128))
+        score = tl.dot(query, tl.trans(key))
+        score = tl.reshape(tl.maximum(score, 0.0), (BM, 32, BN))
+        weight = tl.load(weights + request * w_req + rows[:, None] * w_row + head[None, :],
+                         in_rows[:, None], other=0.0)
+        result = tl.where(live, tl.sum(score * weight[:, :, None], axis=1), result)
+    tl.store(out + (request * N + rows)[:, None].to(tl.int64) * out_row + cols[None, :], result,
+             in_rows[:, None] & in_cols[None, :])
+
+
+@triton.jit
+def _candidate_logits_kernel(q, q_req, q_row, q_head, weights, w_req, w_row, lengths, l_req, l_row,
+                             cache, table, t_req, t_col, candidates, c_row, errors, out, out_row,
+                             N: tl.constexpr, CAP: tl.constexpr, K: tl.constexpr, NB: tl.constexpr,
+                             LOCAL: tl.constexpr, STATES: tl.constexpr, PAGE_STRIDE: tl.constexpr,
+                             COLUMNS: tl.constexpr, PAGES: tl.constexpr, BN: tl.constexpr):
+    # One query row x BN candidate keys. Global candidate block b holds this rank's
+    # local columns [b * LOCAL, (b + 1) * LOCAL) (DCP interleave 1, even block size).
+    # The row is scored twice as a BM=2 pair so the MMA tile and head reduction match
+    # _paged_logits_kernel exactly: candidate scores are bitwise the full scorer's.
+    row = tl.program_id(0)
+    request = row // N
+    local_row = row % N
+    slot = tl.program_id(1) * BN + tl.arange(0, BN)
+    chosen = slot // LOCAL
+    block = tl.load(candidates + row * c_row + chosen, chosen < K, other=-1).to(tl.int64)
+    raw = tl.load(lengths + request * l_req + local_row * l_row)
+    if tl.program_id(1) == 0:
+        if (raw < 0) | (raw > CAP):
+            tl.atomic_or(errors + request, 1)
+    hi = tl.minimum(tl.maximum(raw, 0), CAP)
+    live = (chosen < K) & (block >= 0) & (block < NB) & (block * LOCAL + slot % LOCAL < hi)
+    if tl.max(live.to(tl.int32), axis=0) > 0:
+        cols = tl.where(live, block * LOCAL + slot % LOCAL, 0)
+        key = _paged_keys(cache, table, request, t_req, t_col, errors, cols, live,
+                          STATES, PAGE_STRIDE, COLUMNS, PAGES, BN)
+        pair = tl.arange(0, 2)
+        head = tl.arange(0, 32)
+        dim = tl.arange(0, 128)
+        query = tl.load(q + request * q_req + local_row * q_row + pair[:, None, None] * 0
+                        + head[None, :, None] * q_head + dim[None, None, :])
+        query = tl.reshape(query.to(tl.bfloat16), (64, 128))
+        score = tl.dot(query, tl.trans(key))
+        score = tl.reshape(tl.maximum(score, 0.0), (2, 32, BN))
+        weight = tl.load(weights + request * w_req + local_row * w_row + pair[:, None] * 0 + head[None, :])
+        both = tl.sum(score * weight[:, :, None], axis=1)
+        result = tl.max(tl.where(pair[:, None] == 0, both, float('-inf')), axis=0)
+        tl.store(out + row.to(tl.int64) * out_row + cols, result, live)
+
+
+def _graph_decode_layout(q, kv, weights, lengths, table, max_model_len, indices, state_chunk):
+    values, q_scale = q
+    values = _fp8_query(values)
+    if (values.ndim != 4 or not 1 <= values.shape[0] <= 24
+            or values.shape[0] * values.shape[1] > 24 or not 1 <= values.shape[1] <= 4
+            or q_scale is not None or indices is not None or lengths.shape != values.shape[:2]
+            or type(max_model_len) is not int or not 1 <= max_model_len <= 1048576
+            or type(state_chunk) is not int or not 1 <= state_chunk <= 8192):
+        raise ValueError(f'Expected at most24 FP8 query rows: values={values.shape}, lengths={lengths.shape}')
+    batch, next_n = values.shape[:2]
+    _check_view(kv)
+    if (weights.shape not in ((batch * next_n, HEADS), (batch, next_n, HEADS))
+            or weights.dtype != torch.float32 or table.ndim != 2 or table.shape[0] != batch
+            or table.dtype not in (torch.int32, torch.int64)
+            or lengths.dtype not in (torch.int32, torch.int64)
+            or any(x.device != kv.device for x in (values, weights, lengths, table))
+            or any(s < 0 for x in (values, weights, lengths, table) for s in x.stride())):
+        raise ValueError('Invalid NVFP4 graph page/query layout or metadata')
+    weights = weights.reshape(batch, next_n, HEADS)
+    return values, (weights if weights.stride(2) == 1 else weights.contiguous())
+
+
+_ERRORS = ((1, 'Local context exceeds bounded logits allocation'),
+           (2, 'Indexer block table is too short'), (4, 'Invalid physical indexer page ID'))
+
+
 def graph_paged_logits(q, kv, weights, lengths, table, schedule_metadata, *,
                        max_model_len, clean_logits=False, indices=None, state_chunk=8192):
     """Capture-safe decode/DSpark scorer (NVFP4 counterpart of dcp_indexer_graph.paged_logits).
 
-    Device lengths bound the gather and each row's -inf tail; no host readback
-    inside capture. Invalid metadata is masked and reported through the owner.
+    Scores keys in place from their pages (no key workspace). Device lengths bound
+    each row's live columns and -inf tail; no host readback inside capture. Invalid
+    metadata is masked and reported through the owner, exactly as the gathered scorer.
     """
+    from .graph_validation import check_flags, require_capture_owner
+    require_capture_owner()
+    values, weights = _graph_decode_layout(q, kv, weights, lengths, table, max_model_len, indices, state_chunk)
+    batch, next_n = values.shape[:2]
+    output = torch.empty((batch * next_n, max_model_len), device=kv.device, dtype=torch.float32)
+    errors = torch.zeros(batch, device=kv.device, dtype=torch.int32)
+    pairs = triton.cdiv(next_n, 2)
+    _paged_logits_kernel[(batch * pairs, triton.cdiv(max_model_len, 128))](
+        values, values.stride(0), values.stride(1), values.stride(2), weights, weights.stride(0),
+        weights.stride(1), lengths, lengths.stride(0), lengths.stride(1), kv, table, table.stride(0),
+        table.stride(1), errors, output, output.stride(0), N=next_n, NL=triton.next_power_of_2(next_n),
+        PAIRS=pairs, CAP=max_model_len, STATES=kv.shape[1], PAGE_STRIDE=kv.stride(0),
+        COLUMNS=table.shape[1], PAGES=kv.shape[0], BM=2, BN=128, num_warps=4)
+    check_flags(errors, _ERRORS)
+    return output
+
+
+def graph_candidate_logits(q, kv, weights, lengths, table, candidates, *, block_size, rank, world,
+                           max_model_len, indices=None, state_chunk=8192):
+    """Capture-safe decode scorer for indexers that consume two-level candidate blocks.
+
+    Computes graph_paged_logits' values only at this rank's columns of each row's
+    candidate blocks ([rows, K] global block ids, -1 padding). Every other column is
+    left unwritten: the caller's apply_candidate_mask must follow, and it sets every
+    non-candidate or past-length column to -inf (it never keeps an unwritten one).
+    """
+    from .graph_validation import check_flags, require_capture_owner
+    require_capture_owner()
+    values, weights = _graph_decode_layout(q, kv, weights, lengths, table, max_model_len, indices, state_chunk)
+    batch, next_n = values.shape[:2]
+    rows = batch * next_n
+    if (world != 2 or rank not in (0, 1) or type(block_size) is not int or block_size < 2
+            or block_size % world or candidates.ndim != 2 or candidates.shape[0] != rows
+            or not 1 <= candidates.shape[1] <= 8192 or candidates.stride(1) != 1
+            or candidates.dtype not in (torch.int32, torch.int64) or candidates.device != kv.device):
+        raise ValueError('Expected DCP2 decode candidate blocks for every query row')
+    output = torch.empty((rows, max_model_len), device=kv.device, dtype=torch.float32)
+    errors = torch.zeros(batch, device=kv.device, dtype=torch.int32)
+    local, k = block_size // world, candidates.shape[1]
+    _candidate_logits_kernel[(rows, triton.cdiv(k * local, 128))](
+        values, values.stride(0), values.stride(1), values.stride(2), weights, weights.stride(0),
+        weights.stride(1), lengths, lengths.stride(0), lengths.stride(1), kv, table, table.stride(0),
+        table.stride(1), candidates, candidates.stride(0), errors, output, output.stride(0),
+        N=next_n, CAP=max_model_len, K=k, NB=triton.cdiv(max_model_len * world, block_size),
+        LOCAL=local, STATES=kv.shape[1], PAGE_STRIDE=kv.stride(0), COLUMNS=table.shape[1],
+        PAGES=kv.shape[0], BN=128, num_warps=4)
+    check_flags(errors, _ERRORS)
+    return output
+
+
+def _graph_paged_logits_gathered(q, kv, weights, lengths, table, schedule_metadata, *,
+                                 max_model_len, clean_logits=False, indices=None, state_chunk=8192):
+    """The previous workspace-gather scorer; kept only as the probes' bitwise reference."""
     from .graph_validation import check_flags, require_capture_owner
     require_capture_owner()
     values, q_scale = q
@@ -467,8 +658,7 @@ def graph_paged_logits(q, kv, weights, lengths, table, schedule_metadata, *,
         ends = sizes.clamp(0, max_model_len).to(torch.int32).contiguous()
         mqa_logits(values[request].contiguous(), weights[request].contiguous(), keys, key_scales,
                    starts, ends, out=output[request * next_n:(request + 1) * next_n])
-    check_flags(errors, ((1, 'Local context exceeds bounded logits allocation'),
-        (2, 'Indexer block table is too short'), (4, 'Invalid physical indexer page ID')))
+    check_flags(errors, _ERRORS)
     return output
 
 
@@ -707,21 +897,34 @@ def graph_paged_logits_nvfp4(values, scales, head_weights, kv, lengths, table, *
     return output
 
 
-def make_decode_logits(fp8_scorer):
+def make_decode_logits(fp8_scorer, dcp_group=None):
     """Decode dispatcher for the recompiled sparse_attn_indexer.
 
     FP8 queries (default) keep the installed FP8 x NVFP4 scorer. With
     DS41_INDEXER_DECODE_QUERY=nvfp4 the QueryPackage's decode rows are quantized like
     prefill and scored on FP4 tensor cores; batches needing ragged padding (short
     chunked prefill mixed into decode) keep the FP8 scorer.
+
+    Indexers that consume two-level candidate blocks pass ``candidates`` (rows x K
+    global block ids); with the capture-safe FP8 scorer only those blocks' columns
+    are scored (graph_candidate_logits), bitwise equal to scoring every column,
+    because the caller's apply_candidate_mask discards all others. Other routes
+    score every column and rely on the same mask.
     """
     nvfp4_scorer = graph_paged_logits_nvfp4 if fp8_scorer is graph_paged_logits else paged_logits_nvfp4
 
     def decode_logits(package, count, requires_padding, q, kv, weights, lengths, table, schedule_metadata,
-                      *, max_model_len, clean_logits=False, indices=None):
+                      *, max_model_len, clean_logits=False, indices=None, candidates=None,
+                      candidate_block_size=0):
         values = q[0]
         if (DECODE_QUERY != 'nvfp4' or package is None or requires_padding or indices is not None
                 or values.ndim != 4 or count != values.shape[0] * values.shape[1]):
+            if candidates is not None and fp8_scorer is graph_paged_logits and dcp_group is not None:
+                group = dcp_group()
+                return graph_candidate_logits(q, kv, weights, lengths, table, candidates,
+                                              block_size=candidate_block_size, rank=group.rank_in_group,
+                                              world=group.world_size, max_model_len=max_model_len,
+                                              indices=indices)
             return fp8_scorer(q, kv, weights, lengths, table, schedule_metadata, max_model_len=max_model_len,
                               clean_logits=clean_logits, indices=indices)
         batch, next_n = values.shape[:2]

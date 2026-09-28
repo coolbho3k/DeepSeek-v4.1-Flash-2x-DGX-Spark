@@ -1,0 +1,113 @@
+{
+ "paged_equals_gathered": [
+  {
+   "states": 64,
+   "batch": 1,
+   "next_n": 4,
+   "cap": 4096,
+   "bitwise_equal": true,
+   "finite_columns": 10431,
+   "invalid_page": [
+    "Invalid physical indexer page ID",
+    "Invalid physical indexer page ID"
+   ],
+   "invalid_length": [
+    "Local context exceeds bounded logits allocation",
+    "Local context exceeds bounded logits allocation"
+   ],
+   "same_errors": true
+  },
+  {
+   "states": 128,
+   "batch": 2,
+   "next_n": 3,
+   "cap": 6000,
+   "bitwise_equal": true,
+   "finite_columns": 11355,
+   "invalid_page": [
+    "Invalid physical indexer page ID",
+    "Invalid physical indexer page ID"
+   ],
+   "invalid_length": [
+    "Local context exceeds bounded logits allocation",
+    "Local context exceeds bounded logits allocation"
+   ],
+   "same_errors": true
+  },
+  {
+   "states": 64,
+   "batch": 6,
+   "next_n": 4,
+   "cap": 2048,
+   "bitwise_equal": true,
+   "finite_columns": 19835,
+   "invalid_page": [
+    "Invalid physical indexer page ID",
+    "Invalid physical indexer page ID"
+   ],
+   "invalid_length": [
+    "Local context exceeds bounded logits allocation",
+    "Local context exceeds bounded logits allocation"
+   ],
+   "same_errors": true
+  },
+  {
+   "states": 64,
+   "batch": 3,
+   "next_n": 1,
+   "cap": 5000,
+   "bitwise_equal": true,
+   "finite_columns": 6527,
+   "invalid_page": [
+    "Invalid physical indexer page ID",
+    "Invalid physical indexer page ID"
+   ],
+   "invalid_length": [
+    "Local context exceeds bounded logits allocation",
+    "Local context exceeds bounded logits allocation"
+   ],
+   "same_errors": true
+  }
+ ],
+ "candidates_equal_full_then_mask": {
+  "rank0": {
+   "bitwise_equal": true,
+   "dispatcher_bitwise_equal": true,
+   "kept_columns": 10640
+  },
+  "rank1": {
+   "bitwise_equal": true,
+   "dispatcher_bitwise_equal": true,
+   "kept_columns": 10640
+  }
+ },
+ "graph_replay": {
+  "full_equals_fresh": true,
+  "full_equals_gathered": true,
+  "candidates_equal_full_then_mask": true
+ },
+ "timing_ms": {
+  "1x4_rows_4096_keys": {
+   "gathered": 0.0576,
+   "paged": 0.0494,
+   "candidates_2048x8": 0.0104
+  },
+  "1x4_rows_65536_keys": {
+   "gathered": 0.1199,
+   "paged": 0.1025,
+   "candidates_2048x8": 0.0146
+  },
+  "1x4_rows_520000_keys": {
+   "gathered": 0.7229,
+   "paged": 0.5271,
+   "candidates_2048x8": 0.0145
+  },
+  "6x4_rows_131072_keys": {
+   "gathered": 1.2841,
+   "paged": 0.9987,
+   "candidates_2048x8": 0.0534
+  }
+ },
+ "peak_allocated_mib": 123.0,
+ "passed": true
+}

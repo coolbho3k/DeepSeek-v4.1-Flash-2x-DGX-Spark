@@ -319,12 +319,19 @@ def make_probe_patches():
             ('logits = fp8_fp4_paged_mqa_logits(',
              'logits = _ds41_decode_logits(_ds41_prefill_q, num_decode_tokens, '
              'decode_metadata.requires_padding,'),
+            # Candidate consumers score only their candidate blocks; the mask below still runs.
+            ('                indices=decode_metadata.indices,\n            )\n        num_rows = logits.shape[0]',
+             '                indices=decode_metadata.indices,\n'
+             '                candidates=(candidate_blocks[:num_padded_tokens]\n'
+             '                            if candidate_blocks is not None and not candidate_write else None),\n'
+             '                candidate_block_size=candidate_block_size,\n'
+             '            )\n        num_rows = logits.shape[0]'),
         ]
         indexer_globals.update({'_gather_workspace_shapes': _nvfp4.workspace_shapes,
             'kv_cache_as_quant_view': _nvfp4.quant_view,
             '_ds41_QueryPackage': _nvfp4.QueryPackage,
             '_ds41_prefill_logits': _nvfp4.prefill_logits,
-            '_ds41_decode_logits': _nvfp4.make_decode_logits(paged_logits),
+            '_ds41_decode_logits': _nvfp4.make_decode_logits(paged_logits, get_dcp_group),
             '_ds41_gather_index_k': _nvfp4.gather_requests})
 
         def record_width(index_head_dim, use_fp4_kv):

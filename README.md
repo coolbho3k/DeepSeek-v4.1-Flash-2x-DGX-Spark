@@ -56,6 +56,13 @@ baseline replies matched exactly; one coding reply differed. See
 [measurements, limitations and atomic upgrades](docs/engram-io-performance.md)
 and the [preceding DCP attention results](docs/dcp-overlap-performance.md).
 
+**1M-context decode:** the sparse indexer now scores keys in place from the cache
+pages, and the four indexers that consume layer 20's candidate blocks score only
+those blocks; both are bitwise identical to the previous scorer. On a synthetic
+1,039,999-token retrieval prompt (keys found), decode measured **67.5 ms per step
+(32.5 tok/s)** versus 63–65 ms at short context, down from 81.7 ms (25.7 tok/s).
+See [the indexer notes](release/experimental/indexer_fp4/README.md).
+
 ## What this recipe adds
 
 - Our target quantizes **routed experts to EXL3 3bpw MUL1**, retaining the

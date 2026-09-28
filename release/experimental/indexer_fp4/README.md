@@ -100,7 +100,9 @@ weight, which brings the head maximum to 1,024 or below. Every searched scale (a
 **Code:**
 - `serving/ds41/nvfp4_indexer.py`:
   - the writer and the gathers;
-  - the FP8 x NVFP4 decode scorers (eager and capture-safe);
+  - the FP8 x NVFP4 decode scorers (eager and capture-safe); the capture-safe scorer reads keys in
+    place from their pages (no key workspace);
+  - the candidate scorer for indexers that consume layer 20's two-level candidate blocks;
   - the NVFP4 query quantizer and `QueryPackage`;
   - `prefill_logits`;
   - the native loader, which checks the binary hash against the receipt;
@@ -118,7 +120,8 @@ weight, which brings the head maximum to 1,024 or below. Every searched scale (a
   - returns a `QueryPackage` (pre-RoPE queries, quantized lazily per prefill chunk) in the unused
     `q_scale` slot;
   - recompiles `sparse_attn_indexer` with the NVFP4 gather, workspace, cache view, eager decode
-    scorer and `prefill_logits`.
+    scorer and `prefill_logits`;
+  - passes candidate consumers' candidate blocks to the decode scorer (the candidate mask still runs).
 - `spark_combined_miaai.py` selects the capture-safe decode scorer.
 - Pins in `overlay-manifest.json`, `spark_backend_attestation.py`, `spark_combined_miaai.py` and
   `runtime-requirements.json` were refreshed. `release/freeze.py` was re-run.
@@ -129,6 +132,11 @@ weight, which brings the head maximum to 1,024 or below. Every searched scale (a
 - `probes/check_nvfp4_indexer_integration_gpu.py`:
   - vLLM's store entry point through the parity hook is byte-exact;
   - the eager and graph decode scorers over block-table pages match float64.
+- `probes/check_nvfp4_paged_decode_gpu.py`, bitwise:
+  - the paged-direct scorer against the previous workspace-gather scorer (ragged, zero and
+    full-capacity rows, permuted tables, 64- and 128-state pages, identical error reports);
+  - candidate scorer + candidate mask against full scorer + the same mask, on both DCP ranks;
+  - both after CUDA-graph capture and replay with pages, lengths and candidates changed in place.
 - `probes/check_nvfp4_prefill_gpu.py`:
   - key writer and query quantizer bytes are exact against the oracle;
   - no key group (0 of 4,128) and no query group (0 of 65,792) has error above `/6` or
@@ -185,8 +193,33 @@ three paths up to 3x slower at the small shapes (1x4 64K: 2.45 / 2.41 / 2.74; 6x
 2.80 / 11.9; 6x4 512K: 11.8 / 9.4 / 43.7). The search changes no decode scorer; it adds about
 1 us per decode query quantization and 0.5 us per index-key write.
 
-At 512K both new paths are dominated by the per-request gather into a contiguous workspace. A
-scorer that reads pages directly is the next decode optimization.
+At 512K both new paths were dominated by the per-request gather into a contiguous workspace.
+
+**Paged-direct and candidate decode scoring** (FP8 queries, the served route). The capture-safe
+scorer now fuses the gather into the scoring kernel: the same two-row, 128-key tiles, BF16 MMA and
+head reduction, reading each key's 64 value and 8 scale bytes from its page. Its output is bitwise
+the gathered scorer's, error reports included. V4.1's four indexers after the candidate source
+(layers 24, 28, 32, 36) previously scored every local key and then masked all but layer 20's 2,048
+candidate blocks of 8 positions (4 local columns per block per DCP rank). They now score only those
+columns; each row is scored as a duplicated two-row tile, so the kept values are bitwise the full
+scorer's, and the unchanged candidate mask sets every other column to -inf. One decode indexer
+call under CUDA-graph replay, one GB10, idle ([results](paged-decode-results.json)):
+
+| 1 request x 4 rows, local keys | Gathered | Paged | Candidates (2,048 x 8) |
+| --- | ---: | ---: | ---: |
+| 4,096 | 0.058 | 0.049 | 0.010 |
+| 65,536 | 0.120 | 0.103 | 0.015 |
+| 520,000 | 0.723 | 0.527 | 0.015 |
+| 6 requests, 131,072 | 1.284 | 0.999 | 0.053 |
+
+From these isolated timings, scoring per 1M decode step (per rank: three 260K-key and five
+520K-key indexers) should fall from about 4.8 ms to about 1.5 ms; decode top-k over 520K-column
+rows adds about 0.15 ms per indexer over short rows, and the candidate mask is width-bound
+(0.04 ms). Served, the saving was about four times larger than that estimate: on the synthetic
+1,039,999-token retrieval prompt the clean single-request decode step fell from 81.7 ms
+(25.7 tok/s) to 67.5 ms cached and 67.7 ms cold (32.5 / 31.3 tok/s), against 63.2–64.9 ms at short
+context on the same deployment. All three keys were returned; text 3/3, diagnostics 2/2 and
+held-out images 19/24 matched the previous kit.
 
 **Kit and A/B:**
 - `prepare_kit.py` derives a runtime kit from a verified parent kit:
@@ -216,4 +249,4 @@ NVFP4 keys with FP8 decode queries):
 **Not yet done:**
 - a KL A/B against an unquantized-indexer reference on long prompts;
 - idle-GPU timing of the prefill route (measured only under a concurrent GPU job);
-- a paged-direct decode scorer (the per-request gather dominates at 512K).
+- restricting the candidate consumers' top-k to their candidate columns (it still ranks full rows).
