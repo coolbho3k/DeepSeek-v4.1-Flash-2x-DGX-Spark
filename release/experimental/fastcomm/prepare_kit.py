@@ -42,12 +42,18 @@ def main():
     p.add_argument('--library', type=Path, required=True)
     p.add_argument('--output', type=Path, required=True)
     p.add_argument('--receipt', type=Path, required=True)
+    p.add_argument('--replace-existing', action='store_true',
+                   help='Rebuild fastcomm in an already-integrated verified parent kit')
     a = p.parse_args()
     parent = a.parent_kit.absolute()
     verify(parent, a.parent_sha256)
     kit = a.output.absolute()
     if kit.exists() or a.receipt.exists():
         raise ValueError('Fresh output required')
+    existing = parent / 'serving/libfastcomm.so'
+    if existing.exists() != a.replace_existing:
+        raise ValueError('Use --replace-existing only for an already-integrated fastcomm kit')
+    old_library_sha = sha(existing.read_bytes()) if a.replace_existing else None
     library = a.library.read_bytes()
     shutil.copytree(parent, kit)
     (kit / 'serving/libfastcomm.so').write_bytes(library)
@@ -56,17 +62,39 @@ def main():
     assert sha(library) in module
     (kit / 'serving/ds41/fastcomm.py').write_text(module)
     (kit / 'native-source').mkdir(exist_ok=True)
-    shutil.copy2(HERE / 'fastcomm.cu', kit / 'native-source/fastcomm.cu')
+    for name in ('fastcomm.cu', 'fastcomm_mtu.h'):
+        shutil.copy2(HERE / name, kit / 'native-source' / name)
     for name, pairs in json.loads((HERE / 'edits.json').read_bytes()).items():
         for before, after in pairs:
-            replace(kit / name, before, after)
+            if a.replace_existing:
+                text = (kit / name).read_text()
+                if before in text or text.count(after) != 1:
+                    raise ValueError('Parent fastcomm integration changed: ' + name)
+            else:
+                replace(kit / name, before, after)
     module_sha = sha((kit / 'serving/ds41/fastcomm.py').read_bytes())
     for name, anchor, entries in (
             ('spark_combined_miaai.py', 'PINS = {', {'ds41.fastcomm': module_sha}),
             ('spark_backend_attestation.py', 'PRIVATE_SOURCES = {', {
                 'ds41/fastcomm.py': module_sha, 'libfastcomm.so': sha(library)})):
-        replace(kit / 'serving' / name, anchor, anchor + '\n' +
-                ''.join(f'    {key!r}: {value!r},\n' for key, value in entries.items()))
+        path = kit / 'serving' / name
+        if a.replace_existing:
+            assignment = next(n for n in ast.parse(path.read_text()).body
+                              if isinstance(n, ast.Assign) and any(
+                                  isinstance(t, ast.Name) and t.id == anchor.split()[0]
+                                  for t in n.targets))
+            pins = ast.literal_eval(assignment.value)
+            parent_module_sha = sha((parent / 'serving/ds41/fastcomm.py').read_bytes())
+            for key in entries:
+                expected = old_library_sha if key == 'libfastcomm.so' else parent_module_sha
+                if pins.get(key) != expected:
+                    raise ValueError('Parent fastcomm pin changed: ' + key)
+            if name == 'spark_backend_attestation.py':
+                replace(path, old_library_sha, sha(library))
+            # Python source pins are refreshed by the existing dependency pass.
+        else:
+            replace(path, anchor, anchor + '\n' +
+                    ''.join(f'    {key!r}: {value!r},\n' for key, value in entries.items()))
     manifest = json.loads((parent / 'bundle-manifest.json').read_bytes())
     history = {name: {row['sha256'], sha((kit / name).read_bytes())}
                for name, row in manifest['files'].items()

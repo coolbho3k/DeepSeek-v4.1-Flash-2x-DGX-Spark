@@ -24,6 +24,7 @@
 #include <cstdio>
 #include <cstring>
 #include <thread>
+#include "fastcomm_mtu.h"
 
 namespace {
 constexpr int kChannels = 2, kSlots = 4;
@@ -48,11 +49,12 @@ struct Comm {
   DeviceView view{};
   uint64_t peer_recv = 0, peer_flags = 0; uint32_t peer_rkey = 0;
   int gid_index = 0;
+  uint32_t active_mtu = 0;
   std::thread proxy; std::atomic<bool> stop{false}; std::atomic<int> error{0};
   uint64_t posted = 0;
 };
 
-struct Info { uint32_t qpn, psn, rkey, pad; uint64_t recv, flags; ibv_gid gid; };
+struct Info { uint32_t qpn, psn, rkey, active_mtu; uint64_t recv, flags; ibv_gid gid; };
 
 __device__ __forceinline__ uint64_t load_acquire_sys(const uint64_t* p) {
   uint64_t v; asm volatile("ld.acquire.sys.global.u64 %0, [%1];" : "=l"(v) : "l"(p) : "memory"); return v;
@@ -186,6 +188,17 @@ void* fc_create(const char* device, int gid_index, uint64_t max_bytes, void* inf
   for (int i = 0; i < n; ++i) if (!strcmp(ibv_get_device_name(list[i]), device)) c->ctx = ibv_open_device(list[i]);
   ibv_free_device_list(list);
   if (!c->ctx) { delete c; return nullptr; }
+  // Query the selected port's active MTU, not its hardware maximum. This is
+  // host-only validation before pinned buffers or CUDA state are allocated.
+  ibv_port_attr port{};
+  if (ibv_query_port(c->ctx, 1, &port) ||
+      !ds41_fastcomm::valid_mtu(static_cast<uint32_t>(port.active_mtu))) {
+    fprintf(stderr, "fastcomm: cannot determine a supported active MTU on %s port 1\n", device);
+    ibv_close_device(c->ctx);
+    delete c;
+    return nullptr;
+  }
+  c->active_mtu = static_cast<uint32_t>(port.active_mtu);
   c->gid_index = gid_index;
   c->pd = ibv_alloc_pd(c->ctx);
   c->cq = ibv_create_cq(c->ctx, 1024, nullptr, nullptr, 0);
@@ -217,6 +230,8 @@ void* fc_create(const char* device, int gid_index, uint64_t max_bytes, void* inf
   if (ibv_modify_qp(c->qp, &at, IBV_QP_STATE | IBV_QP_PKEY_INDEX | IBV_QP_PORT | IBV_QP_ACCESS_FLAGS)) return nullptr;
   Info me{};
   me.qpn = c->qp->qp_num; me.psn = 4242; me.rkey = c->mr->rkey;
+  // Reuse the previously zeroed padding field; both peers must use this build.
+  me.active_mtu = c->active_mtu;
   me.recv = reinterpret_cast<uint64_t>(c->view.recv);
   me.flags = reinterpret_cast<uint64_t>(c->view.recv_flags);
   if (ibv_query_gid(c->ctx, 1, gid_index, &me.gid)) return nullptr;
@@ -227,8 +242,16 @@ void* fc_create(const char* device, int gid_index, uint64_t max_bytes, void* inf
 int fc_connect(void* handle, const void* peer_info) {
   auto* c = static_cast<Comm*>(handle);
   Info peer; memcpy(&peer, peer_info, sizeof peer);
+  const uint32_t path_mtu = ds41_fastcomm::negotiate_mtu(c->active_mtu, peer.active_mtu);
+  if (!path_mtu) {
+    fprintf(stderr, "fastcomm: invalid active MTU advertisement (local=%u peer=%u); "
+                    "rebuild both peers with MTU negotiation\n", c->active_mtu, peer.active_mtu);
+    return EINVAL;
+  }
+  fprintf(stderr, "fastcomm: negotiated path MTU %u bytes (local=%u peer=%u bytes)\n",
+          128u << path_mtu, 128u << c->active_mtu, 128u << peer.active_mtu);
   ibv_qp_attr at{};
-  at.qp_state = IBV_QPS_RTR; at.path_mtu = IBV_MTU_4096; at.dest_qp_num = peer.qpn; at.rq_psn = peer.psn;
+  at.qp_state = IBV_QPS_RTR; at.path_mtu = static_cast<ibv_mtu>(path_mtu); at.dest_qp_num = peer.qpn; at.rq_psn = peer.psn;
   at.max_dest_rd_atomic = 1; at.min_rnr_timer = 12;
   at.ah_attr.is_global = 1; at.ah_attr.port_num = 1;
   at.ah_attr.grh.dgid = peer.gid; at.ah_attr.grh.sgid_index = c->gid_index; at.ah_attr.grh.hop_limit = 64;
